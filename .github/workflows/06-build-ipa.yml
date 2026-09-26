@@ -1,4 +1,4 @@
-name: Build unsigned iOS IPA (Version 6)
+name: Build unsigned iOS IPA (Version 6 - manual run)
 
 on:
   workflow_dispatch:
@@ -25,6 +25,19 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Check GameFile secret is configured (never print its value)
+        env:
+          GAMEFILE: ${{ secrets.GameFile }}
+        run: |
+          if [[ -z "$GAMEFILE" ]]; then
+            echo "::error::GitHub Actions secret GameFile is missing or empty."
+            exit 1
+          fi
+          echo "GameFile secret is present (value hidden)."
+          # The secret's format is intentionally not guessed here.
+          # Packaging the actual game data requires knowing whether it is a URL,
+          # base64 archive, or another supported payload format.
 
       - name: Install build tools
         run: |
