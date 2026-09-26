@@ -1,0 +1,23 @@
+name: First workflow — macOS build
+
+on:
+  workflow_dispatch:
+    inputs:
+      preset:
+        description: "CMake preset for macOS"
+        required: true
+        type: choice
+        options:
+          - macos-vulkan
+        default: macos-vulkan
+
+permissions:
+  contents: read
+
+jobs:
+  build-macos:
+    name: Build macOS apps
+    uses: ./.github/workflows/build-macos.yml
+    with:
+      preset: ${{ inputs.preset }}
+    secrets: inherit
