@@ -1,0 +1,127 @@
+name: Build unsigned iOS IPA (Version 5)
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_mode:
+        description: "Build mode"
+        required: true
+        type: choice
+        options:
+          - dev
+  push:
+    branches:
+      - clean/ios-rebuild
+    paths:
+      - ".github/workflows/05-build-ipa.yml"
+      - "scripts/build/ios/**"
+      - "ios/**"
+      - "GeneralsMD/**"
+      - "CMakeLists.txt"
+      - "CMakePresets.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-unsigned-v5-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-ios:
+    name: Build unsigned iOS app bundle
+    runs-on: macos-15
+    timeout-minutes: 360
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install build tools
+        run: |
+          brew update
+          brew install cmake ninja meson pkgconf xcodegen
+
+      - name: Configure Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git "$RUNNER_TEMP/vcpkg"
+          "$RUNNER_TEMP/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
+          echo "VCPKG_ROOT=$RUNNER_TEMP/vcpkg" >> "$GITHUB_ENV"
+
+      - name: Fetch MoltenVK and stage fonts
+        run: |
+          ./scripts/build/ios/fetch-moltenvk.sh
+          ./scripts/build/ios/stage-fonts.sh
+
+      - name: Configure iOS Vulkan build
+        run: cmake --preset ios-vulkan
+
+      - name: Compile engine
+        run: cmake --build build/ios-vulkan --target z_generals --parallel 3
+
+      - name: Build app shell without Apple signing
+        run: |
+          cd ios
+          xcodegen generate
+          xcodebuild -project GeneralsXZH.xcodeproj \
+            -scheme GeneralsXZH \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$GITHUB_WORKSPACE/build/ios-shell" \
+            CODE_SIGNING_ALLOWED=NO build
+
+      - name: Assemble unsigned IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP="$GITHUB_WORKSPACE/build/ios-shell/Build/Products/Release-iphoneos/GeneralsXZH.app"
+          ENGINE="$GITHUB_WORKSPACE/build/ios-vulkan/GeneralsMD/GeneralsXZH.app/GeneralsXZH"
+          test -d "$APP"
+          test -f "$ENGINE"
+          cp "$ENGINE" "$APP/GeneralsXZH"
+          mkdir -p "$APP/Frameworks"
+          DXVK="$GITHUB_WORKSPACE/build/ios-vulkan/_deps/dxvk-build-macos"
+          for lib in \
+            "$DXVK/src/d3d8/libdxvk_d3d8.0.dylib" \
+            "$DXVK/src/d3d9/libdxvk_d3d9.0.dylib" \
+            "$GITHUB_WORKSPACE/build/ios-vulkan/_deps/sdl3-build/libSDL3.0.dylib" \
+            "$GITHUB_WORKSPACE/build/ios-vulkan/_deps/sdl3_image-build/libSDL3_image.0.dylib" \
+            "$GITHUB_WORKSPACE/build/ios-vulkan/_deps/openal_soft-build/libopenal.1.24.2.dylib"; do
+            test -f "$lib"
+            cp "$lib" "$APP/Frameworks/"
+          done
+          if [[ -f "$APP/Frameworks/libopenal.1.24.2.dylib" ]]; then
+            mv "$APP/Frameworks/libopenal.1.24.2.dylib" "$APP/Frameworks/libopenal.1.dylib"
+          fi
+          MVK=$(find "$HOME" "$GITHUB_WORKSPACE" -path '*/MoltenVK.framework/MoltenVK' -type f -print -quit 2>/dev/null || true)
+          if [[ -z "$MVK" ]]; then
+            echo "MoltenVK binary not found; cannot package a working app." >&2
+            exit 1
+          fi
+          MVK_DIR="$(dirname "$MVK")"
+          mkdir -p "$APP/Frameworks/MoltenVK.framework"
+          cp -R "$MVK_DIR/"* "$APP/Frameworks/MoltenVK.framework/"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable GeneralsXZH" "$APP/Info.plist" || true
+          /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier org.generalsxzh.unsigned" "$APP/Info.plist" || true
+          /usr/libexec/PlistBuddy -c "Set :CFBundleSupportedPlatforms:0 iPhoneOS" "$APP/Info.plist" || true
+          install_name_tool -add_rpath "@executable_path/Frameworks" "$APP/GeneralsXZH" 2>/dev/null || true
+          mkdir -p "$GITHUB_WORKSPACE/build/ipa/Payload"
+          cp -R "$APP" "$GITHUB_WORKSPACE/build/ipa/Payload/"
+          cd "$GITHUB_WORKSPACE/build/ipa"
+          /usr/bin/zip -qry "$GITHUB_WORKSPACE/GeneralsXZH-unsigned.ipa" Payload
+          file "$GITHUB_WORKSPACE/GeneralsXZH-unsigned.ipa"
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: GeneralsXZH-unsigned-ipa-v5
+          path: GeneralsXZH-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 7
