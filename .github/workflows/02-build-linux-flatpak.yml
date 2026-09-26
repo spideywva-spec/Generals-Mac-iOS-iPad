@@ -1,0 +1,23 @@
+name: Second workflow — Linux Flatpak build
+
+on:
+  workflow_dispatch:
+    inputs:
+      preset:
+        description: "CMake preset for Linux"
+        required: true
+        type: choice
+        options:
+          - linux64-deploy
+          - linux64-testing
+        default: linux64-deploy
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux:
+    name: Build Linux Flatpak bundles
+    uses: ./.github/workflows/build-linux-flatpak.yml
+    with:
+      preset: ${{ inputs.preset }}
