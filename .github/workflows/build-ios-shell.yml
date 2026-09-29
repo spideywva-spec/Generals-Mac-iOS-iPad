@@ -53,8 +53,22 @@ jobs:
       # FIX FOR A13 / APPLE GPU FAMILY 6
       - name: Apply DXVK iOS Patch
         run: |
-          if [ -f Patches/dxvk-ios.patch ]; then
-            git -C references/fbraz3-dxvk apply ../../Patches/dxvk-ios.patch || true
+          set -euo pipefail
+          PATCH="Patches/dxvk-ios.patch"
+          DXVK="references/fbraz3-dxvk"
+
+          test -f "${PATCH}"
+          test -d "${DXVK}/.git"
+
+          # Apply once, or verify that the exact patch is already present.
+          if git -C "${DXVK}" apply --check "../../${PATCH}"; then
+            git -C "${DXVK}" apply "../../${PATCH}"
+            echo "Applied DXVK iOS patch."
+          elif git -C "${DXVK}" apply --reverse --check "../../${PATCH}"; then
+            echo "DXVK iOS patch is already applied."
+          else
+            echo "ERROR: DXVK iOS patch neither applies cleanly nor appears already applied."
+            exit 1
           fi
           # Disable Vulkan 1.2/1.3 feature flags for Apple
           sed -i '' 's/m_hasVulkan12 = m_driverInfo.version >= VK_MAKE_VERSION(1, 2, 0);/m_hasVulkan12 = false;/g' references/fbraz3-dxvk/src/dxvk/dxvk_adapter.cpp || true
