@@ -45,7 +45,6 @@ jobs:
     name: GeneralsXZH iOS shell
     runs-on: macos-latest
     timeout-minutes: 150
-
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -88,18 +87,15 @@ jobs:
           SHA256="632cbe96c8ed6ed00c6ce25e3a7738c466134f76586e1c51f1419410d7f9042e"
           EXTRACT="/tmp/vulkan-extract"
           ROOT="$HOME/VulkanSDK/${VERSION}"
-
           curl -fL --retry 3 --retry-delay 5 -o "${ZIP}" "${URL}"
           echo "${SHA256}  ${ZIP}" | shasum -a 256 -c -
           rm -rf "${EXTRACT}"
           mkdir -p "${EXTRACT}"
           unzip -q "${ZIP}" -d "${EXTRACT}"
-
           INSTALLER=$(find "${EXTRACT}" -path "*/Contents/MacOS/vulkansdk-macOS-${VERSION}" -type f | head -1)
           test -n "${INSTALLER}"
           chmod +x "${INSTALLER}"
           "${INSTALLER}" --root "${ROOT}" --accept-licenses --default-answer --confirm-command install
-
           if [[ -d "${ROOT}/macOS" ]]; then SDK="${ROOT}/macOS"; else SDK="${ROOT}"; fi
           test -f "${SDK}/lib/MoltenVK.xcframework/ios-arm64/libMoltenVK.a"
           test -d "${SDK}/include/vulkan"
