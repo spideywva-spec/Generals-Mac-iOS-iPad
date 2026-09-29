@@ -58,7 +58,7 @@ jobs:
           DXVK="references/fbraz3-dxvk"
 
           test -f "${PATCH}"
-          test -d "${DXVK}/.git"
+          test -e "${DXVK}/.git"
 
           # Apply once, or verify that the exact patch is already present.
           if git -C "${DXVK}" apply --check "../../${PATCH}"; then
