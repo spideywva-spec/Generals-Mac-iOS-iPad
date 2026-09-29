@@ -1,0 +1,97 @@
+name: Prepare Generals Deluxe for GeneralsX (wiki layout)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prepare-game-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Install archive tools
+        run: sudo apt-get update && sudo apt-get install -y unzip zip
+
+      - name: Download and validate Dropbox archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 5 --retry-all-errors --retry-delay 3 \
+            "https://www.dropbox.com/scl/fi/77uzq0jtkqni0s9j0wofk/Generals-Deluxe.zip?rlkey=vn3fugm1jw36tzcxq53xagtgb&st=ivigr1eo&dl=1" \
+            -o "$RUNNER_TEMP/Generals-Deluxe.zip"
+          test -s "$RUNNER_TEMP/Generals-Deluxe.zip"
+          unzip -t "$RUNNER_TEMP/Generals-Deluxe.zip"
+          unzip -Z1 "$RUNNER_TEMP/Generals-Deluxe.zip" > "$RUNNER_TEMP/source-file-list.txt"
+
+      - name: Extract and arrange using wiki Steam layout
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="$RUNNER_TEMP/extracted"
+          PACKAGE="$RUNNER_TEMP/package"
+          mkdir -p "$SRC" "$PACKAGE/GeneralsX/GeneralsZH"
+          unzip -q "$RUNNER_TEMP/Generals-Deluxe.zip" -d "$SRC"
+
+          ROOT="$(find "$SRC" -type d -iname 'Generals Deluxe' -print -quit)"
+          if [ -z "$ROOT" ]; then
+            echo "ERROR: source archive does not contain a 'Generals Deluxe' directory."
+            find "$SRC" -maxdepth 3 -print
+            exit 1
+          fi
+
+          # The source's top-level game files are Zero Hour. Keep its ZH_Generals
+          # subfolder nested inside GeneralsZH: this is the wiki's Steam layout.
+          cp -a "$ROOT/." "$PACKAGE/GeneralsX/GeneralsZH/"
+
+          # Verify that the expected nested base-game directory was preserved.
+          test -d "$PACKAGE/GeneralsX/GeneralsZH/ZH_Generals"
+          find "$PACKAGE/GeneralsX/GeneralsZH" -type f -iname '*.big' -print | sort > "$RUNNER_TEMP/big-archives.txt"
+          test -s "$RUNNER_TEMP/big-archives.txt"
+
+          echo "===== Expected wiki layout ====="
+          echo "GeneralsX/GeneralsZH/       (Zero Hour root files)"
+          echo "GeneralsX/GeneralsZH/ZH_Generals/ (base-game assets, preserved from source)"
+          echo "===== BIG archives ====="
+          cat "$RUNNER_TEMP/big-archives.txt"
+
+          cat > "$PACKAGE/GeneralsX/README-layout.txt" <<'EOF'
+          Prepared from the supplied Generals Deluxe archive.
+          Wiki-style Steam layout:
+            GeneralsX/GeneralsZH/          — Zero Hour files
+            GeneralsX/GeneralsZH/ZH_Generals/ — nested base-game files from the source archive
+          This is game data only. No IPA was built, signed, or tested.
+          EOF
+
+          echo "===== File count ====="
+          find "$PACKAGE/GeneralsX" -type f | wc -l
+          echo "===== Size ====="
+          du -sh "$PACKAGE/GeneralsX"
+
+      - name: Create ZIP for download
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/package"
+          zip -qry "$RUNNER_TEMP/GeneralsX-wiki-layout.zip" GeneralsX
+          unzip -t "$RUNNER_TEMP/GeneralsX-wiki-layout.zip"
+          ls -lh "$RUNNER_TEMP/GeneralsX-wiki-layout.zip"
+
+      - name: Upload prepared game data
+        uses: actions/upload-artifact@v4
+        with:
+          name: GeneralsX-wiki-layout
+          path: ${{ runner.temp }}/GeneralsX-wiki-layout.zip
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Upload file inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: GeneralsX-wiki-layout-report
+          path: |
+            ${{ runner.temp }}/source-file-list.txt
+            ${{ runner.temp }}/big-archives.txt
+          retention-days: 7
+          if-no-files-found: error
