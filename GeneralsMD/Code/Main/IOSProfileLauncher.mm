@@ -446,8 +446,10 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
                                   UIFontWeightRegular);
     subtitle.textColor = [UIColor colorWithWhite:0.62 alpha:1.0];
 
+    UIButton *gameFile = MakeButton(@"Download GameFile", self, @selector(downloadGameFile));
     UIButton *settings = MakeButton(@"Settings", self, @selector(showSettings));
     UIButton *diagnostics = MakeButton(@"Diagnostics", self, @selector(showDiagnostics));
+    gameFile.backgroundColor = [UIColor colorWithWhite:0.06 alpha:1.0];
     settings.backgroundColor = [UIColor colorWithWhite:0.06 alpha:1.0];
     diagnostics.backgroundColor = [UIColor colorWithWhite:0.06 alpha:1.0];
 
@@ -484,6 +486,8 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         }
     }
 
+    [views addObject:gameFile];
+    [buttons addObject:gameFile];
     [views addObject:settings];
     [buttons addObject:settings];
     [views addObject:diagnostics];
@@ -1086,6 +1090,24 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 - (void)launchContra
 {
     SetSelectedProfile(@"contra-x");
+}
+
+- (void)downloadGameFile
+{
+    NSURL *url = [NSURL URLWithString:
+        @"https://www.dropbox.com/scl/fi/77uzq0jtkqni0s9j0wofk/Generals-Deluxe.zip?rlkey=vn3fugm1jw36tzcxq53xagtgb&st=z8xqnlg8&dl=1"];
+    if (url == nil)
+    {
+        fprintf(stderr, "ERROR: invalid GameFile download URL\\n");
+        return;
+    }
+
+    [[UIApplication sharedApplication] openURL:url
+                                       options:@{}
+                             completionHandler:^(BOOL success) {
+        if (!success)
+            fprintf(stderr, "ERROR: failed to open GameFile download URL\\n");
+    }];
 }
 
 - (NSString *)valueForKey:(NSString *)key inContents:(NSString *)contents
