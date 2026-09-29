@@ -4,6 +4,12 @@ name: Build iOS Shell
 
 on:
   workflow_dispatch:
+    inputs:
+      game_archive_url:
+        description: "Direct download URL to Generals Deluxe ZIP (optional)"
+        required: false
+        type: string
+        default: ""
   push:
     branches:
       - ios-clean
@@ -146,6 +152,57 @@ jobs:
           fi
           echo "IPA_SIZE=$(du -h "${IPA}" | cut -f1)" >> "${GITHUB_ENV}"
 
+      # Optional retail game files: archive is supplied at dispatch time and is not committed.
+      - name: Add Generals Deluxe game files
+        if: ${{ inputs.game_archive_url != '' }}
+        env:
+          GAME_ARCHIVE_URL: ${{ inputs.game_archive_url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          IPA="build/ios-package/GeneralsXZH-launcher-unsigned.ipa"
+          WORK="$RUNNER_TEMP/gamedata-import"
+          ZIP="$RUNNER_TEMP/generals-deluxe.zip"
+          mkdir -p "$WORK"
+          curl -fL --retry 3 --retry-delay 5 "$GAME_ARCHIVE_URL" -o "$ZIP"
+          python3 - "$ZIP" "$WORK" <<'PY'
+          import pathlib, sys, zipfile
+          archive = pathlib.Path(sys.argv[1])
+          out = pathlib.Path(sys.argv[2]).resolve()
+          with zipfile.ZipFile(archive) as z:
+              for info in z.infolist():
+                  name = info.filename.replace("\\\\", "/")
+                  p = pathlib.PurePosixPath(name)
+                  if p.is_absolute() or ".." in p.parts:
+                      raise SystemExit(f"Unsafe ZIP path: {name}")
+                  target = (out / pathlib.Path(*p.parts)).resolve()
+                  if out not in target.parents and target != out:
+                      raise SystemExit(f"Unsafe ZIP path: {name}")
+                  if info.is_dir():
+                      target.mkdir(parents=True, exist_ok=True)
+                  else:
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      with z.open(info) as src, target.open("wb") as dst:
+                          dst.write(src.read())
+          PY
+          SOURCE="$WORK"
+          if [[ -d "$WORK/Generals Deluxe" ]]; then SOURCE="$WORK/Generals Deluxe"; fi
+          if [[ ! -f "$SOURCE/Generals.exe" && ! -d "$SOURCE/ZH_Generals" ]]; then
+            echo "ERROR: ZIP does not contain the expected Generals Deluxe layout"
+            find "$WORK" -maxdepth 3 -print | head -200
+            exit 1
+          fi
+          UNPACK="$RUNNER_TEMP/ipa-unpack"
+          mkdir -p "$UNPACK"
+          unzip -q "$IPA" -d "$UNPACK"
+          APP="$UNPACK/Payload/GeneralsXZH.app"
+          test -d "$APP"
+          mkdir -p "$APP/GameData"
+          ditto "$SOURCE" "$APP/GameData"
+          (cd "$UNPACK" && /usr/bin/zip -qry "$IPA" Payload)
+          echo "Game files copied to app GameData."
+          du -sh "$APP/GameData"
+
       - name: Upload shell
         uses: actions/upload-artifact@v7
         with:
@@ -169,6 +226,6 @@ jobs:
           echo "## iOS shell" >> "${GITHUB_STEP_SUMMARY}"
           echo "- Engine: GeneralsXZH arm64" >> "${GITHUB_STEP_SUMMARY}"
           echo "- Launcher: native UIKit" >> "${GITHUB_STEP_SUMMARY}"
-          echo "- Retail GameData: not included" >> "${GITHUB_STEP_SUMMARY}"
+          echo "- Retail GameData: ${{ inputs.game_archive_url != '' && 'included from supplied ZIP' || 'not included' }}" >> "${GITHUB_STEP_SUMMARY}"
           echo "- Mod profiles: not included" >> "${GITHUB_STEP_SUMMARY}"
           echo "- Artifact size: ${IPA_SIZE}" >> "${GITHUB_STEP_SUMMARY}"
