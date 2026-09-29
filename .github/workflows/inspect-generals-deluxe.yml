@@ -1,0 +1,49 @@
+name: Inspect Generals Deluxe ZIP
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/inspect-generals-deluxe.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y unzip
+
+      - name: Download ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --retry-delay 2 \
+            "https://www.dropbox.com/scl/fi/77uzq0jtkqni0s9j0wofk/Generals-Deluxe.zip?rlkey=vn3fugm1jw36tzcxq53xagtgb&st=ivigr1eo&dl=1" \
+            -o "$RUNNER_TEMP/Generals-Deluxe.zip"
+          ls -lh "$RUNNER_TEMP/Generals-Deluxe.zip"
+          file "$RUNNER_TEMP/Generals-Deluxe.zip"
+
+      - name: Validate and print archive structure
+        shell: bash
+        run: |
+          set -euo pipefail
+          ZIP="$RUNNER_TEMP/Generals-Deluxe.zip"
+          unzip -t "$ZIP"
+          echo "===== COMPLETE ARCHIVE TREE ====="
+          unzip -Z1 "$ZIP" | tee "$RUNNER_TEMP/archive-tree.txt"
+          echo "===== TOP-LEVEL ENTRIES ====="
+          unzip -Z1 "$ZIP" | awk -F/ 'NF {print $1}' | sort -u
+          echo "===== IMPORTANT FILES ====="
+          unzip -Z1 "$ZIP" | grep -Ei '(^|/)(generals(_zh)?|zero.?hour|data|maps|ini|generals\.exe|game\.dat|worldbuilder)(/|$|\.)' || true
+          echo "===== TOTAL ENTRIES ====="
+          unzip -Z1 "$ZIP" | wc -l
+
+      - name: Upload archive tree
+        uses: actions/upload-artifact@v4
+        with:
+          name: generals-deluxe-archive-tree
+          path: ${{ runner.temp }}/archive-tree.txt
+          retention-days: 7
