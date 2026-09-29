@@ -1,0 +1,103 @@
+name: Package Generals Deluxe game data
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/package-generals-deluxe.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Install archive tools
+        run: sudo apt-get update && sudo apt-get install -y unzip zip
+
+      - name: Download and validate source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --retry-delay 2 \
+            "https://www.dropbox.com/scl/fi/77uzq0jtkqni0s9j0wofk/Generals-Deluxe.zip?rlkey=vn3fugm1jw36tzcxq53xagtgb&st=ivigr1eo&dl=1" \
+            -o "$RUNNER_TEMP/Generals-Deluxe.zip"
+          unzip -t "$RUNNER_TEMP/Generals-Deluxe.zip"
+          unzip -Z1 "$RUNNER_TEMP/Generals-Deluxe.zip" > "$RUNNER_TEMP/archive-tree.txt"
+
+      - name: Stage Generals and Zero Hour data in GeneralsX layout
+        shell: bash
+        run: |
+          set -euo pipefail
+          ZIP="$RUNNER_TEMP/Generals-Deluxe.zip"
+          EXTRACT="$RUNNER_TEMP/extracted"
+          OUT="$RUNNER_TEMP/package/GeneralsX"
+          mkdir -p "$EXTRACT" "$OUT/Generals" "$OUT/GeneralsZH"
+          unzip -q "$ZIP" -d "$EXTRACT"
+
+          BASE="$(find "$EXTRACT" -type d -iname 'Generals Deluxe' -print -quit)"
+          if [ -z "$BASE" ]; then
+            echo "Could not find 'Generals Deluxe' directory in source archive."
+            find "$EXTRACT" -maxdepth 3 -print
+            exit 1
+          fi
+
+          ZH="$(find "$BASE" -mindepth 1 -maxdepth 1 -type d -iname 'ZH_Generals' -print -quit)"
+          if [ -z "$ZH" ]; then
+            echo "Could not find ZH_Generals inside '$BASE'."
+            find "$BASE" -maxdepth 3 -print
+            exit 1
+          fi
+
+          # Keep each game's original directory contents together, including Data and BIG archives.
+          find "$BASE" -mindepth 1 -maxdepth 1 ! -path "$ZH" -exec cp -R {} "$OUT/Generals/" \;
+          cp -R "$ZH"/. "$OUT/GeneralsZH/"
+
+          # Fail fast if essential asset archives are absent.
+          find "$OUT/Generals" "$OUT/GeneralsZH" -type f -iname '*.big' -print | sort | tee "$RUNNER_TEMP/big-files.txt"
+          test -s "$RUNNER_TEMP/big-files.txt"
+          grep -Eiq '/(Data/)?(English|AudioEnglish|INI|Maps|MapsZH|MapsZ?)?[^/]*\.big$|\.big$' "$RUNNER_TEMP/big-files.txt"
+
+          cat > "$OUT/README.txt" <<'EOF'
+          Game data staged from the supplied Generals Deluxe archive.
+          Layout:
+            GeneralsX/Generals/   — Command & Conquer: Generals data
+            GeneralsX/GeneralsZH/ — Zero Hour data
+          This package contains game data only; it does not include a rebuilt or signed iOS app.
+          EOF
+
+          echo "===== STAGED FILES ====="
+          find "$OUT" -type f | sort
+          echo "===== TOTAL FILES ====="
+          find "$OUT" -type f | wc -l
+          echo "===== BIG ARCHIVES ====="
+          find "$OUT" -type f -iname '*.big' | wc -l
+
+      - name: Create downloadable package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/package"
+          zip -qry "$RUNNER_TEMP/GeneralsX-game-data.zip" GeneralsX
+          unzip -t "$RUNNER_TEMP/GeneralsX-game-data.zip"
+          ls -lh "$RUNNER_TEMP/GeneralsX-game-data.zip"
+
+      - name: Upload arranged game data
+        uses: actions/upload-artifact@v4
+        with:
+          name: GeneralsX-game-data
+          path: ${{ runner.temp }}/GeneralsX-game-data.zip
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Upload staging report
+        uses: actions/upload-artifact@v4
+        with:
+          name: GeneralsX-game-data-report
+          path: |
+            ${{ runner.temp }}/archive-tree.txt
+            ${{ runner.temp }}/big-files.txt
+          retention-days: 7
+          if-no-files-found: error
