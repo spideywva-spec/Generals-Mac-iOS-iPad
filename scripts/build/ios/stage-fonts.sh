@@ -11,7 +11,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "${TMP}"' EXIT
 
 mkdir -p "${DEST}"
-if [[ -f "${DEST}/arial.ttf" && -f "${DEST}/arialbold.ttf" && -f "${DEST}/couriernew.ttf" && -f "${DEST}/timesnewroman.ttf" ]]; then
+if [[ -f "${DEST}/arial.ttf" && -f "${DEST}/arialbold.ttf" && -f "${DEST}/couriernew.ttf" && -f "${DEST}/timesnewroman.ttf" && -f "${DEST}/tahoma.ttf" && -f "${DEST}/tahomabd.ttf" ]]; then
     echo "Fonts already staged at ${DEST}"
     exit 0
 fi
@@ -27,8 +27,14 @@ echo "${LIB_SHA256}  ${TMP}/liberation.tar.gz" | shasum -a 256 -c -
 tar -xzf "${TMP}/liberation.tar.gz" -C "${TMP}"
 SRC="$(find "${TMP}" -name "LiberationSans-Regular.ttf" -exec dirname {} \; | head -1)"
 [[ -n "${SRC}" ]] || { echo "ERROR: Liberation fonts not found in archive"; exit 1; }
+
 cp "${SRC}/LiberationSans-Regular.ttf"   "${DEST}/arial.ttf"
 cp "${SRC}/LiberationSans-Bold.ttf"      "${DEST}/arialbold.ttf"
 cp "${SRC}/LiberationMono-Regular.ttf"   "${DEST}/couriernew.ttf"
 cp "${SRC}/LiberationSerif-Regular.ttf"  "${DEST}/timesnewroman.ttf"
+
+# Подмена для Tahoma (используется Liberation Sans)
+cp "${SRC}/LiberationSans-Regular.ttf"   "${DEST}/tahoma.ttf"
+cp "${SRC}/LiberationSans-Bold.ttf"      "${DEST}/tahomabd.ttf"
+
 echo "==> Staged $(ls "${DEST}" | wc -l | tr -d ' ') fonts at ${DEST}"
