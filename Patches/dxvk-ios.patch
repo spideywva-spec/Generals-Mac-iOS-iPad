@@ -38,12 +38,18 @@ index 10fca478..be0828f5 100644
  
 -    if (!SDL_GetWindowSize(window, &w, &h))
 -      Logger::err(str::format("SDL3 WSI: SDL_GetWindowSize: ", SDL_GetError()));
-+    // Pixels, not points: on high-DPI displays (iOS high-pixel-density windows)
-+    // the Metal layer's drawable is scale-factor larger than the logical window.
-+    // Sizing the swapchain in points leaves it rendering into a corner of the
-+    // surface. Identical to points wherever no scale factor applies.
++    // Pixels, not points: on high-DPI/iOS displays the Metal layer is larger.
 +    if (!SDL_GetWindowSizeInPixels(window, &w, &h))
 +      Logger::err(str::format("SDL3 WSI: SDL_GetWindowSizeInPixels: ", SDL_GetError()));
  
      if (pWidth)
        *pWidth = uint32_t(w);
+diff --git a/src/d3d9/d3d9_sampler.cpp b/src/d3d9/d3d9_sampler.cpp
+--- a/src/d3d9/d3d9_sampler.cpp
++++ b/src/d3d9/d3d9_sampler.cpp
+@@ -15,6 +15,13 @@
+     if (desc.addressModeV == VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE && !device->GetDeviceInfo().features.samplerMirrorClampToEdge)
+       desc.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+ 
+     if (desc.addressModeW == VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE && !device->GetDeviceInfo().features.samplerMirrorClampToEdge)
+       desc.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
