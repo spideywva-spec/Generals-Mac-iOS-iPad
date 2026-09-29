@@ -1,4 +1,5 @@
 # iOS-only clean build
+# Trigger build on workflow updates to ios-clean
 name: Build iOS Shell
 
 on:
