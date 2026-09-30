@@ -131,7 +131,7 @@ static bool SDLCALL iosLifecycleWatcher(void *userdata, SDL_Event *event)
 //   1 finger short tap    -> synthetic LMB click (select)
 //   1 finger movement     -> synthetic RMB drag (camera pan)
 //   1 finger hold 3 sec   -> switch to LMB selection-rectangle mode
-//   1 finger after 3 sec  -> movement expands the selection rectangle
+//   1 finger after 1 sec  -> movement expands the selection rectangle
 //   2 finger short tap    -> synthetic RMB click (cancel/deselect)
 //   2 finger movement     -> zoom
 //   2 finger pinch        -> mouse-wheel zoom
@@ -167,7 +167,7 @@ struct TouchState {
 
 TouchState s_touch;
 
-const Uint64 LONG_PRESS_MS = 3000;
+const Uint64 LONG_PRESS_MS = 1000;
 const float PINCH_STEP_RATIO = 0.06f;
 const float TAP_DEAD_ZONE_PX = 8.0f;
 const float TWO_FINGER_TAP_MAX_MOVE_PX = 12.0f;
