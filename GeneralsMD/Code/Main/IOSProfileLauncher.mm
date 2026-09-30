@@ -528,7 +528,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     gameTitle.textColor = [UIColor colorWithWhite:0.93 alpha:1.0];
     [hero addSubview:gameTitle];
 
-    UILabel *zeroHour = MakeLabel(@"GENERALS\nZERO HOUR", 42.0, UIFontWeightBlack];
+    UILabel *zeroHour = MakeLabel(@"GENERALS\nZERO HOUR", 42.0, UIFontWeightBlack);
     zeroHour.textAlignment = NSTextAlignmentLeft;
     zeroHour.textColor = UIColor.whiteColor;
     [hero addSubview:zeroHour];
