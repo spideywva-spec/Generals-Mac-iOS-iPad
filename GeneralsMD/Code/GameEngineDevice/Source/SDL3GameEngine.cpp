@@ -474,7 +474,8 @@ SDL3GameEngine::SDL3GameEngine()
 	  m_IsInitialized(false),
 	  m_IsActive(false),
 	  m_IsTextInputActive(false),
-	  m_TextInputFocusWindow(nullptr)
+	  m_TextInputFocusWindow(nullptr),
+  m_TextInputSuppressedFocusWindow(nullptr)
 {
 	fprintf(stderr, "DEBUG: SDL3GameEngine::SDL3GameEngine() created\n");
 }
@@ -689,6 +690,18 @@ void SDL3GameEngine::pollSDL3Events(void)
 
 			case SDL_EVENT_KEY_DOWN:
 			case SDL_EVENT_KEY_UP:
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+				// On iOS, Return must dismiss the software keyboard. SDL can keep
+				// the entry widget focused after Return, so remember that focus and
+				// prevent updateTextInputState() from immediately restarting IME.
+				if (event.type == SDL_EVENT_KEY_DOWN &&
+				    (event.key.key == SDLK_RETURN || event.key.key == SDLK_KP_ENTER) &&
+				    m_IsTextInputActive) {
+					SDL_StopTextInput(m_SDLWindow);
+					m_IsTextInputActive = false;
+					m_TextInputSuppressedFocusWindow = m_TextInputFocusWindow;
+				}
+#endif
 				// Fighter19 pattern: direct addSDLEvent() call
 				// GeneralsX @refactor felipebraz 16/02/2026 Simplified event routing
 				if (TheKeyboard) {
@@ -774,6 +787,23 @@ void SDL3GameEngine::updateTextInputState(void)
 		focusedWindow != nullptr && BitIsSet(focusedWindow->winGetStyle(), GWS_ENTRY_FIELD);
 
 	if (wantsTextInput) {
+		// The Return key hides the iOS keyboard but the game may intentionally
+		// keep the entry field focused. Do not reopen the keyboard until focus
+		// moves to another window (or the field is closed).
+		if (m_TextInputSuppressedFocusWindow != nullptr &&
+		    focusedWindow != m_TextInputSuppressedFocusWindow) {
+			m_TextInputSuppressedFocusWindow = nullptr;
+		}
+
+		if (focusedWindow == m_TextInputSuppressedFocusWindow) {
+			if (m_IsTextInputActive) {
+				SDL_StopTextInput(m_SDLWindow);
+				m_IsTextInputActive = false;
+			}
+			m_TextInputFocusWindow = focusedWindow;
+			return;
+		}
+
 		if (!m_IsTextInputActive) {
 			if (SDL_StartTextInput(m_SDLWindow)) {
 				m_IsTextInputActive = true;
@@ -786,6 +816,7 @@ void SDL3GameEngine::updateTextInputState(void)
 			m_IsTextInputActive = false;
 		}
 		m_TextInputFocusWindow = nullptr;
+		m_TextInputSuppressedFocusWindow = nullptr;
 	}
 }
 
