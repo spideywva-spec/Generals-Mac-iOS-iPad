@@ -1095,7 +1095,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 - (void)downloadGameFile
 {
     NSURL *url = [NSURL URLWithString:
-        @"https://www.dropbox.com/scl/fi/77uzq0jtkqni0s9j0wofk/Generals-Deluxe.zip?rlkey=vn3fugm1jw36tzcxq53xagtgb&st=z8xqnlg8&dl=1"];
+        @"https://www.dropbox.com/scl/fi/jg0y2m0mioxm09jkrl5bn/GeneralsRus.zip?rlkey=yr7fslgqqw901ogzhmq86qaji&st=ba0b7oju&dl=1"];
     if (url == nil)
     {
         fprintf(stderr, "ERROR: invalid GameFile download URL\\n");
