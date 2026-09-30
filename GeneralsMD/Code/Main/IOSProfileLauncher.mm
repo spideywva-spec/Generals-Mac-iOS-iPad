@@ -428,6 +428,8 @@ UIButton *MakeButton(NSString *title, id target, SEL action)
 @property(nonatomic, strong) UISegmentedControl *textureFilterSegment;
 
 @property(nonatomic, strong) UIView *diagnosticsView;
+@property(nonatomic, strong) UIView *modalBackdrop;
+@property(nonatomic, strong) UIView *profileView;
 @property(nonatomic, strong) UILabel *diagnosticsText;
 @property(nonatomic, strong) UIButton *shareDiagnosticsButton;
 @property(nonatomic, assign) BOOL diagnosticsScanRunning;
@@ -449,8 +451,23 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     EnsureDefaultZeroHourSettings();
 
     [self buildMenu];
+
+    self.modalBackdrop = [[UIView alloc] init];
+    self.modalBackdrop.translatesAutoresizingMaskIntoConstraints = NO;
+    self.modalBackdrop.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.48];
+    self.modalBackdrop.hidden = YES;
+    [self.view addSubview:self.modalBackdrop];
+    MakeGlassBlurView(self.modalBackdrop);
+    [NSLayoutConstraint activateConstraints:@[
+        [self.modalBackdrop.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+        [self.modalBackdrop.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
+        [self.modalBackdrop.topAnchor constraintEqualToAnchor:self.view.topAnchor],
+        [self.modalBackdrop.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor]
+    ]];
+
     [self buildSettings];
     [self buildDiagnostics];
+    [self buildProfileModal];
 }
 
 - (void)buildMenu
@@ -534,7 +551,19 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     hero.layer.borderWidth = 1.0;
     hero.layer.borderColor = [UIColor colorWithRed:0.16 green:0.40 blue:0.65 alpha:0.85].CGColor;
     hero.clipsToBounds = YES;
-    MakeGlassBlurView(hero);
+    UIImageView *heroImage = [[UIImageView alloc] init];
+    heroImage.translatesAutoresizingMaskIntoConstraints = NO;
+    heroImage.contentMode = UIViewContentModeScaleAspectFill;
+    heroImage.clipsToBounds = YES;
+    heroImage.alpha = 0.94;
+    [hero addSubview:heroImage];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [heroImage.leadingAnchor constraintEqualToAnchor:hero.leadingAnchor],
+        [heroImage.trailingAnchor constraintEqualToAnchor:hero.trailingAnchor],
+        [heroImage.topAnchor constraintEqualToAnchor:hero.topAnchor],
+        [heroImage.bottomAnchor constraintEqualToAnchor:hero.bottomAnchor]
+    ]];
 
     CAGradientLayer *heroGradient = [CAGradientLayer layer];
     heroGradient.frame = CGRectMake(0, 0, 1000, 420);
@@ -544,7 +573,23 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     ];
     heroGradient.startPoint = CGPointMake(0.0, 0.0);
     heroGradient.endPoint = CGPointMake(1.0, 1.0);
-    [hero.layer insertSublayer:heroGradient atIndex:0];
+    [hero.layer addSublayer:heroGradient];
+
+    NSURL *heroURL = [NSURL URLWithString:@"https://media.contentapi.ea.com/content/dam/gin/images/2017/01/command-and-conquer-generals-zero-hour-key-art.jpg"];
+    if (heroURL != nil)
+    {
+        [[[NSURLSession sharedSession] dataTaskWithURL:heroURL
+                                    completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+            if (data.length == 0 || error != nil)
+                return;
+            UIImage *image = [UIImage imageWithData:data];
+            if (image == nil)
+                return;
+            dispatch_async(dispatch_get_main_queue(), ^{
+                heroImage.image = image;
+            });
+        }] resume];
+    }
 
     UILabel *gameTitle = MakeLabel(@"COMMAND & CONQUER", 20.0, UIFontWeightBold);
     gameTitle.textAlignment = NSTextAlignmentLeft;
@@ -627,7 +672,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     UIButton *profile = [self makeLauncherCard:@"ПРОФИЛЬ"
                                        subtitle:dedicatedZeroHour ? @"zerohour  •  текущий профиль" : @"vanilla  •  текущий профиль"
                                           icon:@"person.crop.circle.fill"
-                                         action:@selector(launchVanilla)
+                                         action:@selector(showProfile)
                                      accentColor:[UIColor colorWithRed:0.70 green:0.76 blue:0.90 alpha:1.0]];
 
     [sideStack addArrangedSubview:gameFile];
@@ -926,7 +971,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 {
     self.settingsView = [[UIView alloc] init];
     self.settingsView.translatesAutoresizingMaskIntoConstraints = NO;
-    self.settingsView.backgroundColor = [UIColor colorWithWhite:0.02 alpha:0.20];
+    self.settingsView.backgroundColor = [UIColor colorWithWhite:0.02 alpha:0.56];
     self.settingsView.layer.cornerRadius = 28.0;
     self.settingsView.layer.borderWidth = 1.0;
     self.settingsView.layer.borderColor = [UIColor colorWithRed:0.25 green:0.60 blue:1.0 alpha:0.45].CGColor;
@@ -1211,7 +1256,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 {
     self.diagnosticsView = [[UIView alloc] init];
     self.diagnosticsView.translatesAutoresizingMaskIntoConstraints = NO;
-    self.diagnosticsView.backgroundColor = [UIColor colorWithWhite:0.02 alpha:0.20];
+    self.diagnosticsView.backgroundColor = [UIColor colorWithWhite:0.02 alpha:0.56];
     self.diagnosticsView.layer.cornerRadius = 28.0;
     self.diagnosticsView.layer.borderWidth = 1.0;
     self.diagnosticsView.layer.borderColor = [UIColor colorWithRed:0.25 green:0.60 blue:1.0 alpha:0.45].CGColor;
@@ -1297,10 +1342,91 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     ]];
 }
 
+- (void)buildProfileModal
+{
+    self.profileView = [[UIView alloc] init];
+    self.profileView.translatesAutoresizingMaskIntoConstraints = NO;
+    self.profileView.backgroundColor = [UIColor colorWithWhite:0.025 alpha:0.72];
+    self.profileView.layer.cornerRadius = 26.0;
+    self.profileView.layer.borderWidth = 1.0;
+    self.profileView.layer.borderColor = [UIColor colorWithRed:0.25 green:0.60 blue:1.0 alpha:0.48].CGColor;
+    self.profileView.layer.shadowColor = UIColor.blackColor.CGColor;
+    self.profileView.layer.shadowOpacity = 0.55;
+    self.profileView.layer.shadowRadius = 30.0;
+    self.profileView.layer.shadowOffset = CGSizeMake(0, 14);
+    self.profileView.hidden = YES;
+    [self.view addSubview:self.profileView];
+    MakeGlassBlurView(self.profileView);
+
+    UILabel *title = MakeLabel(@"ПРОФИЛЬ", 27.0, UIFontWeightBold);
+    title.textAlignment = NSTextAlignmentLeft;
+    [self.profileView addSubview:title];
+
+    UILabel *note = MakeLabel(@"Выберите профиль запуска игры", 14.0, UIFontWeightRegular);
+    note.textAlignment = NSTextAlignmentLeft;
+    note.textColor = [UIColor colorWithWhite:0.65 alpha:1.0];
+    [self.profileView addSubview:note];
+
+    UIButton *vanilla = MakeButton(@"VANILLA\nОбычный запуск", self, @selector(launchVanilla));
+    UIButton *enhanced = MakeButton(@"ENHANCED\nРасширенный профиль", self, @selector(launchEnhanced));
+    UIButton *zeroHour = MakeButton(@"ZERO HOUR\nОсновной профиль", self, @selector(launchZeroHour));
+    UIButton *close = MakeButton(@"Закрыть", self, @selector(hideProfile));
+
+    vanilla.backgroundColor = [UIColor colorWithRed:0.04 green:0.25 blue:0.50 alpha:0.72];
+    enhanced.backgroundColor = [UIColor colorWithRed:0.12 green:0.16 blue:0.30 alpha:0.72];
+    zeroHour.backgroundColor = [UIColor colorWithRed:0.30 green:0.12 blue:0.06 alpha:0.72];
+
+    UIStackView *stack = [[UIStackView alloc] initWithArrangedSubviews:@[
+        vanilla, enhanced, zeroHour, close
+    ]];
+    stack.translatesAutoresizingMaskIntoConstraints = NO;
+    stack.axis = UILayoutConstraintAxisVertical;
+    stack.spacing = 11.0;
+    [self.profileView addSubview:stack];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [self.profileView.leadingAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.leadingAnchor constant:90.0],
+        [self.profileView.trailingAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.trailingAnchor constant:-90.0],
+        [self.profileView.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor],
+        [self.profileView.heightAnchor constraintGreaterThanOrEqualToConstant:390.0],
+
+        [title.leadingAnchor constraintEqualToAnchor:self.profileView.leadingAnchor constant:24.0],
+        [title.trailingAnchor constraintEqualToAnchor:self.profileView.trailingAnchor constant:-24.0],
+        [title.topAnchor constraintEqualToAnchor:self.profileView.topAnchor constant:24.0],
+
+        [note.leadingAnchor constraintEqualToAnchor:title.leadingAnchor],
+        [note.trailingAnchor constraintEqualToAnchor:title.trailingAnchor],
+        [note.topAnchor constraintEqualToAnchor:title.bottomAnchor constant:5.0],
+
+        [stack.leadingAnchor constraintEqualToAnchor:self.profileView.leadingAnchor constant:24.0],
+        [stack.trailingAnchor constraintEqualToAnchor:self.profileView.trailingAnchor constant:-24.0],
+        [stack.topAnchor constraintEqualToAnchor:note.bottomAnchor constant:18.0],
+        [stack.bottomAnchor constraintEqualToAnchor:self.profileView.bottomAnchor constant:-24.0]
+    ]];
+}
+
+- (void)showProfile
+{
+    self.menuStack.hidden = NO;
+    self.settingsView.hidden = YES;
+    self.diagnosticsView.hidden = YES;
+    self.modalBackdrop.hidden = NO;
+    self.profileView.hidden = NO;
+}
+
+- (void)hideProfile
+{
+    self.profileView.hidden = YES;
+    self.modalBackdrop.hidden = YES;
+    self.menuStack.hidden = NO;
+}
+
 - (void)showDiagnostics
 {
-    self.menuStack.hidden = YES;
+    self.menuStack.hidden = NO;
     self.settingsView.hidden = YES;
+    self.profileView.hidden = YES;
+    self.modalBackdrop.hidden = NO;
     self.diagnosticsView.hidden = NO;
     [self refreshDiagnostics];
 }
@@ -1308,6 +1434,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 - (void)hideDiagnostics
 {
     self.diagnosticsView.hidden = YES;
+    self.modalBackdrop.hidden = YES;
     self.menuStack.hidden = NO;
 }
 
@@ -1455,20 +1582,33 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
 - (void)downloadGameFile
 {
-    NSURL *url = [NSURL URLWithString:
-        @"https://www.dropbox.com/scl/fi/11yzk5dnym9d7cm1ie45g/generals-by-spideywv.zip?rlkey=c8wtkjf7dzos0kzq31vyfmomm&st=ts5phkhp&dl=1"];
-    if (url == nil)
-    {
-        fprintf(stderr, "ERROR: invalid GameFile download URL\\n");
-        return;
-    }
+    UIAlertController *alert =
+        [UIAlertController alertControllerWithTitle:@"GAMEFILE"
+                                            message:@"GameFile будет открыт для скачивания. После загрузки распакуйте содержимое в папку «Generals ZH» без дополнительной вложенной папки."
+                                     preferredStyle:UIAlertControllerStyleAlert];
 
-    [[UIApplication sharedApplication] openURL:url
-                                       options:@{}
-                             completionHandler:^(BOOL success) {
-        if (!success)
-            fprintf(stderr, "ERROR: failed to open GameFile download URL\\n");
-    }];
+    [alert addAction:[UIAlertAction actionWithTitle:@"Отмена"
+                                              style:UIAlertActionStyleCancel
+                                            handler:nil]];
+    [alert addAction:[UIAlertAction actionWithTitle:@"Скачать"
+                                              style:UIAlertActionStyleDefault
+                                            handler:^(UIAlertAction *action) {
+        NSURL *url = [NSURL URLWithString:
+            @"https://www.dropbox.com/scl/fi/11yzk5dnym9d7cm1ie45g/generals-by-spideywv.zip?rlkey=c8wtkjf7dzos0kzq31vyfmomm&st=ts5phkhp&dl=1"];
+        if (url == nil)
+        {
+            fprintf(stderr, "ERROR: invalid GameFile download URL\\n");
+            return;
+        }
+
+        [[UIApplication sharedApplication] openURL:url
+                                           options:@{}
+                                 completionHandler:^(BOOL success) {
+            if (!success)
+                fprintf(stderr, "ERROR: failed to open GameFile download URL\\n");
+        }];
+    }]];
+    [self presentViewController:alert animated:YES completion:nil];
 }
 
 - (NSString *)valueForKey:(NSString *)key inContents:(NSString *)contents
@@ -1668,13 +1808,17 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 - (void)showНастройки
 {
     [self loadНастройкиControls];
-    self.menuStack.hidden = YES;
+    self.menuStack.hidden = NO;
+    self.diagnosticsView.hidden = YES;
+    self.profileView.hidden = YES;
+    self.modalBackdrop.hidden = NO;
     self.settingsView.hidden = NO;
 }
 
 - (void)hideНастройки
 {
     self.settingsView.hidden = YES;
+    self.modalBackdrop.hidden = YES;
     self.menuStack.hidden = NO;
 }
 
