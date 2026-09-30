@@ -151,9 +151,9 @@ NSString *IOSIPadOverridesPath()
     return [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/iOSIPadOverrides.ini"];
 }
 
-NSString *ZeroHourНастройкиPath()
+NSString *ZeroHourSettingsPath()
 {
-    return DocumentsFilePath(@"ZeroHourНастройки.ini");
+    return DocumentsFilePath(@"ZeroHourSettings.ini");
 }
 
 NSString *EngineOptionsPath()
@@ -223,7 +223,7 @@ BOOL WriteKeyValueFile(NSString *path, NSDictionary<NSString *, NSString *> *val
     return [output writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:error];
 }
 
-NSDictionary<NSString *, NSString *> *DefaultZeroHourНастройки()
+NSDictionary<NSString *, NSString *> *DefaultZeroHourSettings()
 {
     return @{
         @"ControlBar": @"ZeroHour",
@@ -253,16 +253,16 @@ NSDictionary<NSString *, NSString *> *DefaultZeroHourНастройки()
     };
 }
 
-void EnsureDefaultZeroHourНастройки()
+void EnsureDefaultZeroHourSettings()
 {
-    NSString *path = ZeroHourНастройкиPath();
+    NSString *path = ZeroHourSettingsPath();
     if ([[NSFileManager defaultManager] fileExistsAtPath:path])
         return;
 
     NSError *error = nil;
-    if (!WriteKeyValueFile(path, DefaultZeroHourНастройки(), &error))
+    if (!WriteKeyValueFile(path, DefaultZeroHourSettings(), &error))
     {
-        fprintf(stderr, "ERROR: failed to seed ZeroHourНастройки.ini: %s\n",
+        fprintf(stderr, "ERROR: failed to seed ZeroHourSettings.ini: %s\n",
                 error != nil ? [[error description] UTF8String] : "unknown");
     }
 }
@@ -407,7 +407,7 @@ UIButton *MakeButton(NSString *title, id target, SEL action)
 
 @property(nonatomic, strong) UIView *diagnosticsView;
 @property(nonatomic, strong) UILabel *diagnosticsText;
-@property(nonatomic, strong) UIButton *shareДиагностикаButton;
+@property(nonatomic, strong) UIButton *shareDiagnosticsButton;
 @property(nonatomic, assign) BOOL diagnosticsScanRunning;
 @end
 
@@ -424,11 +424,11 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
     self.view.backgroundColor = UIColor.blackColor;
     EnsureDefaultIOSIPadOverrides();
-    EnsureDefaultZeroHourНастройки();
+    EnsureDefaultZeroHourSettings();
 
     [self buildMenu];
-    [self buildНастройки];
-    [self buildДиагностика];
+    [self buildSettings];
+    [self buildDiagnostics];
 }
 
 - (void)buildMenu
@@ -448,7 +448,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
     UIButton *gameFile = MakeButton(@"Скачать GameFile", self, @selector(downloadGameFile));
     UIButton *settings = MakeButton(@"Настройки", self, @selector(showНастройки));
-    UIButton *diagnostics = MakeButton(@"Диагностика", self, @selector(showДиагностика));
+    UIButton *diagnostics = MakeButton(@"Диагностика", self, @selector(showDiagnostics));
     gameFile.backgroundColor = [UIColor colorWithWhite:0.06 alpha:1.0];
     settings.backgroundColor = [UIColor colorWithWhite:0.06 alpha:1.0];
     diagnostics.backgroundColor = [UIColor colorWithWhite:0.06 alpha:1.0];
@@ -602,7 +602,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     return row;
 }
 
-- (void)buildНастройки
+- (void)buildSettings
 {
     self.settingsView = [[UIView alloc] init];
     self.settingsView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -648,6 +648,31 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.textureQualitySegment = [self makeSegmented:@[@"High", @"Medium", @"Low"]];
     self.particleQualitySegment = [self makeSegmented:@[@"Low", @"Medium", @"High"]];
     self.textureFilterSegment = [self makeSegmented:@[@"Bilinear", @"Trilinear", @"Anisotropic 8x"]];
+    [self.zeroHourControlBarSegment setTitle:@"ZeroHour" forSegmentAtIndex:0];
+    [self.zeroHourControlBarSegment setTitle:@"Про" forSegmentAtIndex:1];
+    [self.zeroHourControlBarSegment setTitle:@"Стандарт" forSegmentAtIndex:2];
+    [self.zeroHourCameosSegment setTitle:@"Стандарт" forSegmentAtIndex:0];
+    [self.zeroHourCameosSegment setTitle:@"HD" forSegmentAtIndex:1];
+    [self.zeroHourMusicSegment setTitle:@"Стандарт" forSegmentAtIndex:0];
+    [self.zeroHourMusicSegment setTitle:@"Улучшенная" forSegmentAtIndex:1];
+    [self.zeroHourMusicSegment setTitle:@"The Score" forSegmentAtIndex:2];
+    [self.zeroHourVoicesSegment setTitle:@"Английский" forSegmentAtIndex:0];
+    [self.zeroHourVoicesSegment setTitle:@"Родной" forSegmentAtIndex:1];
+    [self.zeroHourHotkeysSegment setTitle:@"Оригинал" forSegmentAtIndex:0];
+    [self.zeroHourHotkeysSegment setTitle:@"Leikeze" forSegmentAtIndex:1];
+    [self.zeroHourHotkeyLanguageSegment setTitle:@"Английский" forSegmentAtIndex:0];
+    [self.zeroHourHotkeyLanguageSegment setTitle:@"Русский" forSegmentAtIndex:1];
+    [self.zeroHourPortraitsSegment setTitle:@"Стандарт" forSegmentAtIndex:0];
+    [self.zeroHourPortraitsSegment setTitle:@"Смешные" forSegmentAtIndex:1];
+    [self.textureQualitySegment setTitle:@"Высокое" forSegmentAtIndex:0];
+    [self.textureQualitySegment setTitle:@"Среднее" forSegmentAtIndex:1];
+    [self.textureQualitySegment setTitle:@"Низкое" forSegmentAtIndex:2];
+    [self.particleQualitySegment setTitle:@"Низкое" forSegmentAtIndex:0];
+    [self.particleQualitySegment setTitle:@"Среднее" forSegmentAtIndex:1];
+    [self.particleQualitySegment setTitle:@"Высокое" forSegmentAtIndex:2];
+    [self.textureFilterSegment setTitle:@"Билинейная" forSegmentAtIndex:0];
+    [self.textureFilterSegment setTitle:@"Трилинейная" forSegmentAtIndex:1];
+    [self.textureFilterSegment setTitle:@"Анизотропная 8x" forSegmentAtIndex:2];
 
     self.maxCameraSlider = [self makeSliderWithMin:300.0f max:800.0f];
     self.minCameraSlider = [self makeSliderWithMin:40.0f max:150.0f];
@@ -785,7 +810,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     BOOL zeroHourУстановлено = ProfileDirectoryExists(@"zerohour");
 
     NSString *settingsPath = IOSIPadOverridesPath();
-    NSString *zeroHourНастройкиPath = ZeroHourНастройкиPath();
+    NSString *zeroHourНастройкиPath = ZeroHourSettingsPath();
     BOOL settingsExists = [[NSFileManager defaultManager] fileExistsAtPath:settingsPath];
     BOOL zeroHourНастройкиExists = [[NSFileManager defaultManager] fileExistsAtPath:zeroHourНастройкиPath];
 
@@ -854,7 +879,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         sessionLogsText];
 }
 
-- (void)buildДиагностика
+- (void)buildDiagnostics
 {
     self.diagnosticsView = [[UIView alloc] init];
     self.diagnosticsView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -886,20 +911,20 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.diagnosticsText.font = [UIFont monospacedSystemFontOfSize:15.0 weight:UIFontWeightRegular];
     [scroll addSubview:self.diagnosticsText];
 
-    UIButton *refresh = MakeButton(@"Обновить", self, @selector(refreshДиагностика));
-    self.shareДиагностикаButton = MakeButton(@"Поделиться отчётом + логами", self, @selector(shareДиагностика));
-    UIButton *clearLogs = MakeButton(@"Очистить логи", self, @selector(clearДиагностикаLogs));
-    UIButton *back = MakeButton(@"Назад", self, @selector(hideДиагностика));
+    UIButton *refresh = MakeButton(@"Обновить", self, @selector(refreshDiagnostics));
+    self.shareDiagnosticsButton = MakeButton(@"Поделиться отчётом + логами", self, @selector(shareDiagnostics));
+    UIButton *clearLogs = MakeButton(@"Очистить логи", self, @selector(clearDiagnosticsLogs));
+    UIButton *back = MakeButton(@"Назад", self, @selector(hideDiagnostics));
 
     clearLogs.backgroundColor = [UIColor colorWithRed:0.24 green:0.06 blue:0.06 alpha:1.0];
 
     [refresh.widthAnchor constraintEqualToConstant:160.0].active = YES;
-    [self.shareДиагностикаButton.widthAnchor constraintEqualToConstant:220.0].active = YES;
+    [self.shareDiagnosticsButton.widthAnchor constraintEqualToConstant:220.0].active = YES;
     [clearLogs.widthAnchor constraintEqualToConstant:160.0].active = YES;
     [back.widthAnchor constraintEqualToConstant:160.0].active = YES;
 
     UIStackView *buttons = [[UIStackView alloc] initWithArrangedSubviews:@[
-        refresh, self.shareДиагностикаButton, clearLogs, back
+        refresh, self.shareDiagnosticsButton, clearLogs, back
     ]];
     buttons.translatesAutoresizingMaskIntoConstraints = NO;
     buttons.axis = UILayoutConstraintAxisHorizontal;
@@ -936,21 +961,21 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     ]];
 }
 
-- (void)showДиагностика
+- (void)showDiagnostics
 {
     self.menuStack.hidden = YES;
     self.settingsView.hidden = YES;
     self.diagnosticsView.hidden = NO;
-    [self refreshДиагностика];
+    [self refreshDiagnostics];
 }
 
-- (void)hideДиагностика
+- (void)hideDiagnostics
 {
     self.diagnosticsView.hidden = YES;
     self.menuStack.hidden = NO;
 }
 
-- (void)refreshДиагностика
+- (void)refreshDiagnostics
 {
     if (self.diagnosticsScanRunning)
         return;
@@ -979,7 +1004,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     });
 }
 
-- (void)clearДиагностикаLogs
+- (void)clearDiagnosticsLogs
 {
     UIAlertController *alert =
         [UIAlertController alertControllerWithTitle:@"Очистить диагностические логи?"
@@ -1013,7 +1038,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         if (strongSelf != nil)
         {
             strongSelf.diagnosticsScanRunning = NO;
-            [strongSelf refreshДиагностика];
+            [strongSelf refreshDiagnostics];
         }
     }]];
 
@@ -1021,7 +1046,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 }
 
 
-- (void)shareДиагностика
+- (void)shareDiagnostics
 {
     NSMutableArray *items = [NSMutableArray array];
 
@@ -1049,8 +1074,8 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     UIPopoverЕстьationController *popover = activity.popoverЕстьationController;
     if (popover != nil)
     {
-        popover.sourceView = self.shareДиагностикаButton;
-        popover.sourceRect = self.shareДиагностикаButton.bounds;
+        popover.sourceView = self.shareDiagnosticsButton;
+        popover.sourceRect = self.shareDiagnosticsButton.bounds;
     }
 
     [self presentViewController:activity animated:YES completion:nil];
@@ -1156,9 +1181,9 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     return fallback;
 }
 
-- (void)resetZeroHourНастройкиControls
+- (void)resetZeroHourSettingsControls
 {
-    NSDictionary<NSString *, NSString *> *defaults = DefaultZeroHourНастройки();
+    NSDictionary<NSString *, NSString *> *defaults = DefaultZeroHourSettings();
     self.zeroHourControlBarSegment.selectedSegmentIndex = 0;
     self.zeroHourCameosSegment.selectedSegmentIndex = 0;
     self.zeroHourMusicSegment.selectedSegmentIndex = 0;
@@ -1185,10 +1210,10 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.textureFilterSegment.selectedSegmentIndex = 2;
 }
 
-- (void)loadZeroHourНастройкиControls
+- (void)loadZeroHourSettingsControls
 {
-    EnsureDefaultZeroHourНастройки();
-    NSDictionary<NSString *, NSString *> *values = ReadKeyValueFile(ZeroHourНастройкиPath());
+    EnsureDefaultZeroHourSettings();
+    NSDictionary<NSString *, NSString *> *values = ReadKeyValueFile(ZeroHourSettingsPath());
 
     self.zeroHourControlBarSegment.selectedSegmentIndex =
         [self segmentIndexForValue:SettingValue(values, @"ControlBar", @"ZeroHour")
@@ -1248,7 +1273,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
 - (void)resetНастройкиControls
 {
-    [self resetZeroHourНастройкиControls];
+    [self resetZeroHourSettingsControls];
 
     self.maxCameraSlider.value = 550.0f;
     self.minCameraSlider.value = 70.0f;
@@ -1264,7 +1289,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
 - (void)loadНастройкиControls
 {
-    [self loadZeroHourНастройкиControls];
+    [self loadZeroHourSettingsControls];
 
     NSError *error = nil;
     NSString *contents = [NSString stringWithContentsOfFile:IOSIPadOverridesPath()
@@ -1346,7 +1371,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.fpsValue.alpha = enabled ? 1.0 : 0.35;
 }
 
-- (BOOL)saveZeroHourНастройкиAndOptions:(NSError **)error
+- (BOOL)saveZeroHourSettingsAndOptions:(NSError **)error
 {
     NSArray<NSString *> *controlBars = @[@"ZeroHour", @"Pro", @"Standard"];
     NSArray<NSString *> *cameos = @[@"Standard", @"HD"];
@@ -1362,7 +1387,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     NSArray<NSString *> *filters = @[@"Bilinear", @"Trilinear", @"Anisotropic"];
     NSString *filter = filters[MAX(0, MIN(2, self.textureFilterSegment.selectedSegmentIndex))];
 
-    NSMutableDictionary<NSString *, NSString *> *zeroHour = [DefaultZeroHourНастройки() mutableCopy];
+    NSMutableDictionary<NSString *, NSString *> *zeroHour = [DefaultZeroHourSettings() mutableCopy];
     zeroHour[@"ControlBar"] = controlBars[self.zeroHourControlBarSegment.selectedSegmentIndex];
     zeroHour[@"Cameos"] = cameos[self.zeroHourCameosSegment.selectedSegmentIndex];
     zeroHour[@"Music"] = music[self.zeroHourMusicSegment.selectedSegmentIndex];
@@ -1389,7 +1414,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     zeroHour[@"TextureFilter"] = filter;
     zeroHour[@"AnisotropyLevel"] = self.textureFilterSegment.selectedSegmentIndex == 2 ? @"8" : @"2";
 
-    if (!WriteKeyValueFile(ZeroHourНастройкиPath(), zeroHour, error))
+    if (!WriteKeyValueFile(ZeroHourSettingsPath(), zeroHour, error))
         return NO;
 
     NSMutableDictionary<NSString *, NSString *> *options = ReadKeyValueFile(EngineOptionsPath());
@@ -1435,7 +1460,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
                                atomically:YES
                                  encoding:NSUTF8StringEncoding
                                     error:&error];
-    BOOL zeroHourOK = cameraOK ? [self saveZeroHourНастройкиAndOptions:&error] : NO;
+    BOOL zeroHourOK = cameraOK ? [self saveZeroHourSettingsAndOptions:&error] : NO;
 
     if (cameraOK && zeroHourOK)
     {
@@ -1443,7 +1468,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         self.settingsStatus.textColor = [UIColor systemGreenColor];
         fprintf(stderr,
                 "[ZEROHOUR-SETTINGS] saved settings=%s options=%s camera=%s\n",
-                ZeroHourНастройкиPath().fileSystemRepresentation,
+                ZeroHourSettingsPath().fileSystemRepresentation,
                 EngineOptionsPath().fileSystemRepresentation,
                 IOSIPadOverridesPath().fileSystemRepresentation);
     }
