@@ -166,7 +166,10 @@ extern "C" void GeneralsXInstallIOSEscOverlay(SDL_Window *window)
         // Retry briefly so the control cannot accidentally attach to the launcher
         // window before the actual game window is ready.
         const double delays[] = {0.10, 0.30, 0.75, 1.50};
-        for (double delay in delays) {
+        const size_t delayCount = sizeof(delays) / sizeof(delays[0]);
+
+        for (size_t i = 0; i < delayCount; ++i) {
+            const double delay = delays[i];
             dispatch_after(
                 dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)),
                 dispatch_get_main_queue(), ^{
