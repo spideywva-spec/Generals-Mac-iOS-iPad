@@ -105,7 +105,7 @@ bool IsSupportedProfile(const char *profile)
     return profile != nullptr &&
         (strcmp(profile, "vanilla") == 0 ||
          strcmp(profile, "enhanced") == 0 ||
-         strcmp(profile, "contra-x") == 0);
+         strcmp(profile, "zerohour") == 0);
 }
 
 void SetSelectedProfile(NSString *profile)
@@ -146,14 +146,14 @@ NSString *BundledAutoLaunchProfile()
     return value;
 }
 
-NSString *IPadOverridesPath()
+NSString *IOSIPadOverridesPath()
 {
-    return [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/iPadOverrides.ini"];
+    return [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/iOSIPadOverrides.ini"];
 }
 
-NSString *ContraSettingsPath()
+NSString *ZeroHourSettingsPath()
 {
-    return DocumentsFilePath(@"ContraSettings.ini");
+    return DocumentsFilePath(@"ZeroHourSettings.ini");
 }
 
 NSString *EngineOptionsPath()
@@ -223,10 +223,10 @@ BOOL WriteKeyValueFile(NSString *path, NSDictionary<NSString *, NSString *> *val
     return [output writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:error];
 }
 
-NSDictionary<NSString *, NSString *> *DefaultContraSettings()
+NSDictionary<NSString *, NSString *> *DefaultZeroHourSettings()
 {
     return @{
-        @"ControlBar": @"Contra",
+        @"ControlBar": @"ZeroHour",
         @"Cameos": @"Standard",
         @"Music": @"Standard",
         @"UnitVoices": @"English",
@@ -253,16 +253,16 @@ NSDictionary<NSString *, NSString *> *DefaultContraSettings()
     };
 }
 
-void EnsureDefaultContraSettings()
+void EnsureDefaultZeroHourSettings()
 {
-    NSString *path = ContraSettingsPath();
+    NSString *path = ZeroHourSettingsPath();
     if ([[NSFileManager defaultManager] fileExistsAtPath:path])
         return;
 
     NSError *error = nil;
-    if (!WriteKeyValueFile(path, DefaultContraSettings(), &error))
+    if (!WriteKeyValueFile(path, DefaultZeroHourSettings(), &error))
     {
-        fprintf(stderr, "ERROR: failed to seed ContraSettings.ini: %s\n",
+        fprintf(stderr, "ERROR: failed to seed ZeroHourSettings.ini: %s\n",
                 error != nil ? [[error description] UTF8String] : "unknown");
     }
 }
@@ -278,9 +278,9 @@ bool ProfileDirectoryExists(NSString *profileDirectory)
                                                isDirectory:&isDirectory] && isDirectory;
 }
 
-NSString *DefaultIPadOverrides()
+NSString *DefaultIOSIPadOverrides()
 {
-    // GeneralsX @feature dvorovrus 26/09/2026 Default shared iPad tuning.
+    // GeneralsX @feature dvorovrus 26/09/2026 Default shared iOS/iOS/iPad tuning.
     return @"GameData\n"
             @"  MaxCameraHeight = 550.0\n"
             @"  MinCameraHeight = 70.0\n"
@@ -293,14 +293,14 @@ NSString *DefaultIPadOverrides()
             @"End\n";
 }
 
-void EnsureDefaultIPadOverrides()
+void EnsureDefaultIOSIPadOverrides()
 {
-    NSString *path = IPadOverridesPath();
+    NSString *path = IOSIPadOverridesPath();
     if ([[NSFileManager defaultManager] fileExistsAtPath:path])
         return;
 
     NSError *error = nil;
-    BOOL ok = [DefaultIPadOverrides() writeToFile:path
+    BOOL ok = [DefaultIOSIPadOverrides() writeToFile:path
                                       atomically:YES
                                         encoding:NSUTF8StringEncoding
                                            error:&error];
@@ -310,7 +310,7 @@ void EnsureDefaultIPadOverrides()
     }
     else
     {
-        fprintf(stderr, "ERROR: iOS launcher failed to seed iPadOverrides.ini: %s\n",
+        fprintf(stderr, "ERROR: iOS launcher failed to seed iOSIPadOverrides.ini: %s\n",
                 [[error description] UTF8String]);
     }
 }
@@ -380,16 +380,16 @@ UIButton *MakeButton(NSString *title, id target, SEL action)
 @property(nonatomic, strong) UISwitch *enforceMaxSwitch;
 @property(nonatomic, strong) UISwitch *fpsLimitSwitch;
 
-@property(nonatomic, strong) UISegmentedControl *contraControlBarSegment;
-@property(nonatomic, strong) UISegmentedControl *contraCameosSegment;
-@property(nonatomic, strong) UISegmentedControl *contraMusicSegment;
-@property(nonatomic, strong) UISegmentedControl *contraVoicesSegment;
-@property(nonatomic, strong) UISegmentedControl *contraHotkeysSegment;
-@property(nonatomic, strong) UISegmentedControl *contraHotkeyLanguageSegment;
-@property(nonatomic, strong) UISegmentedControl *contraPortraitsSegment;
-@property(nonatomic, strong) UISwitch *contraFogSwitch;
-@property(nonatomic, strong) UISwitch *contraWaterSwitch;
-@property(nonatomic, strong) UISwitch *contraExtraBuildingPropsSwitch;
+@property(nonatomic, strong) UISegmentedControl *zeroHourControlBarSegment;
+@property(nonatomic, strong) UISegmentedControl *zeroHourCameosSegment;
+@property(nonatomic, strong) UISegmentedControl *zeroHourMusicSegment;
+@property(nonatomic, strong) UISegmentedControl *zeroHourVoicesSegment;
+@property(nonatomic, strong) UISegmentedControl *zeroHourHotkeysSegment;
+@property(nonatomic, strong) UISegmentedControl *zeroHourHotkeyLanguageSegment;
+@property(nonatomic, strong) UISegmentedControl *zeroHourPortraitsSegment;
+@property(nonatomic, strong) UISwitch *zeroHourFogSwitch;
+@property(nonatomic, strong) UISwitch *zeroHourWaterSwitch;
+@property(nonatomic, strong) UISwitch *zeroHourExtraBuildingPropsSwitch;
 
 @property(nonatomic, strong) UISwitch *shadow3DSwitch;
 @property(nonatomic, strong) UISwitch *shadow2DSwitch;
@@ -423,8 +423,8 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     [super viewDidLoad];
 
     self.view.backgroundColor = UIColor.blackColor;
-    EnsureDefaultIPadOverrides();
-    EnsureDefaultContraSettings();
+    EnsureDefaultIOSIPadOverrides();
+    EnsureDefaultZeroHourSettings();
 
     [self buildMenu];
     [self buildSettings];
@@ -434,14 +434,14 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 - (void)buildMenu
 {
     NSString *bundledProfile = BundledAutoLaunchProfile();
-    BOOL dedicatedContra = [bundledProfile isEqualToString:@"contra-x"];
+    BOOL dedicatedZeroHour = [bundledProfile isEqualToString:@"zerohour"];
 
-    UILabel *title = MakeLabel(dedicatedContra ? @"CONTRA X" : @"ZERO HOUR",
+    UILabel *title = MakeLabel(dedicatedZeroHour ? @"ZERO HOUR" : @"ZERO HOUR",
                                34.0,
                                UIFontWeightBold);
-    UILabel *subtitle = MakeLabel(dedicatedContra
-                                      ? @"Beta 2 + Patch 1 · iPad"
-                                      : @"iPad launcher",
+    UILabel *subtitle = MakeLabel(dedicatedZeroHour
+                                      ? @"Beta 2 + Patch 1 · iOS/iPad"
+                                      : @"iOS/iOS/iPad launcher",
                                   14.0,
                                   UIFontWeightRegular);
     subtitle.textColor = [UIColor colorWithWhite:0.62 alpha:1.0];
@@ -456,12 +456,12 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     NSMutableArray<UIView *> *views = [NSMutableArray arrayWithObjects:title, subtitle, nil];
     NSMutableArray<UIButton *> *buttons = [NSMutableArray array];
 
-    if (dedicatedContra)
+    if (dedicatedZeroHour)
     {
-        UIButton *contra = MakeButton(@"Play Contra X", self, @selector(launchContra));
-        [views addObject:contra];
-        [buttons addObject:contra];
-        fprintf(stderr, "INFO: iOS launcher running in dedicated Contra X mode\n");
+        UIButton *zeroHour = MakeButton(@"Play Zero Hour", self, @selector(launchZeroHour));
+        [views addObject:zeroHour];
+        [buttons addObject:zeroHour];
+        fprintf(stderr, "INFO: iOS launcher running in dedicated Zero Hour mode\n");
     }
     else
     {
@@ -477,12 +477,12 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
             fprintf(stderr, "INFO: iOS launcher found Enhanced profile\n");
         }
 
-        if (ProfileDirectoryExists(@"contra-x"))
+        if (ProfileDirectoryExists(@"zerohour"))
         {
-            UIButton *contra = MakeButton(@"Contra X Beta 2 + Patch 1", self, @selector(launchContra));
-            [views addObject:contra];
-            [buttons addObject:contra];
-            fprintf(stderr, "INFO: iOS launcher found Contra X profile\n");
+            UIButton *zeroHour = MakeButton(@"Zero Hour Beta 2 + Patch 1", self, @selector(launchZeroHour));
+            [views addObject:zeroHour];
+            [buttons addObject:zeroHour];
+            fprintf(stderr, "INFO: iOS launcher found Zero Hour profile\n");
         }
     }
 
@@ -617,23 +617,23 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         [self.settingsView.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:-18.0],
     ]];
 
-    UILabel *title = MakeLabel(@"Contra X settings", 26.0, UIFontWeightBold);
+    UILabel *title = MakeLabel(@"Zero Hour settings", 26.0, UIFontWeightBold);
     title.textAlignment = NSTextAlignmentLeft;
 
-    UILabel *note = MakeLabel(@"iPad equivalents of the official Contra X launcher options. Changes apply on the next game launch.", 13.0, UIFontWeightRegular);
+    UILabel *note = MakeLabel(@"iOS/iPad equivalents of the official Zero Hour launcher options. Changes apply on the next game launch.", 13.0, UIFontWeightRegular);
     note.textAlignment = NSTextAlignmentLeft;
     note.textColor = [UIColor colorWithWhite:0.62 alpha:1.0];
 
-    self.contraControlBarSegment = [self makeSegmented:@[@"Contra", @"Pro", @"Standard"]];
-    self.contraCameosSegment = [self makeSegmented:@[@"Standard", @"HD"]];
-    self.contraMusicSegment = [self makeSegmented:@[@"Standard", @"Enhanced", @"The Score"]];
-    self.contraVoicesSegment = [self makeSegmented:@[@"English", @"Native"]];
-    self.contraHotkeysSegment = [self makeSegmented:@[@"Original", @"Leikeze"]];
-    self.contraHotkeyLanguageSegment = [self makeSegmented:@[@"English", @"Russian"]];
-    self.contraPortraitsSegment = [self makeSegmented:@[@"Standard", @"Funny"]];
-    self.contraFogSwitch = [[UISwitch alloc] init];
-    self.contraWaterSwitch = [[UISwitch alloc] init];
-    self.contraExtraBuildingPropsSwitch = [[UISwitch alloc] init];
+    self.zeroHourControlBarSegment = [self makeSegmented:@[@"ZeroHour", @"Pro", @"Standard"]];
+    self.zeroHourCameosSegment = [self makeSegmented:@[@"Standard", @"HD"]];
+    self.zeroHourMusicSegment = [self makeSegmented:@[@"Standard", @"Enhanced", @"The Score"]];
+    self.zeroHourVoicesSegment = [self makeSegmented:@[@"English", @"Native"]];
+    self.zeroHourHotkeysSegment = [self makeSegmented:@[@"Original", @"Leikeze"]];
+    self.zeroHourHotkeyLanguageSegment = [self makeSegmented:@[@"English", @"Russian"]];
+    self.zeroHourPortraitsSegment = [self makeSegmented:@[@"Standard", @"Funny"]];
+    self.zeroHourFogSwitch = [[UISwitch alloc] init];
+    self.zeroHourWaterSwitch = [[UISwitch alloc] init];
+    self.zeroHourExtraBuildingPropsSwitch = [[UISwitch alloc] init];
 
     self.shadow3DSwitch = [[UISwitch alloc] init];
     self.shadow2DSwitch = [[UISwitch alloc] init];
@@ -668,17 +668,17 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     [self.fpsLimitSwitch addTarget:self action:@selector(fpsLimitChanged:) forControlEvents:UIControlEventValueChanged];
 
     UIStackView *controls = [[UIStackView alloc] initWithArrangedSubviews:@[
-        [self sectionLabel:@"CONTRA X"],
-        [self segmentedRow:@"Control Bar" control:self.contraControlBarSegment],
-        [self segmentedRow:@"Icon / cameo quality" control:self.contraCameosSegment],
-        [self segmentedRow:@"Music" control:self.contraMusicSegment],
-        [self segmentedRow:@"Unit voices" control:self.contraVoicesSegment],
-        [self segmentedRow:@"Hotkeys" control:self.contraHotkeysSegment],
-        [self segmentedRow:@"Hotkey language" control:self.contraHotkeyLanguageSegment],
-        [self segmentedRow:@"General portraits" control:self.contraPortraitsSegment],
-        [self switchRow:@"Fog effects" control:self.contraFogSwitch],
-        [self switchRow:@"Water effects" control:self.contraWaterSwitch],
-        [self switchRow:@"Extra building props" control:self.contraExtraBuildingPropsSwitch],
+        [self sectionLabel:@"ZERO HOUR"],
+        [self segmentedRow:@"Control Bar" control:self.zeroHourControlBarSegment],
+        [self segmentedRow:@"Icon / cameo quality" control:self.zeroHourCameosSegment],
+        [self segmentedRow:@"Music" control:self.zeroHourMusicSegment],
+        [self segmentedRow:@"Unit voices" control:self.zeroHourVoicesSegment],
+        [self segmentedRow:@"Hotkeys" control:self.zeroHourHotkeysSegment],
+        [self segmentedRow:@"Hotkey language" control:self.zeroHourHotkeyLanguageSegment],
+        [self segmentedRow:@"General portraits" control:self.zeroHourPortraitsSegment],
+        [self switchRow:@"Fog effects" control:self.zeroHourFogSwitch],
+        [self switchRow:@"Water effects" control:self.zeroHourWaterSwitch],
+        [self switchRow:@"Extra building props" control:self.zeroHourExtraBuildingPropsSwitch],
 
         [self sectionLabel:@"GRAPHICS"],
         [self switchRow:@"3D shadows" control:self.shadow3DSwitch],
@@ -782,12 +782,12 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
     BOOL gameDataExists = [[NSFileManager defaultManager] fileExistsAtPath:gameDataPath];
     BOOL enhancedInstalled = ProfileDirectoryExists(@"enhanced");
-    BOOL contraInstalled = ProfileDirectoryExists(@"contra-x");
+    BOOL zeroHourInstalled = ProfileDirectoryExists(@"zerohour");
 
-    NSString *settingsPath = IPadOverridesPath();
-    NSString *contraSettingsPath = ContraSettingsPath();
+    NSString *settingsPath = IOSIPadOverridesPath();
+    NSString *zeroHourSettingsPath = ZeroHourSettingsPath();
     BOOL settingsExists = [[NSFileManager defaultManager] fileExistsAtPath:settingsPath];
-    BOOL contraSettingsExists = [[NSFileManager defaultManager] fileExistsAtPath:contraSettingsPath];
+    BOOL zeroHourSettingsExists = [[NSFileManager defaultManager] fileExistsAtPath:zeroHourSettingsPath];
 
     NSString *currentLog = DocumentsFilePath(@"generals-stderr.log");
     BOOL currentLogExists = [[NSFileManager defaultManager] fileExistsAtPath:currentLog];
@@ -827,10 +827,10 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
          "GameData: %@\n"
          "GameData size: %@\n"
          "Enhanced: %@\n"
-         "Contra X: %@\n\n"
+         "Zero Hour: %@\n\n"
          "FILES\n"
-         "iPad settings: %@\n"
-         "Contra settings: %@\n"
+         "iOS/iPad settings: %@\n"
+         "ZeroHour settings: %@\n"
          "Current session: %@\n"
          "Session logs: %@\n",
         GX_PROJECT_VERSION,
@@ -847,9 +847,9 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         gameDataExists ? @"Installed" : @"Missing",
         gameDataSize,
         enhancedInstalled ? @"Installed" : @"Not installed",
-        contraInstalled ? @"Installed" : @"Not installed",
+        zeroHourInstalled ? @"Installed" : @"Not installed",
         settingsExists ? @"Present" : @"Missing",
-        contraSettingsExists ? @"Present" : @"Missing",
+        zeroHourSettingsExists ? @"Present" : @"Missing",
         currentLogText,
         sessionLogsText];
 }
@@ -1087,9 +1087,9 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     SetSelectedProfile(@"enhanced");
 }
 
-- (void)launchContra
+- (void)launchZeroHour
 {
-    SetSelectedProfile(@"contra-x");
+    SetSelectedProfile(@"zerohour");
 }
 
 - (void)downloadGameFile
@@ -1156,19 +1156,19 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     return fallback;
 }
 
-- (void)resetContraSettingsControls
+- (void)resetZeroHourSettingsControls
 {
-    NSDictionary<NSString *, NSString *> *defaults = DefaultContraSettings();
-    self.contraControlBarSegment.selectedSegmentIndex = 0;
-    self.contraCameosSegment.selectedSegmentIndex = 0;
-    self.contraMusicSegment.selectedSegmentIndex = 0;
-    self.contraVoicesSegment.selectedSegmentIndex = 0;
-    self.contraHotkeysSegment.selectedSegmentIndex = 0;
-    self.contraHotkeyLanguageSegment.selectedSegmentIndex = 0;
-    self.contraPortraitsSegment.selectedSegmentIndex = 0;
-    self.contraFogSwitch.on = SettingBoolValue(defaults, @"FogEffects", NO);
-    self.contraWaterSwitch.on = SettingBoolValue(defaults, @"WaterEffects", YES);
-    self.contraExtraBuildingPropsSwitch.on = SettingBoolValue(defaults, @"ExtraBuildingProps", YES);
+    NSDictionary<NSString *, NSString *> *defaults = DefaultZeroHourSettings();
+    self.zeroHourControlBarSegment.selectedSegmentIndex = 0;
+    self.zeroHourCameosSegment.selectedSegmentIndex = 0;
+    self.zeroHourMusicSegment.selectedSegmentIndex = 0;
+    self.zeroHourVoicesSegment.selectedSegmentIndex = 0;
+    self.zeroHourHotkeysSegment.selectedSegmentIndex = 0;
+    self.zeroHourHotkeyLanguageSegment.selectedSegmentIndex = 0;
+    self.zeroHourPortraitsSegment.selectedSegmentIndex = 0;
+    self.zeroHourFogSwitch.on = SettingBoolValue(defaults, @"FogEffects", NO);
+    self.zeroHourWaterSwitch.on = SettingBoolValue(defaults, @"WaterEffects", YES);
+    self.zeroHourExtraBuildingPropsSwitch.on = SettingBoolValue(defaults, @"ExtraBuildingProps", YES);
 
     self.shadow3DSwitch.on = SettingBoolValue(defaults, @"UseShadowVolumes", NO);
     self.shadow2DSwitch.on = SettingBoolValue(defaults, @"UseShadowDecals", YES);
@@ -1185,43 +1185,43 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.textureFilterSegment.selectedSegmentIndex = 2;
 }
 
-- (void)loadContraSettingsControls
+- (void)loadZeroHourSettingsControls
 {
-    EnsureDefaultContraSettings();
-    NSDictionary<NSString *, NSString *> *values = ReadKeyValueFile(ContraSettingsPath());
+    EnsureDefaultZeroHourSettings();
+    NSDictionary<NSString *, NSString *> *values = ReadKeyValueFile(ZeroHourSettingsPath());
 
-    self.contraControlBarSegment.selectedSegmentIndex =
-        [self segmentIndexForValue:SettingValue(values, @"ControlBar", @"Contra")
-                           choices:@[@"Contra", @"Pro", @"Standard"]
+    self.zeroHourControlBarSegment.selectedSegmentIndex =
+        [self segmentIndexForValue:SettingValue(values, @"ControlBar", @"ZeroHour")
+                           choices:@[@"ZeroHour", @"Pro", @"Standard"]
                           fallback:0];
-    self.contraCameosSegment.selectedSegmentIndex =
+    self.zeroHourCameosSegment.selectedSegmentIndex =
         [self segmentIndexForValue:SettingValue(values, @"Cameos", @"Standard")
                            choices:@[@"Standard", @"HD"]
                           fallback:0];
-    self.contraMusicSegment.selectedSegmentIndex =
+    self.zeroHourMusicSegment.selectedSegmentIndex =
         [self segmentIndexForValue:SettingValue(values, @"Music", @"Standard")
                            choices:@[@"Standard", @"Enhanced", @"The Score"]
                           fallback:0];
-    self.contraVoicesSegment.selectedSegmentIndex =
+    self.zeroHourVoicesSegment.selectedSegmentIndex =
         [self segmentIndexForValue:SettingValue(values, @"UnitVoices", @"English")
                            choices:@[@"English", @"Native"]
                           fallback:0];
-    self.contraHotkeysSegment.selectedSegmentIndex =
+    self.zeroHourHotkeysSegment.selectedSegmentIndex =
         [self segmentIndexForValue:SettingValue(values, @"Hotkeys", @"Original")
                            choices:@[@"Original", @"Leikeze"]
                           fallback:0];
-    self.contraHotkeyLanguageSegment.selectedSegmentIndex =
+    self.zeroHourHotkeyLanguageSegment.selectedSegmentIndex =
         [self segmentIndexForValue:SettingValue(values, @"HotkeyLanguage", @"English")
                            choices:@[@"English", @"Russian"]
                           fallback:0];
-    self.contraPortraitsSegment.selectedSegmentIndex =
+    self.zeroHourPortraitsSegment.selectedSegmentIndex =
         [self segmentIndexForValue:SettingValue(values, @"Portraits", @"Standard")
                            choices:@[@"Standard", @"Funny"]
                           fallback:0];
 
-    self.contraFogSwitch.on = SettingBoolValue(values, @"FogEffects", NO);
-    self.contraWaterSwitch.on = SettingBoolValue(values, @"WaterEffects", YES);
-    self.contraExtraBuildingPropsSwitch.on = SettingBoolValue(values, @"ExtraBuildingProps", YES);
+    self.zeroHourFogSwitch.on = SettingBoolValue(values, @"FogEffects", NO);
+    self.zeroHourWaterSwitch.on = SettingBoolValue(values, @"WaterEffects", YES);
+    self.zeroHourExtraBuildingPropsSwitch.on = SettingBoolValue(values, @"ExtraBuildingProps", YES);
 
     self.shadow3DSwitch.on = SettingBoolValue(values, @"UseShadowVolumes", NO);
     self.shadow2DSwitch.on = SettingBoolValue(values, @"UseShadowDecals", YES);
@@ -1248,7 +1248,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
 - (void)resetSettingsControls
 {
-    [self resetContraSettingsControls];
+    [self resetZeroHourSettingsControls];
 
     self.maxCameraSlider.value = 550.0f;
     self.minCameraSlider.value = 70.0f;
@@ -1264,10 +1264,10 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
 - (void)loadSettingsControls
 {
-    [self loadContraSettingsControls];
+    [self loadZeroHourSettingsControls];
 
     NSError *error = nil;
-    NSString *contents = [NSString stringWithContentsOfFile:IPadOverridesPath()
+    NSString *contents = [NSString stringWithContentsOfFile:IOSIPadOverridesPath()
                                                    encoding:NSUTF8StringEncoding
                                                       error:&error];
     if (contents == nil)
@@ -1283,7 +1283,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         self.settingsStatus.text = @"Using camera defaults.";
         if (error != nil)
         {
-            fprintf(stderr, "WARNING: iOS launcher could not read iPadOverrides.ini: %s\n",
+            fprintf(stderr, "WARNING: iOS launcher could not read iOSIPadOverrides.ini: %s\n",
                     [[error description] UTF8String]);
         }
     }
@@ -1346,9 +1346,9 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.fpsValue.alpha = enabled ? 1.0 : 0.35;
 }
 
-- (BOOL)saveContraSettingsAndOptions:(NSError **)error
+- (BOOL)saveZeroHourSettingsAndOptions:(NSError **)error
 {
-    NSArray<NSString *> *controlBars = @[@"Contra", @"Pro", @"Standard"];
+    NSArray<NSString *> *controlBars = @[@"ZeroHour", @"Pro", @"Standard"];
     NSArray<NSString *> *cameos = @[@"Standard", @"HD"];
     NSArray<NSString *> *music = @[@"Standard", @"Enhanced", @"The Score"];
     NSArray<NSString *> *voices = @[@"English", @"Native"];
@@ -1362,34 +1362,34 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     NSArray<NSString *> *filters = @[@"Bilinear", @"Trilinear", @"Anisotropic"];
     NSString *filter = filters[MAX(0, MIN(2, self.textureFilterSegment.selectedSegmentIndex))];
 
-    NSMutableDictionary<NSString *, NSString *> *contra = [DefaultContraSettings() mutableCopy];
-    contra[@"ControlBar"] = controlBars[self.contraControlBarSegment.selectedSegmentIndex];
-    contra[@"Cameos"] = cameos[self.contraCameosSegment.selectedSegmentIndex];
-    contra[@"Music"] = music[self.contraMusicSegment.selectedSegmentIndex];
-    contra[@"UnitVoices"] = voices[self.contraVoicesSegment.selectedSegmentIndex];
-    contra[@"Hotkeys"] = hotkeys[self.contraHotkeysSegment.selectedSegmentIndex];
-    contra[@"HotkeyLanguage"] = languages[self.contraHotkeyLanguageSegment.selectedSegmentIndex];
-    contra[@"Portraits"] = portraits[self.contraPortraitsSegment.selectedSegmentIndex];
-    contra[@"FogEffects"] = self.contraFogSwitch.on ? @"Yes" : @"No";
-    contra[@"WaterEffects"] = self.contraWaterSwitch.on ? @"Yes" : @"No";
-    contra[@"ExtraBuildingProps"] = self.contraExtraBuildingPropsSwitch.on ? @"Yes" : @"No";
+    NSMutableDictionary<NSString *, NSString *> *zeroHour = [DefaultZeroHourSettings() mutableCopy];
+    zeroHour[@"ControlBar"] = controlBars[self.zeroHourControlBarSegment.selectedSegmentIndex];
+    zeroHour[@"Cameos"] = cameos[self.zeroHourCameosSegment.selectedSegmentIndex];
+    zeroHour[@"Music"] = music[self.zeroHourMusicSegment.selectedSegmentIndex];
+    zeroHour[@"UnitVoices"] = voices[self.zeroHourVoicesSegment.selectedSegmentIndex];
+    zeroHour[@"Hotkeys"] = hotkeys[self.zeroHourHotkeysSegment.selectedSegmentIndex];
+    zeroHour[@"HotkeyLanguage"] = languages[self.zeroHourHotkeyLanguageSegment.selectedSegmentIndex];
+    zeroHour[@"Portraits"] = portraits[self.zeroHourPortraitsSegment.selectedSegmentIndex];
+    zeroHour[@"FogEffects"] = self.zeroHourFogSwitch.on ? @"Yes" : @"No";
+    zeroHour[@"WaterEffects"] = self.zeroHourWaterSwitch.on ? @"Yes" : @"No";
+    zeroHour[@"ExtraBuildingProps"] = self.zeroHourExtraBuildingPropsSwitch.on ? @"Yes" : @"No";
 
-    contra[@"UseShadowVolumes"] = self.shadow3DSwitch.on ? @"Yes" : @"No";
-    contra[@"UseShadowDecals"] = self.shadow2DSwitch.on ? @"Yes" : @"No";
-    contra[@"UseCloudMap"] = self.cloudShadowsSwitch.on ? @"Yes" : @"No";
-    contra[@"UseLightMap"] = self.groundLightingSwitch.on ? @"Yes" : @"No";
-    contra[@"ShowSoftWaterEdge"] = self.softWaterSwitch.on ? @"Yes" : @"No";
-    contra[@"BuildingOcclusion"] = self.buildingOcclusionSwitch.on ? @"Yes" : @"No";
-    contra[@"ShowTrees"] = self.showPropsSwitch.on ? @"Yes" : @"No";
-    contra[@"ExtraAnimations"] = self.extraAnimationsSwitch.on ? @"Yes" : @"No";
-    contra[@"DynamicLOD"] = self.dynamicLODSwitch.on ? @"Yes" : @"No";
-    contra[@"HeatEffects"] = self.heatEffectsSwitch.on ? @"Yes" : @"No";
-    contra[@"TextureReduction"] = [NSString stringWithFormat:@"%ld", (long)self.textureQualitySegment.selectedSegmentIndex];
-    contra[@"MaxParticleCount"] = [NSString stringWithFormat:@"%ld", (long)particleCount];
-    contra[@"TextureFilter"] = filter;
-    contra[@"AnisotropyLevel"] = self.textureFilterSegment.selectedSegmentIndex == 2 ? @"8" : @"2";
+    zeroHour[@"UseShadowVolumes"] = self.shadow3DSwitch.on ? @"Yes" : @"No";
+    zeroHour[@"UseShadowDecals"] = self.shadow2DSwitch.on ? @"Yes" : @"No";
+    zeroHour[@"UseCloudMap"] = self.cloudShadowsSwitch.on ? @"Yes" : @"No";
+    zeroHour[@"UseLightMap"] = self.groundLightingSwitch.on ? @"Yes" : @"No";
+    zeroHour[@"ShowSoftWaterEdge"] = self.softWaterSwitch.on ? @"Yes" : @"No";
+    zeroHour[@"BuildingOcclusion"] = self.buildingOcclusionSwitch.on ? @"Yes" : @"No";
+    zeroHour[@"ShowTrees"] = self.showPropsSwitch.on ? @"Yes" : @"No";
+    zeroHour[@"ExtraAnimations"] = self.extraAnimationsSwitch.on ? @"Yes" : @"No";
+    zeroHour[@"DynamicLOD"] = self.dynamicLODSwitch.on ? @"Yes" : @"No";
+    zeroHour[@"HeatEffects"] = self.heatEffectsSwitch.on ? @"Yes" : @"No";
+    zeroHour[@"TextureReduction"] = [NSString stringWithFormat:@"%ld", (long)self.textureQualitySegment.selectedSegmentIndex];
+    zeroHour[@"MaxParticleCount"] = [NSString stringWithFormat:@"%ld", (long)particleCount];
+    zeroHour[@"TextureFilter"] = filter;
+    zeroHour[@"AnisotropyLevel"] = self.textureFilterSegment.selectedSegmentIndex == 2 ? @"8" : @"2";
 
-    if (!WriteKeyValueFile(ContraSettingsPath(), contra, error))
+    if (!WriteKeyValueFile(ZeroHourSettingsPath(), zeroHour, error))
         return NO;
 
     NSMutableDictionary<NSString *, NSString *> *options = ReadKeyValueFile(EngineOptionsPath());
@@ -1402,7 +1402,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         @"TextureFilter", @"AnisotropyLevel"
     ])
     {
-        options[key] = contra[key];
+        options[key] = zeroHour[key];
     }
 
     return WriteKeyValueFile(EngineOptionsPath(), options, error);
@@ -1431,21 +1431,21 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         self.fpsSlider.value];
 
     NSError *error = nil;
-    BOOL cameraOK = [contents writeToFile:IPadOverridesPath()
+    BOOL cameraOK = [contents writeToFile:IOSIPadOverridesPath()
                                atomically:YES
                                  encoding:NSUTF8StringEncoding
                                     error:&error];
-    BOOL contraOK = cameraOK ? [self saveContraSettingsAndOptions:&error] : NO;
+    BOOL zeroHourOK = cameraOK ? [self saveZeroHourSettingsAndOptions:&error] : NO;
 
-    if (cameraOK && contraOK)
+    if (cameraOK && zeroHourOK)
     {
         self.settingsStatus.text = @"Saved. Changes apply on the next game launch.";
         self.settingsStatus.textColor = [UIColor systemGreenColor];
         fprintf(stderr,
-                "[CONTRA-SETTINGS] saved settings=%s options=%s camera=%s\n",
-                ContraSettingsPath().fileSystemRepresentation,
+                "[ZEROHOUR-SETTINGS] saved settings=%s options=%s camera=%s\n",
+                ZeroHourSettingsPath().fileSystemRepresentation,
                 EngineOptionsPath().fileSystemRepresentation,
-                IPadOverridesPath().fileSystemRepresentation);
+                IOSIPadOverridesPath().fileSystemRepresentation);
     }
     else
     {
@@ -1484,7 +1484,7 @@ const char *GeneralsXRunIOSProfileLauncher()
         const char *utf8 = [autoProfile UTF8String];
         strlcpy(gSelectedProfile, utf8, sizeof(gSelectedProfile));
 
-        if (![autoProfile isEqualToString:@"contra-x"])
+        if (![autoProfile isEqualToString:@"zerohour"])
         {
             fprintf(stderr, "INFO: iOS launcher auto-selected bundled profile: %s\n",
                     gSelectedProfile);
@@ -1492,7 +1492,7 @@ const char *GeneralsXRunIOSProfileLauncher()
         }
 
         fprintf(stderr,
-                "[CONTRA-SETTINGS] dedicated Contra launcher shown for settings access\n");
+                "[ZEROHOUR-SETTINGS] dedicated ZeroHour launcher shown for settings access\n");
     }
 
     gLauncherFinished.store(false, std::memory_order_release);
