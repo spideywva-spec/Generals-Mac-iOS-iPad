@@ -280,7 +280,7 @@ bool ProfileDirectoryExists(NSString *profileDirectory)
 
 NSString *DefaultIOSIPadOverrides()
 {
-    // GeneralsX @feature dvorovrus 26/09/2026 Default shared iOS/iOS/iPad tuning.
+    // GeneralsX @feature dvorovrus 26/09/2026 Default shared iOS/iPad tuning.
     return @"GameData\n"
             @"  MaxCameraHeight = 550.0\n"
             @"  MinCameraHeight = 70.0\n"
@@ -440,8 +440,8 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
                                34.0,
                                UIFontWeightBold);
     UILabel *subtitle = MakeLabel(dedicatedZeroHour
-                                      ? @"Beta 2 + Patch 1 · iOS/iPad"
-                                      : @"iOS/iOS/iPad launcher",
+                                      ? @"iOS/iPad"
+                                      : @"iOS/iPad launcher",
                                   14.0,
                                   UIFontWeightRegular);
     subtitle.textColor = [UIColor colorWithWhite:0.62 alpha:1.0];
