@@ -1,19 +1,18 @@
 /*
-**	Command & Conquer Generals Zero Hour(tm)
-**	Copyright 2025 Electronic Arts Inc.
+**\tCommand & Conquer Generals Zero Hour(tm)
+**\tCopyright 2025 Electronic Arts Inc.
 **
-**	This program is free software: you can redistribute it and/or modify
-**	it under the terms of the GNU General Public License as published by
-**	the Free Software Foundation, either version 3 of the License, or
-**	(at your option) any later version.
+**\tThis program is free software: you can redistribute it and/or modify
+**\tit under the terms of the GNU General Public License as published by
+**\tthe Free Software Foundation, either version 3 of the License, or
+**\t(at your option) any later version.
 **
-**	This program is distributed in the hope that it will be useful,
-**	but WITHOUT ANY WARRANTY; without even the implied warranty of
-**	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-**	GNU General Public License for more details.
-**
-**	You should have received a copy of the GNU General Public License
-**	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+**\tThis program is distributed in the hope that it will be useful,
+**\tbut WITHOUT ANY WARRANTY; without even the implied warranty of
+**\tMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**\tGNU General Public License for more details.
+**\n**\tYou should have received a copy of the GNU General Public License
+**\talong with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*
@@ -73,53 +72,56 @@ class GameWindow;
 class SDL3GameEngine : public GameEngine
 {
 public:
-	SDL3GameEngine();
-	virtual ~SDL3GameEngine();
+\tSDL3GameEngine();
+\tvirtual ~SDL3GameEngine();
 
-	// GameEngine interface
-	virtual void init(void);
-	virtual void reset(void);
-	virtual void update(void);
-	virtual void execute(void);
-	virtual void serviceWindowsOS(void);
-	virtual Bool isActive(void);
-	virtual void setIsActive(Bool isActive);
+\t// GameEngine interface
+\tvirtual void init(void);
+\tvirtual void reset(void);
+\tvirtual void update(void);
+\tvirtual void execute(void);
+\tvirtual void serviceWindowsOS(void);
+\tvirtual Bool isActive(void);
+\tvirtual void setIsActive(Bool isActive);
 
-	// Factory methods (override GameEngine)
-	virtual LocalFileSystem *createLocalFileSystem(void);
-	virtual ArchiveFileSystem *createArchiveFileSystem(void);
-	virtual GameLogic *createGameLogic(void);
-	virtual GameClient *createGameClient(void);
-	virtual ModuleFactory *createModuleFactory(void);
-	virtual ThingFactory *createThingFactory(void);
-	virtual FunctionLexicon *createFunctionLexicon(void);
-	// GeneralsX @bugfix Copilot 15/04/2026 Match upstream GameEngine pure-virtual signatures after sync.
-	virtual Radar *createRadar(Bool dummy);
-	virtual WebBrowser *createWebBrowser(void);
-	virtual ParticleSystemManager* createParticleSystemManager(Bool dummy);
-	virtual AudioManager *createAudioManager(Bool dummy);
+\t// Factory methods (override GameEngine)
+\tvirtual LocalFileSystem *createLocalFileSystem(void);
+\tvirtual ArchiveFileSystem *createArchiveFileSystem(void);
+\tvirtual GameLogic *createGameLogic(void);
+\tvirtual GameClient *createGameClient(void);
+\tvirtual ModuleFactory *createModuleFactory(void);
+\tvirtual ThingFactory *createThingFactory(void);
+\tvirtual FunctionLexicon *createFunctionLexicon(void);
+\t// GeneralsX @bugfix Copilot 15/04/2026 Match upstream GameEngine pure-virtual signatures after sync.
+\tvirtual Radar *createRadar(Bool dummy);
+\tvirtual WebBrowser *createWebBrowser(void);
+\tvirtual ParticleSystemManager* createParticleSystemManager(Bool dummy);
+\tvirtual AudioManager *createAudioManager(Bool dummy);
 
-	// SDL3 specific
-	virtual SDL_Window* getSDLWindow(void) const { return m_SDLWindow; }
+\t// SDL3 specific
+\tvirtual SDL_Window* getSDLWindow(void) const { return m_SDLWindow; }
 
 protected:
-	SDL_Window*		m_SDLWindow;
-	Bool			m_IsInitialized;
-	Bool			m_IsActive;
-	Bool			m_IsTextInputActive;
-	GameWindow*	m_TextInputFocusWindow;
+\tSDL_Window*\t\tm_SDLWindow;
+\tBool\t\t\tm_IsInitialized;
+\tBool\t\t\tm_IsActive;
+\tBool\t\t\tm_IsTextInputActive;
+\tGameWindow*\tm_TextInputFocusWindow;
+\t// iOS: after Return hides the keyboard, do not immediately restart text input
+\t// while the same entry field still owns focus.
+\tGameWindow*\tm_TextInputSuppressedFocusWindow;
 
-	// Event processing
-	void pollSDL3Events(void);
-	// GeneralsX @bugfix felipebraz 01/04/2026 Bridge SDL text events to GUI text-entry widgets.
-	void updateTextInputState(void);
-	// GeneralsX @bugfix felipebraz 01/04/2026 Forward UTF-8 text input as GWM_IME_CHAR messages.
-	void forwardTextInputEvent(const char* utf8Text);
-	void handleKeyboardEvent(const SDL_KeyboardEvent& event);
-	void handleMouseMotionEvent(const SDL_MouseMotionEvent& event);
-	void handleMouseButtonEvent(const SDL_MouseButtonEvent& event);
-	void handleMouseWheelEvent(const SDL_MouseWheelEvent& event);  //TheSuperHackers @build 10/02/2026 Bender
-	void handleWindowEvent(const SDL_WindowEvent& event);
+\t// Event processing
+\tvoid pollSDL3Events(void);
+\t// GeneralsX @bugfix felipebraz 01/04/2026 Bridge SDL text events to GUI text-entry widgets.
+\tvoid updateTextInputState(void);
+\t// GeneralsX @bugfix felipebraz 01/04/2026 Forward UTF-8 text input as GWM_IME_CHAR messages.
+\tvoid forwardTextInputEvent(const char* utf8Text);
+\tvoid handleKeyboardEvent(const SDL_KeyboardEvent& event);
+\tvoid handleMouseMotionEvent(const SDL_MouseMotionEvent& event);
+\tvoid handleMouseButtonEvent(const SDL_MouseButtonEvent& event);
+\tvoid handleMouseWheelEvent(const SDL_MouseWheelEvent& event);  //TheSuperHackers @build 10/02/2026 Bender
+\tvoid handleWindowEvent(const SDL_WindowEvent& event);
 };
 
 #endif // !_WIN32
