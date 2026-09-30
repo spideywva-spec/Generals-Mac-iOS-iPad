@@ -127,11 +127,14 @@ static bool SDLCALL iosLifecycleWatcher(void *userdata, SDL_Event *event)
 // SDL_HINT_TOUCH_MOUSE_EVENTS=0); every mouse event the game sees on iOS is
 // synthesized here, through the same SDL3Mouse::addSDLEvent path real mice use.
 //
-// Gestures (matching the game's stock control scheme, which is LMB-centric):
-//   1 finger tap/drag     -> left button click / drag (select, command, drag-box)
-//   1 finger long-press   -> right button click (deselect), if finger stays put
-//   2 finger drag         -> right-button drag at the centroid (camera scroll)
-//   2 finger pinch        -> mouse wheel (camera zoom)
+// iOS touch controls:
+//   1 finger short tap    -> synthetic LMB click (select)
+//   1 finger movement     -> synthetic RMB drag (camera pan)
+//   1 finger hold 3 sec   -> switch to LMB selection-rectangle mode
+//   1 finger after 3 sec  -> movement expands the selection rectangle
+//   2 finger short tap    -> synthetic RMB click (cancel/deselect)
+//   2 finger movement     -> zoom
+//   2 finger pinch        -> mouse-wheel zoom
 // ---------------------------------------------------------------------------
 namespace {
 
