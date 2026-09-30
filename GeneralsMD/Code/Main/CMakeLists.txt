@@ -82,6 +82,16 @@ target_sources(z_generals PRIVATE
 # Keep launcher UI in its own dylib: launcher-only changes can then be rebuilt and
 # repackaged without recompiling the whole GeneralsX engine.
 if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    # In-game UIKit ESC overlay. This is compiled into the actual game binary,
+    # separate from the native launcher dylib.
+    target_sources(z_generals PRIVATE
+        IOSGameOverlay.h
+        IOSGameOverlay.mm
+    )
+    set_source_files_properties(IOSGameOverlay.mm PROPERTIES
+        SKIP_PRECOMPILE_HEADERS ON
+        COMPILE_OPTIONS "-fobjc-arc"
+    )
     set(GX_PROJECT_VERSION "0.0.0")
     set(GX_ENGINE_VERSION "0.0.0")
     set(GX_LAUNCHER_VERSION "0.0.0")
