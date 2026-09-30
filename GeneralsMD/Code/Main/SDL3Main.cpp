@@ -1095,6 +1095,11 @@ int main(int argc, char* argv[])
 		// Must be done here, not in SDL3GameEngine::init() which is too late
 		fprintf(stderr, "INFO: Initializing SDL3 video subsystem...\n");
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+		// iOS: pressing Return in a Generals text field must dismiss the
+		// software keyboard instead of leaving the IME stuck on screen.
+		SDL_SetHint(SDL_HINT_RETURN_KEY_HIDES_IME, "1");
+#endif
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 		// All mouse events are synthesized by the gesture translator in
 		// SDL3GameEngine.cpp; SDL's automatic touch->mouse synthesis would
 		// double-deliver finger 1 and fight the two-finger pan logic.
