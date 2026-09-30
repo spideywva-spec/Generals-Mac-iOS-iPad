@@ -235,7 +235,8 @@ jobs:
           retention-days: 7
 
       - name: Summary
-        if: success()        run: |
+        if: success()
+        run: |
           echo "## iOS shell" >> "${GITHUB_STEP_SUMMARY}"
           echo "- Engine: GeneralsXZH arm64" >> "${GITHUB_STEP_SUMMARY}"
           echo "- Launcher: native UIKit" >> "${GITHUB_STEP_SUMMARY}"
