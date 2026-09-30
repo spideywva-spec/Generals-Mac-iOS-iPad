@@ -15,8 +15,6 @@ on:
       - ios-clean
     paths:
       - 'GeneralsMD/**'
-      - '!GeneralsMD/Code/Main/IOSProfileLauncher.mm'
-      - '!GeneralsMD/Code/Main/IOSProfileLauncher.h'
       - 'Core/**'
       - 'Dependencies/Utility/**'
       - 'resources/**'
