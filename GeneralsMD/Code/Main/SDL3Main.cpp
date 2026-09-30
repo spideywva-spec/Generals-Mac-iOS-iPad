@@ -66,6 +66,7 @@
 
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 #include "IOSProfileLauncher.h"
+#include "IOSGameOverlay.h"
 #endif
 
 // DXVK WSI
@@ -1146,6 +1147,13 @@ int main(int argc, char* argv[])
 		fprintf(stderr, "INFO: SDL3 window created successfully\n");
 
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+		// Install the small in-game ESC touch control in the exact top-left area
+		// marked for the iOS touch overlay. It injects a real SDL Escape key event
+		// into the game's existing keyboard path.
+		GeneralsXInstallIOSEscOverlay(TheSDL3Window);
+#endif
+
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 		// Match the game's internal resolution to the phone screen's aspect ratio.
 		// Without this the engine runs its 4:3 default inside the 19.5:9 display:
 		// pillarboxed picture and a skewed window->game coordinate mapping. Height
@@ -1210,6 +1218,9 @@ int main(int argc, char* argv[])
 	}
 
 	// Cleanup SDL3 resources
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+	GeneralsXRemoveIOSEscOverlay();
+#endif
 	if (TheSDL3Window) {
 		SDL_DestroyWindow(TheSDL3Window);
 		TheSDL3Window = nullptr;
