@@ -465,7 +465,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     }
     else
     {
-        UIButton *vanilla = MakeButton(@"ZeroHour 1.04", self, @selector(launchVanilla));
+        UIButton *vanilla = MakeButton(@"Играть", self, @selector(launchVanilla));
         [views addObject:vanilla];
         [buttons addObject:vanilla];
 
@@ -1120,7 +1120,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 - (void)downloadGameFile
 {
     NSURL *url = [NSURL URLWithString:
-        @"https://www.dropbox.com/scl/fi/jg0y2m0mioxm09jkrl5bn/GeneralsRus.zip?rlkey=yr7fslgqqw901ogzhmq86qaji&st=ba0b7oju&dl=1"];
+        @"https://www.dropbox.com/scl/fi/11yzk5dnym9d7cm1ie45g/generals-by-spideywv.zip?rlkey=c8wtkjf7dzos0kzq31vyfmomm&st=ts5phkhp&dl=1"];
     if (url == nil)
     {
         fprintf(stderr, "ERROR: invalid GameFile download URL\\n");
