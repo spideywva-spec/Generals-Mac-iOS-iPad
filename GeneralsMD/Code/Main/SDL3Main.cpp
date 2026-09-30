@@ -1098,6 +1098,7 @@ int main(int argc, char* argv[])
 		// iOS: pressing Return in a Generals text field must dismiss the
 		// software keyboard instead of leaving the IME stuck on screen.
 		SDL_SetHint(SDL_HINT_RETURN_KEY_HIDES_IME, "1");
+		SDL_SetHint(SDL_HINT_ENABLE_SCREEN_KEYBOARD, "1");
 #endif
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 		// All mouse events are synthesized by the gesture translator in
