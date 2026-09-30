@@ -556,6 +556,7 @@ void SDL3GameEngine::reset(void)
 		SDL_StopTextInput(m_SDLWindow);
 		m_IsTextInputActive = false;
 		m_TextInputFocusWindow = nullptr;
+		m_TextInputSuppressedFocusWindow = nullptr;
 	}
 	GameEngine::reset();
 }
@@ -652,6 +653,7 @@ void SDL3GameEngine::pollSDL3Events(void)
 					m_IsTextInputActive = false;
 					m_TextInputFocusWindow = nullptr;
 				}
+				m_TextInputSuppressedFocusWindow = nullptr;
 				if (TheMouse) {
 					TheMouse->loseFocus();
 				}
@@ -691,15 +693,25 @@ void SDL3GameEngine::pollSDL3Events(void)
 			case SDL_EVENT_KEY_DOWN:
 			case SDL_EVENT_KEY_UP:
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
-				// On iOS, Return must dismiss the software keyboard. SDL can keep
-				// the entry widget focused after Return, so remember that focus and
-				// prevent updateTextInputState() from immediately restarting IME.
+				// iOS Return handling: force the IME closed and suppress any
+				// immediate SDL_StartTextInput() while this same entry field
+				// remains focused. Do this even if SDL already reports text input
+				// as inactive; the native iOS IME can still be in the process of
+				// dismissing/reconfiguring after Return.
 				if (event.type == SDL_EVENT_KEY_DOWN &&
-				    (event.key.key == SDLK_RETURN || event.key.key == SDLK_KP_ENTER) &&
-				    m_IsTextInputActive) {
-					SDL_StopTextInput(m_SDLWindow);
-					m_IsTextInputActive = false;
-					m_TextInputSuppressedFocusWindow = m_TextInputFocusWindow;
+				    (event.key.key == SDLK_RETURN || event.key.key == SDLK_KP_ENTER)) {
+					GameWindow* returnFocus = m_TextInputFocusWindow;
+					if (!returnFocus && TheWindowManager) {
+						returnFocus = TheWindowManager->winGetFocus();
+					}
+					if (returnFocus &&
+					    BitIsSet(returnFocus->winGetStyle(), GWS_ENTRY_FIELD)) {
+						SDL_StopTextInput(m_SDLWindow);
+						m_IsTextInputActive = false;
+						m_TextInputFocusWindow = returnFocus;
+						m_TextInputSuppressedFocusWindow = returnFocus;
+						fprintf(stderr, "INFO: iOS text input: Return dismissed keyboard; IME suppressed until entry focus changes\\n");
+					}
 				}
 #endif
 				// Fighter19 pattern: direct addSDLEvent() call
