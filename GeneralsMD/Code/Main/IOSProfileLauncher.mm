@@ -436,80 +436,372 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     NSString *bundledProfile = BundledAutoLaunchProfile();
     BOOL dedicatedZeroHour = [bundledProfile isEqualToString:@"zerohour"];
 
-    UILabel *title = MakeLabel(dedicatedZeroHour ? @"ZERO HOUR" : @"ZERO HOUR",
-                               34.0,
-                               UIFontWeightBold);
-    UILabel *subtitle = MakeLabel(dedicatedZeroHour
-                                      ? @"iOS/iPad"
-                                      : @"iOS/iPad launcher",
-                                  14.0,
-                                  UIFontWeightRegular);
-    subtitle.textColor = [UIColor colorWithWhite:0.62 alpha:1.0];
+    self.view.backgroundColor = [UIColor colorWithRed:0.008 green:0.018 blue:0.035 alpha:1.0];
 
-    UIButton *gameFile = MakeButton(@"Скачать GameFile", self, @selector(downloadGameFile));
-    UIButton *settings = MakeButton(@"Настройки", self, @selector(showНастройки));
-    UIButton *diagnostics = MakeButton(@"Диагностика", self, @selector(showDiagnostics));
-    gameFile.backgroundColor = [UIColor colorWithWhite:0.06 alpha:1.0];
-    settings.backgroundColor = [UIColor colorWithWhite:0.06 alpha:1.0];
-    diagnostics.backgroundColor = [UIColor colorWithWhite:0.06 alpha:1.0];
+    UIScrollView *scrollView = [[UIScrollView alloc] init];
+    scrollView.translatesAutoresizingMaskIntoConstraints = NO;
+    scrollView.alwaysBounceVertical = YES;
+    scrollView.showsVerticalScrollIndicator = NO;
+    scrollView.backgroundColor = UIColor.clearColor;
 
-    NSMutableArray<UIView *> *views = [NSMutableArray arrayWithObjects:title, subtitle, nil];
-    NSMutableArray<UIButton *> *buttons = [NSMutableArray array];
+    UIStackView *content = [[UIStackView alloc] init];
+    content.translatesAutoresizingMaskIntoConstraints = NO;
+    content.axis = UILayoutConstraintAxisVertical;
+    content.spacing = 14.0;
+    content.layoutMargins = UIEdgeInsetsMake(20.0, 18.0, 28.0, 18.0);
+    content.layoutMarginsRelativeArrangement = YES;
 
-    if (dedicatedZeroHour)
-    {
-        UIButton *zeroHour = MakeButton(@"Запустить ZeroHour", self, @selector(launchZeroHour));
-        [views addObject:zeroHour];
-        [buttons addObject:zeroHour];
-        fprintf(stderr, "INFO: iOS launcher running in dedicated Zero Hour mode\n");
-    }
-    else
-    {
-        UIButton *vanilla = MakeButton(@"Играть", self, @selector(launchVanilla));
-        [views addObject:vanilla];
-        [buttons addObject:vanilla];
+    UIView *header = [[UIView alloc] init];
+    header.translatesAutoresizingMaskIntoConstraints = NO;
 
-        if (ProfileDirectoryExists(@"enhanced"))
-        {
-            UIButton *enhanced = MakeButton(@"ZeroHour Enhanced", self, @selector(launchEnhanced));
-            [views addObject:enhanced];
-            [buttons addObject:enhanced];
-            fprintf(stderr, "INFO: iOS launcher found Enhanced profile\n");
-        }
+    UIImageView *appIcon = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:@"shield.fill"]];
+    appIcon.translatesAutoresizingMaskIntoConstraints = NO;
+    appIcon.tintColor = [UIColor colorWithRed:0.25 green:0.65 blue:1.0 alpha:1.0];
+    appIcon.contentMode = UIViewContentModeScaleAspectFit;
+    appIcon.backgroundColor = [UIColor colorWithRed:0.05 green:0.12 blue:0.22 alpha:1.0];
+    appIcon.layer.cornerRadius = 13.0;
+    appIcon.layer.borderWidth = 1.0;
+    appIcon.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.10].CGColor;
+    [header addSubview:appIcon];
 
-        if (ProfileDirectoryExists(@"zerohour"))
-        {
-            UIButton *zeroHour = MakeButton(@"ZeroHour Beta 2 + Patch 1", self, @selector(launchZeroHour));
-            [views addObject:zeroHour];
-            [buttons addObject:zeroHour];
-            fprintf(stderr, "INFO: iOS launcher found Zero Hour profile\n");
-        }
-    }
+    UILabel *title = MakeLabel(@"Generals: Zero Hour", 23.0, UIFontWeightBold);
+    title.textAlignment = NSTextAlignmentLeft;
+    [header addSubview:title];
 
-    [views addObject:gameFile];
-    [buttons addObject:gameFile];
-    [views addObject:settings];
-    [buttons addObject:settings];
-    [views addObject:diagnostics];
-    [buttons addObject:diagnostics];
+    UILabel *subtitle = MakeLabel(@"iOS / iPad Launcher", 13.0, UIFontWeightRegular);
+    subtitle.textAlignment = NSTextAlignmentLeft;
+    subtitle.textColor = [UIColor colorWithRed:0.38 green:0.72 blue:1.0 alpha:1.0];
+    [header addSubview:subtitle];
 
-    for (UIButton *button in buttons)
-        [button.widthAnchor constraintEqualToConstant:460.0].active = YES;
-
-    self.menuStack = [[UIStackView alloc] initWithArrangedSubviews:views];
-    self.menuStack.translatesAutoresizingMaskIntoConstraints = NO;
-    self.menuStack.axis = UILayoutConstraintAxisVertical;
-    self.menuStack.alignment = UIStackViewAlignmentCenter;
-    self.menuStack.spacing = 12.0;
-    [self.menuStack setCustomSpacing:26.0 afterView:subtitle];
-
-    [self.view addSubview:self.menuStack];
+    UILabel *platform = MakeLabel(@"  iPhone / iPad\niOS", 12.0, UIFontWeightSemibold);
+    platform.textAlignment = NSTextAlignmentCenter;
+    platform.textColor = [UIColor colorWithWhite:0.88 alpha:1.0];
+    platform.backgroundColor = [UIColor colorWithWhite:0.08 alpha:0.82];
+    platform.layer.cornerRadius = 18.0;
+    platform.layer.borderWidth = 1.0;
+    platform.layer.borderColor = [UIColor colorWithRed:0.20 green:0.45 blue:0.72 alpha:0.8].CGColor;
+    platform.clipsToBounds = YES;
+    [header addSubview:platform];
 
     [NSLayoutConstraint activateConstraints:@[
-        [self.menuStack.centerXAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.centerXAnchor],
-        [self.menuStack.centerYAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.centerYAnchor],
+        [appIcon.leadingAnchor constraintEqualToAnchor:header.leadingAnchor],
+        [appIcon.topAnchor constraintEqualToAnchor:header.topAnchor],
+        [appIcon.widthAnchor constraintEqualToConstant:54.0],
+        [appIcon.heightAnchor constraintEqualToConstant:54.0],
+
+        [title.leadingAnchor constraintEqualToAnchor:appIcon.trailingAnchor constant:14.0],
+        [title.topAnchor constraintEqualToAnchor:header.topAnchor constant:2.0],
+
+        [subtitle.leadingAnchor constraintEqualToAnchor:title.leadingAnchor],
+        [subtitle.topAnchor constraintEqualToAnchor:title.bottomAnchor constant:3.0],
+
+        [platform.trailingAnchor constraintEqualToAnchor:header.trailingAnchor],
+        [platform.centerYAnchor constraintEqualToAnchor:appIcon.centerYAnchor],
+        [platform.widthAnchor constraintGreaterThanOrEqualToConstant:122.0],
+        [platform.heightAnchor constraintEqualToConstant:54.0],
+
+        [header.heightAnchor constraintEqualToConstant:54.0]
     ]];
+
+    [content addArrangedSubview:header];
+
+    UIView *hero = [[UIView alloc] init];
+    hero.translatesAutoresizingMaskIntoConstraints = NO;
+    hero.backgroundColor = [UIColor colorWithRed:0.035 green:0.085 blue:0.14 alpha:1.0];
+    hero.layer.cornerRadius = 24.0;
+    hero.layer.borderWidth = 1.0;
+    hero.layer.borderColor = [UIColor colorWithRed:0.16 green:0.40 blue:0.65 alpha:0.85].CGColor;
+    hero.clipsToBounds = YES;
+
+    CAGradientLayer *heroGradient = [CAGradientLayer layer];
+    heroGradient.frame = CGRectMake(0, 0, 1000, 420);
+    heroGradient.colors = @[
+        (id)[UIColor colorWithRed:0.03 green:0.10 blue:0.18 alpha:1.0].CGColor,
+        (id)[UIColor colorWithRed:0.01 green:0.025 blue:0.055 alpha:1.0].CGColor
+    ];
+    heroGradient.startPoint = CGPointMake(0.0, 0.0);
+    heroGradient.endPoint = CGPointMake(1.0, 1.0);
+    [hero.layer insertSublayer:heroGradient atIndex:0];
+
+    UILabel *gameTitle = MakeLabel(@"COMMAND & CONQUER", 20.0, UIFontWeightBold);
+    gameTitle.textAlignment = NSTextAlignmentLeft;
+    gameTitle.textColor = [UIColor colorWithWhite:0.93 alpha:1.0];
+    [hero addSubview:gameTitle];
+
+    UILabel *zeroHour = MakeLabel(@"GENERALS\nZERO HOUR", 42.0, UIFontWeightBlack];
+    zeroHour.textAlignment = NSTextAlignmentLeft;
+    zeroHour.textColor = UIColor.whiteColor;
+    [hero addSubview:zeroHour];
+
+    UILabel *tagline = MakeLabel(@"Modern gaming launcher • Dark tactical edition", 13.0, UIFontWeightRegular);
+    tagline.textAlignment = NSTextAlignmentLeft;
+    tagline.textColor = [UIColor colorWithWhite:0.65 alpha:1.0];
+    [hero addSubview:tagline];
+
+    UIButton *play = MakeButton(@"▶   ИГРАТЬ   ›", self, @selector(launchVanilla));
+    play.titleLabel.font = [UIFont systemFontOfSize:25.0 weight:UIFontWeightBold];
+    play.backgroundColor = [UIColor colorWithRed:0.03 green:0.43 blue:0.95 alpha:1.0];
+    play.layer.cornerRadius = 30.0;
+    play.layer.borderWidth = 1.0;
+    play.layer.borderColor = [UIColor colorWithRed:0.35 green:0.80 blue:1.0 alpha:0.95].CGColor;
+    play.layer.shadowColor = [UIColor colorWithRed:0.0 green:0.45 blue:1.0 alpha:1.0].CGColor;
+    play.layer.shadowOpacity = 0.55;
+    play.layer.shadowRadius = 18.0;
+    play.layer.shadowOffset = CGSizeMake(0, 5);
+    [hero addSubview:play];
+
+    UILabel *heroHint = MakeLabel(dedicatedZeroHour
+                                      ? @"Профиль: Zero Hour"
+                                      : @"Профиль: vanilla",
+                                  12.0,
+                                  UIFontWeightSemibold);
+    heroHint.textAlignment = NSTextAlignmentRight;
+    heroHint.textColor = [UIColor colorWithRed:0.35 green:0.82 blue:1.0 alpha:1.0];
+    [hero addSubview:heroHint];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [gameTitle.leadingAnchor constraintEqualToAnchor:hero.leadingAnchor constant:28.0],
+        [gameTitle.topAnchor constraintEqualToAnchor:hero.topAnchor constant:24.0],
+
+        [zeroHour.leadingAnchor constraintEqualToAnchor:hero.leadingAnchor constant:28.0],
+        [zeroHour.topAnchor constraintEqualToAnchor:gameTitle.bottomAnchor constant:4.0],
+
+        [tagline.leadingAnchor constraintEqualToAnchor:hero.leadingAnchor constant:28.0],
+        [tagline.topAnchor constraintEqualToAnchor:zeroHour.bottomAnchor constant:8.0],
+
+        [play.leadingAnchor constraintEqualToAnchor:hero.leadingAnchor constant:28.0],
+        [play.bottomAnchor constraintEqualToAnchor:hero.bottomAnchor constant:-28.0],
+        [play.widthAnchor constraintEqualToConstant:300.0],
+        [play.heightAnchor constraintEqualToConstant:62.0],
+
+        [heroHint.trailingAnchor constraintEqualToAnchor:hero.trailingAnchor constant:-28.0],
+        [heroHint.centerYAnchor constraintEqualToAnchor:play.centerYAnchor],
+
+        [hero.heightAnchor constraintGreaterThanOrEqualToConstant:310.0]
+    ]];
+
+    [content addArrangedSubview:hero];
+
+    UIView *sidePanel = [[UIView alloc] init];
+    sidePanel.translatesAutoresizingMaskIntoConstraints = NO;
+    sidePanel.backgroundColor = UIColor.clearColor;
+
+    UIStackView *sideStack = [[UIStackView alloc] init];
+    sideStack.translatesAutoresizingMaskIntoConstraints = NO;
+    sideStack.axis = UILayoutConstraintAxisVertical;
+    sideStack.spacing = 12.0;
+
+    UIButton *gameFile = [self makeLauncherCard:@"СТАТУС GAMEFILE"
+                                        subtitle:@"Установлен  •  44 объекта проверены"
+                                           icon:@"checkmark.circle.fill"
+                                          action:@selector(downloadGameFile)
+                                      accentColor:[UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0]];
+    UIButton *graphics = [self makeLauncherCard:@"ДВИЖОК / ГРАФИКА"
+                                        subtitle:@"Vulkan  •  DXVK  •  MoltenVK"
+                                           icon:@"cube.fill"
+                                          action:@selector(showНастройки)
+                                      accentColor:[UIColor colorWithRed:0.25 green:0.65 blue:1.0 alpha:1.0]];
+    UIButton *profile = [self makeLauncherCard:@"ПРОФИЛЬ"
+                                       subtitle:dedicatedZeroHour ? @"zerohour  •  текущий профиль" : @"vanilla  •  текущий профиль"
+                                          icon:@"person.crop.circle.fill"
+                                         action:@selector(launchVanilla)
+                                     accentColor:[UIColor colorWithRed:0.70 green:0.76 blue:0.90 alpha:1.0]];
+
+    [sideStack addArrangedSubview:gameFile];
+    [sideStack addArrangedSubview:graphics];
+    [sideStack addArrangedSubview:profile];
+    [sidePanel addSubview:sideStack];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [sideStack.leadingAnchor constraintEqualToAnchor:sidePanel.leadingAnchor],
+        [sideStack.trailingAnchor constraintEqualToAnchor:sidePanel.trailingAnchor],
+        [sideStack.topAnchor constraintEqualToAnchor:sidePanel.topAnchor],
+        [sideStack.bottomAnchor constraintEqualToAnchor:sidePanel.bottomAnchor]
+    ]];
+
+    UIStackView *mainColumns = [[UIStackView alloc] init];
+    mainColumns.translatesAutoresizingMaskIntoConstraints = NO;
+    mainColumns.axis = UILayoutConstraintAxisHorizontal;
+    mainColumns.spacing = 14.0;
+    mainColumns.alignment = UIStackViewAlignmentFill;
+    [mainColumns addArrangedSubview:hero];
+    [mainColumns addArrangedSubview:sidePanel];
+
+    // Re-parent hero from the vertical content stack into the adaptive columns.
+    [content removeArrangedSubview:hero];
+
+    UIView *mainSection = [[UIView alloc] init];
+    mainSection.translatesAutoresizingMaskIntoConstraints = NO;
+    [mainSection addSubview:mainColumns];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [mainColumns.leadingAnchor constraintEqualToAnchor:mainSection.leadingAnchor],
+        [mainColumns.trailingAnchor constraintEqualToAnchor:mainSection.trailingAnchor],
+        [mainColumns.topAnchor constraintEqualToAnchor:mainSection.topAnchor],
+        [mainColumns.bottomAnchor constraintEqualToAnchor:mainSection.bottomAnchor],
+        [sidePanel.widthAnchor constraintGreaterThanOrEqualToConstant:250.0],
+        [hero.heightAnchor constraintGreaterThanOrEqualToConstant:310.0]
+    ]];
+
+    [content addArrangedSubview:mainSection];
+
+    UIStackView *actions = [[UIStackView alloc] init];
+    actions.translatesAutoresizingMaskIntoConstraints = NO;
+    actions.axis = UILayoutConstraintAxisHorizontal;
+    actions.spacing = 12.0;
+    actions.distribution = UIStackViewDistributionFillEqually;
+
+    UIButton *gameFileAction = [self makeLauncherCard:@"GameFile"
+                                              subtitle:@"Управление игрой"
+                                                 icon:@"arrow.down.circle.fill"
+                                                action:@selector(downloadGameFile)
+                                            accentColor:[UIColor colorWithRed:0.30 green:0.72 blue:1.0 alpha:1.0]];
+    UIButton *settingsAction = [self makeLauncherCard:@"Настройки"
+                                              subtitle:@"Графика, звук, управление"
+                                                 icon:@"gearshape.fill"
+                                                action:@selector(showНастройки)
+                                            accentColor:[UIColor colorWithRed:0.55 green:0.68 blue:0.95 alpha:1.0]];
+    UIButton *diagnosticsAction = [self makeLauncherCard:@"Диагностика"
+                                                 subtitle:@"Логи, информация, проверка"
+                                                    icon:@"stethoscope"
+                                                   action:@selector(showDiagnostics)
+                                               accentColor:[UIColor colorWithRed:0.38 green:0.90 blue:0.72 alpha:1.0]];
+
+    [actions addArrangedSubview:gameFileAction];
+    [actions addArrangedSubview:settingsAction];
+    [actions addArrangedSubview:diagnosticsAction];
+    [content addArrangedSubview:actions];
+
+    UIView *systemCard = [[UIView alloc] init];
+    systemCard.translatesAutoresizingMaskIntoConstraints = NO;
+    systemCard.backgroundColor = [UIColor colorWithWhite:0.045 alpha:0.96];
+    systemCard.layer.cornerRadius = 18.0;
+    systemCard.layer.borderWidth = 1.0;
+    systemCard.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.10].CGColor;
+
+    UILabel *systemTitle = MakeLabel(@"СИСТЕМА", 16.0, UIFontWeightBold);
+    systemTitle.textAlignment = NSTextAlignmentLeft;
+    [systemCard addSubview:systemTitle];
+
+    UILabel *systemText = MakeLabel(@"Vulkan / DXVK / MoltenVK\nNative iOS launcher\n1792 × 828 • iPhone / iPad", 13.0, UIFontWeightRegular);
+    systemText.textAlignment = NSTextAlignmentLeft;
+    systemText.textColor = [UIColor colorWithWhite:0.68 alpha:1.0];
+    [systemCard addSubview:systemText];
+
+    UILabel *ready = MakeLabel(@"●  LAUNCHER READY", 12.0, UIFontWeightBold);
+    ready.textAlignment = NSTextAlignmentRight;
+    ready.textColor = [UIColor colorWithRed:0.18 green:0.90 blue:0.50 alpha:1.0];
+    [systemCard addSubview:ready];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [systemTitle.leadingAnchor constraintEqualToAnchor:systemCard.leadingAnchor constant:20.0],
+        [systemTitle.topAnchor constraintEqualToAnchor:systemCard.topAnchor constant:17.0],
+        [systemText.leadingAnchor constraintEqualToAnchor:systemTitle.leadingAnchor],
+        [systemText.topAnchor constraintEqualToAnchor:systemTitle.bottomAnchor constant:7.0],
+        [systemText.bottomAnchor constraintEqualToAnchor:systemCard.bottomAnchor constant:-17.0],
+        [ready.trailingAnchor constraintEqualToAnchor:systemCard.trailingAnchor constant:-20.0],
+        [ready.centerYAnchor constraintEqualToAnchor:systemCard.centerYAnchor]
+    ]];
+
+    [content addArrangedSubview:systemCard];
+
+    [scrollView addSubview:content];
+    [self.view addSubview:scrollView];
+
+    self.menuStack = content;
+
+    [NSLayoutConstraint activateConstraints:@[
+        [scrollView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+        [scrollView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
+        [scrollView.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor],
+        [scrollView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
+
+        [content.leadingAnchor constraintEqualToAnchor:scrollView.contentLayoutGuide.leadingAnchor],
+        [content.trailingAnchor constraintEqualToAnchor:scrollView.contentLayoutGuide.trailingAnchor],
+        [content.topAnchor constraintEqualToAnchor:scrollView.contentLayoutGuide.topAnchor],
+        [content.bottomAnchor constraintEqualToAnchor:scrollView.contentLayoutGuide.bottomAnchor],
+        [content.widthAnchor constraintEqualToAnchor:scrollView.frameLayoutGuide.widthAnchor]
+    ]];
+
+    if (@available(iOS 16.0, *))
+    {
+        mainColumns.axis = UILayoutConstraintAxisHorizontal;
+    }
+
+    [self adaptModernLauncherLayout:mainColumns hero:hero sidePanel:sidePanel actions:actions];
 }
+
+- (UIButton *)makeLauncherCard:(NSString *)title
+                      subtitle:(NSString *)subtitle
+                          icon:(NSString *)iconName
+                         action:(SEL)action
+                    accentColor:(UIColor *)accentColor
+{
+    UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
+    button.translatesAutoresizingMaskIntoConstraints = NO;
+    button.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+    button.backgroundColor = [UIColor colorWithWhite:0.045 alpha:0.96];
+    button.layer.cornerRadius = 18.0;
+    button.layer.borderWidth = 1.0;
+    button.layer.borderColor = [UIColor colorWithRed:0.12 green:0.30 blue:0.50 alpha:0.75].CGColor;
+    button.contentEdgeInsets = UIEdgeInsetsMake(14.0, 16.0, 14.0, 16.0);
+
+    UIImage *image = [UIImage systemImageNamed:iconName];
+    if (image != nil)
+    {
+        image = [image imageWithTintColor:accentColor renderingMode:UIImageRenderingModeAlwaysOriginal];
+        [button setImage:image forState:UIControlStateNormal];
+        button.imageView.contentMode = UIViewContentModeScaleAspectFit;
+    }
+
+    NSString *display = [NSString stringWithFormat:@"%@\n%@", title, subtitle];
+    NSMutableAttributedString *attributed = [[NSMutableAttributedString alloc] initWithString:display];
+    [attributed addAttribute:NSFontAttributeName
+                       value:[UIFont systemFontOfSize:15.0 weight:UIFontWeightBold]
+                       range:NSMakeRange(0, title.length)];
+    [attributed addAttribute:NSForegroundColorAttributeName
+                       value:UIColor.whiteColor
+                       range:NSMakeRange(0, title.length)];
+    NSRange subtitleRange = NSMakeRange(title.length + 1, subtitle.length);
+    [attributed addAttribute:NSFontAttributeName
+                       value:[UIFont systemFontOfSize:11.0 weight:UIFontWeightRegular]
+                       range:subtitleRange];
+    [attributed addAttribute:NSForegroundColorAttributeName
+                       value:[UIColor colorWithWhite:0.62 alpha:1.0]
+                       range:subtitleRange];
+
+    [button setAttributedTitle:attributed forState:UIControlStateNormal];
+    button.titleLabel.numberOfLines = 2;
+    button.titleLabel.textAlignment = NSTextAlignmentLeft;
+    button.titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+    [button addTarget:self action:action forControlEvents:UIControlEventTouchUpInside];
+    [button.heightAnchor constraintGreaterThanOrEqualToConstant:92.0].active = YES;
+
+    return button;
+}
+
+- (void)adaptModernLauncherLayout:(UIStackView *)columns
+                              hero:(UIView *)hero
+                        sidePanel:(UIView *)sidePanel
+                           actions:(UIStackView *)actions
+{
+    void (^update)(void) = ^{
+        BOOL compact = self.view.bounds.size.width < 700.0;
+
+        columns.axis = compact ? UILayoutConstraintAxisVertical : UILayoutConstraintAxisHorizontal;
+        columns.spacing = compact ? 12.0 : 14.0;
+
+        actions.axis = compact ? UILayoutConstraintAxisVertical : UILayoutConstraintAxisHorizontal;
+
+        if (compact)
+        {
+            [sidePanel.widthAnchor constraintEqualToConstant:0.0].active = NO;
+        }
+    };
+
+    update();
+}
+
 
 - (UISlider *)makeSliderWithMin:(float)minimum max:(float)maximum
 {
