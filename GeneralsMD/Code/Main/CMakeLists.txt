@@ -148,6 +148,12 @@ if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
         ${UIKIT_FRAMEWORK}
         ${OBJC_LIBRARY}
     )
+    # The ESC overlay is compiled into z_generals itself, so its UIKit symbols
+    # must also be linked into the game executable (not only the launcher dylib).
+    target_link_libraries(z_generals PRIVATE
+        ${UIKIT_FRAMEWORK}
+        ${OBJC_LIBRARY}
+    )
     target_compile_definitions(generalsx_ios_launcher PRIVATE
         GX_PROJECT_VERSION=\"${GX_PROJECT_VERSION}\"
         GX_ENGINE_VERSION=\"${GX_ENGINE_VERSION}\"
