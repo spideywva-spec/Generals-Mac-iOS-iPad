@@ -344,6 +344,24 @@ UILabel *MakeLabel(NSString *text, CGFloat size, UIFontWeight weight)
     return label;
 }
 
+UIVisualEffectView *MakeGlassBlurView(UIView *container)
+{
+    UIBlurEffect *effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemUltraThinMaterialDark];
+    UIVisualEffectView *blur = [[UIVisualEffectView alloc] initWithEffect:effect];
+    blur.translatesAutoresizingMaskIntoConstraints = NO;
+    blur.userInteractionEnabled = NO;
+    blur.alpha = 0.82;
+    [container addSubview:blur];
+    [NSLayoutConstraint activateConstraints:@[
+        [blur.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+        [blur.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+        [blur.topAnchor constraintEqualToAnchor:container.topAnchor],
+        [blur.bottomAnchor constraintEqualToAnchor:container.bottomAnchor]
+    ]];
+    [container sendSubviewToBack:blur];
+    return blur;
+}
+
 UIButton *MakeButton(NSString *title, id target, SEL action)
 {
     UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
@@ -351,7 +369,11 @@ UIButton *MakeButton(NSString *title, id target, SEL action)
     [button setTitle:title forState:UIControlStateNormal];
     [button setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
     button.titleLabel.font = [UIFont systemFontOfSize:19.0 weight:UIFontWeightSemibold];
-    button.backgroundColor = [UIColor colorWithWhite:0.12 alpha:1.0];
+    button.backgroundColor = [UIColor colorWithWhite:0.08 alpha:0.52];
+    button.layer.shadowColor = [UIColor colorWithRed:0.0 green:0.45 blue:1.0 alpha:1.0].CGColor;
+    button.layer.shadowOpacity = 0.22;
+    button.layer.shadowRadius = 13.0;
+    button.layer.shadowOffset = CGSizeMake(0, 5);
     button.layer.cornerRadius = 10.0;
     button.layer.borderWidth = 1.0;
     button.layer.borderColor = [UIColor colorWithWhite:0.28 alpha:1.0].CGColor;
@@ -512,6 +534,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     hero.layer.borderWidth = 1.0;
     hero.layer.borderColor = [UIColor colorWithRed:0.16 green:0.40 blue:0.65 alpha:0.85].CGColor;
     hero.clipsToBounds = YES;
+    MakeGlassBlurView(hero);
 
     CAGradientLayer *heroGradient = [CAGradientLayer layer];
     heroGradient.frame = CGRectMake(0, 0, 1000, 420);
@@ -740,7 +763,12 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
     button.translatesAutoresizingMaskIntoConstraints = NO;
     button.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
-    button.backgroundColor = [UIColor colorWithWhite:0.045 alpha:0.96];
+    button.backgroundColor = [UIColor colorWithWhite:0.06 alpha:0.42];
+    button.layer.shadowColor = accentColor.CGColor;
+    button.layer.shadowOpacity = 0.18;
+    button.layer.shadowRadius = 14.0;
+    button.layer.shadowOffset = CGSizeMake(0, 6);
+    MakeGlassBlurView(button);
     button.layer.cornerRadius = 18.0;
     button.layer.borderWidth = 1.0;
     button.layer.borderColor = [UIColor colorWithRed:0.12 green:0.30 blue:0.50 alpha:0.75].CGColor;
@@ -898,7 +926,15 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 {
     self.settingsView = [[UIView alloc] init];
     self.settingsView.translatesAutoresizingMaskIntoConstraints = NO;
-    self.settingsView.backgroundColor = UIColor.blackColor;
+    self.settingsView.backgroundColor = [UIColor colorWithWhite:0.02 alpha:0.20];
+    self.settingsView.layer.cornerRadius = 28.0;
+    self.settingsView.layer.borderWidth = 1.0;
+    self.settingsView.layer.borderColor = [UIColor colorWithRed:0.25 green:0.60 blue:1.0 alpha:0.45].CGColor;
+    self.settingsView.layer.shadowColor = UIColor.blackColor.CGColor;
+    self.settingsView.layer.shadowOpacity = 0.45;
+    self.settingsView.layer.shadowRadius = 28.0;
+    self.settingsView.layer.shadowOffset = CGSizeMake(0, 12);
+    MakeGlassBlurView(self.settingsView);
     self.settingsView.hidden = YES;
     [self.view addSubview:self.settingsView];
 
@@ -1175,7 +1211,15 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 {
     self.diagnosticsView = [[UIView alloc] init];
     self.diagnosticsView.translatesAutoresizingMaskIntoConstraints = NO;
-    self.diagnosticsView.backgroundColor = UIColor.blackColor;
+    self.diagnosticsView.backgroundColor = [UIColor colorWithWhite:0.02 alpha:0.20];
+    self.diagnosticsView.layer.cornerRadius = 28.0;
+    self.diagnosticsView.layer.borderWidth = 1.0;
+    self.diagnosticsView.layer.borderColor = [UIColor colorWithRed:0.25 green:0.60 blue:1.0 alpha:0.45].CGColor;
+    self.diagnosticsView.layer.shadowColor = UIColor.blackColor.CGColor;
+    self.diagnosticsView.layer.shadowOpacity = 0.45;
+    self.diagnosticsView.layer.shadowRadius = 28.0;
+    self.diagnosticsView.layer.shadowOffset = CGSizeMake(0, 12);
+    MakeGlassBlurView(self.diagnosticsView);
     self.diagnosticsView.hidden = YES;
     [self.view addSubview:self.diagnosticsView];
 
