@@ -45,6 +45,7 @@ jobs:
     name: GeneralsXZH iOS shell
     runs-on: macos-latest
     timeout-minutes: 150
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -133,6 +134,23 @@ jobs:
           file "${BIN}" | grep -q "Mach-O"
           lipo -info "${BIN}" | grep -q arm64
 
+      - name: Inject Fonts into App Bundle
+        run: |
+          APP="build/ios-vulkan/GeneralsMD/GeneralsXZH.app"
+          FONTS_DIR="${HOME}/GeneralsX/ios-staging/fonts"
+          
+          if [ -d "$FONTS_DIR" ]; then
+            echo "==> Injecting staged fonts into app bundle..."
+            cp "$FONTS_DIR"/*.ttf "$APP/"
+            mkdir -p "$APP/Data" "$APP/GameData"
+            cp "$FONTS_DIR"/*.ttf "$APP/Data/"
+            cp "$FONTS_DIR"/*.ttf "$APP/GameData/"
+            echo "Fonts successfully injected everywhere!"
+          else
+            echo "ERROR: Fonts directory not found at $FONTS_DIR"
+            exit 1
+          fi
+
       - name: Package unsigned shell
         env:
           GX_BUNDLE_ID: com.dvorov.generalszh.launcher
@@ -217,8 +235,7 @@ jobs:
           retention-days: 7
 
       - name: Summary
-        if: success()
-        run: |
+        if: success()        run: |
           echo "## iOS shell" >> "${GITHUB_STEP_SUMMARY}"
           echo "- Engine: GeneralsXZH arm64" >> "${GITHUB_STEP_SUMMARY}"
           echo "- Launcher: native UIKit" >> "${GITHUB_STEP_SUMMARY}"
