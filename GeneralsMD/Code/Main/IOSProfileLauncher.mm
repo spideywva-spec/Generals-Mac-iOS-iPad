@@ -1641,7 +1641,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         [self.gameFileDetail.leadingAnchor constraintEqualToAnchor:title.leadingAnchor],
         [self.gameFileDetail.trailingAnchor constraintEqualToAnchor:title.trailingAnchor],
         [self.gameFileDetail.bottomAnchor constraintEqualToAnchor:self.gameFileView.bottomAnchor constant:-26.0]
-    ];
+    ]];
 }
 
 - (void)hideGameFileProgress
