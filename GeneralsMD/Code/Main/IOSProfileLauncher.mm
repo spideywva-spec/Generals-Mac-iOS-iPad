@@ -1728,6 +1728,9 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
             self.gameFileStage.text = success ? @"✓ GAMEFILE ГОТОВ" : @"✕ ОШИБКА";
             self.gameFileDetail.text = message ?: @"";
             if (success) self.gameFileProgress.progressTintColor = [UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0];
+            [self refreshGameFileStatusCard];
+            [self refreshDiagnostics];
+
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
                 [self hideGameFileProgress];
                 [self loadНастройкиControls];
