@@ -177,7 +177,7 @@ NSString *BundledAutoLaunchProfile()
 NSString *GameRootPath()
 {
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-    return [documents stringByAppendingPathComponent:@"Generals ZH"];
+    return documents;
 }
 
 BOOL EnsureGameRootDirectory()
@@ -192,13 +192,13 @@ BOOL EnsureGameRootDirectory()
 
 NSString *IOSIPadOverridesPath()
 {
-    // Keep the exact native-launcher location: beside all installed game files.
+    // Documents itself is the Generals ZH root; keep the INI beside all installed game files.
     return [GameRootPath() stringByAppendingPathComponent:@"iOSIPadOverrides.ini"];
 }
 
 NSString *ZeroHourSettingsPath()
 {
-    // Keep the exact native-launcher location: beside all installed game files.
+    // Documents itself is the Generals ZH root; keep the INI beside all installed game files.
     return [GameRootPath() stringByAppendingPathComponent:@"ZeroHourSettings.ini"];
 }
 
