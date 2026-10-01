@@ -1673,37 +1673,37 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 {
     [self showGameFileProgress];
 
-    __weak id weakSelf = self;
+    __weak GXProfileLauncherViewController *weakSelf = self;
     [[GXGameFileManager sharedManager]
         downloadAndInstallGameFileWithProgress:^(double progress, int64_t received, int64_t total, double speed, NSTimeInterval remaining) {
-            id self = weakSelf;
-            if (!self) return;
-            self.gameFileProgress.progress = (float)MAX(0.0, MIN(1.0, progress));
-            self.gameFileStage.text = [NSString stringWithFormat:@"Скачивание  •  %.0f%%", progress * 100.0];
+            GXProfileLauncherViewController *strongSelf = weakSelf;
+            if (strongSelf == nil) return;
+            strongSelf.gameFileProgress.progress = (float)MAX(0.0, MIN(1.0, progress));
+            strongSelf.gameFileStage.text = [NSString stringWithFormat:@"Скачивание  •  %.0f%%", progress * 100.0];
             NSString *sizeText = total > 0
-                ? [NSString stringWithFormat:@"%@ из %@", [self gxFormatBytes:received], [self gxFormatBytes:total]]
-                : [NSString stringWithFormat:@"%@", [self gxFormatBytes:received]];
-            NSString *speedText = speed > 0 ? [NSString stringWithFormat:@"Скорость: %@/s", [self gxFormatBytes:(int64_t)speed]] : @"Скорость: —";
-            NSString *timeText = [NSString stringWithFormat:@"Осталось: %@", [self gxFormatTime:remaining]];
-            self.gameFileDetail.text = [NSString stringWithFormat:@"%@\n%@\n%@", sizeText, speedText, timeText];
+                ? [NSString stringWithFormat:@"%@" , [strongSelf gxFormatBytes:received]]
+                : [NSString stringWithFormat:@"%@", [strongSelf gxFormatBytes:received]];
+            NSString *speedText = speed > 0 ? [NSString stringWithFormat:@"Скорость: %@/s", [strongSelf gxFormatBytes:(int64_t)speed]] : @"Скорость: —";
+            NSString *timeText = [NSString stringWithFormat:@"Осталось: %@", [strongSelf gxFormatTime:remaining]];
+            strongSelf.gameFileDetail.text = [NSString stringWithFormat:@"%@\n%@\n%@", sizeText, speedText, timeText];
         } status:^(NSString *stage, NSString *detail) {
-            __strong typeof(weakSelf) self = weakSelf;
+            GXProfileLauncherViewController *strongSelf = weakSelf;
             if (!self) return;
             self.gameFileStage.text = stage;
-            self.gameFileDetail.text = detail;
+            strongSelf.gameFileDetail.text = detail;
         } completion:^(BOOL success, NSString *message) {
-            __strong typeof(weakSelf) self = weakSelf;
+            GXProfileLauncherViewController *strongSelf = weakSelf;
             if (!self) return;
-            self.gameFileProgress.progress = success ? 1.0 : self.gameFileProgress.progress;
-            self.gameFileStage.text = success ? @"✓ GAMEFILE ГОТОВ" : @"✕ ОШИБКА";
-            self.gameFileDetail.text = message ?: @"";
-            if (success) self.gameFileProgress.progressTintColor = [UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0];
-            [self refreshGameFileStatusCard];
-            [self refreshDiagnostics];
+            strongSelf.gameFileProgress.progress = success ? 1.0 : strongSelf.gameFileProgress.progress;
+            strongSelf.gameFileStage.text = success ? @"✓ GAMEFILE ГОТОВ" : @"✕ ОШИБКА";
+            strongSelf.gameFileDetail.text = message ?: @"";
+            if (success) strongSelf.gameFileProgress.progressTintColor = [UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0];
+            [strongSelf refreshGameFileStatusCard];
+            [strongSelf refreshDiagnostics];
 
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                [self hideGameFileProgress];
-                [self loadНастройкиControls];
+                [strongSelf hideGameFileProgress];
+                [strongSelf loadНастройкиControls];
             });
         }];
 }
