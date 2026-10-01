@@ -143,6 +143,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
     find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
     find_library(UIKIT_FRAMEWORK UIKit REQUIRED)
     find_library(QUARTZCORE_FRAMEWORK QuartzCore REQUIRED)
+    find_library(QUARTZCORE_FRAMEWORK QuartzCore REQUIRED)
     find_library(OBJC_LIBRARY objc REQUIRED)
     target_link_libraries(generalsx_ios_launcher PRIVATE
         ${FOUNDATION_FRAMEWORK}
@@ -154,6 +155,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
     # must also be linked into the game executable (not only the launcher dylib).
     target_link_libraries(z_generals PRIVATE
         ${UIKIT_FRAMEWORK}
+        ${QUARTZCORE_FRAMEWORK}
         ${OBJC_LIBRARY}
     )
     target_compile_definitions(generalsx_ios_launcher PRIVATE
