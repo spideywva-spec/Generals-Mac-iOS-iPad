@@ -668,20 +668,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
                                            icon:@"checkmark.circle.fill"
                                           action:@selector(downloadGameFile)
                                       accentColor:[UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0]];
-    UIButton *graphics = [self makeLauncherCard:@"ДВИЖОК / ГРАФИКА"
-                                        subtitle:@"Vulkan  •  DXVK  •  MoltenVK"
-                                           icon:@"cube.fill"
-                                          action:@selector(showНастройки)
-                                      accentColor:[UIColor colorWithRed:0.25 green:0.65 blue:1.0 alpha:1.0]];
-    UIButton *profile = [self makeLauncherCard:@"ПРОФИЛЬ"
-                                       subtitle:dedicatedZeroHour ? @"zerohour  •  текущий профиль" : @"vanilla  •  текущий профиль"
-                                          icon:@"person.crop.circle.fill"
-                                         action:@selector(showProfile)
-                                     accentColor:[UIColor colorWithRed:0.70 green:0.76 blue:0.90 alpha:1.0]];
-
     [sideStack addArrangedSubview:gameFile];
-    [sideStack addArrangedSubview:graphics];
-    [sideStack addArrangedSubview:profile];
     [sidePanel addSubview:sideStack];
 
     [NSLayoutConstraint activateConstraints:@[
