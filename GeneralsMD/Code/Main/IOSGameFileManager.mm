@@ -89,7 +89,7 @@ didFinishDownloadingToURL:(NSURL *)location {
 
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
         __block NSString *message = nil;
-        BOOL ok = [self extractZIPAtPath:tmp message:&message];
+        __block BOOL ok = [self extractZIPAtPath:tmp message:&message];
         dispatch_async(dispatch_get_main_queue(), ^{
             if (self.status) self.status(@"Проверка", ok ? @"Проверка GameFile…" : @"Ошибка распаковки");
             if (ok) {
