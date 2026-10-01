@@ -643,7 +643,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     sideStack.axis = UILayoutConstraintAxisVertical;
     sideStack.spacing = 12.0;
 
-    self.gameFileStatusButton = [self makeLauncherCard:@"СТАТУС GAMEFILE"
+    self.gameFileStatusButton = [self makeLauncherCard:@"СТАТУС ФАЙЛА ИГРЫ"
                                         subtitle:@"Проверка…"
                                            icon:@"checkmark.circle.fill"
                                           action:@selector(downloadGameFile)
@@ -689,8 +689,8 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     actions.spacing = 12.0;
     actions.distribution = UIStackViewDistributionFillEqually;
 
-    UIButton *gameFileAction = [self makeLauncherCard:@"GameFile"
-                                              subtitle:@"Управление игрой"
+    UIButton *gameFileAction = [self makeLauncherCard:@"Файл игры"
+                                              subtitle:@"Файл игры и установка"
                                                  icon:@"arrow.down.circle.fill"
                                                 action:@selector(downloadGameFile)
                                             accentColor:[UIColor colorWithRed:0.30 green:0.72 blue:1.0 alpha:1.0]];
@@ -1153,7 +1153,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     NSString *gameFileStatus = nil;
     BOOL gameFileReady = [[GXGameFileManager sharedManager] validateInstalledGameFile:&gameFileStatus];
     if (gameFileStatus == nil)
-        gameFileStatus = gameFileReady ? @"GameFile: ГОТОВ" : @"GameFile: НЕ ГОТОВ";
+        gameFileStatus = gameFileReady ? @"Файл игры: ГОТОВ" : @"Файл игры: НЕ ГОТОВ";
     BOOL enhancedУстановлено = ProfileDirectoryExists(@"enhanced");
     BOOL zeroHourУстановлено = ProfileDirectoryExists(@"zerohour");
 
@@ -1247,18 +1247,19 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
     NSString *display = [NSString stringWithFormat:@"СТАТУС GAMEFILE\n%@", subtitle];
     NSMutableAttributedString *attributed = [[NSMutableAttributedString alloc] initWithString:display];
+    NSString *titleText = @"СТАТУС ФАЙЛА ИГРЫ";
     [attributed addAttribute:NSFontAttributeName
                        value:[UIFont systemFontOfSize:15.0 weight:UIFontWeightBold]
-                       range:NSMakeRange(0, 14)];
+                       range:NSMakeRange(0, titleText.length)];
     [attributed addAttribute:NSForegroundColorAttributeName
                        value:UIColor.whiteColor
-                       range:NSMakeRange(0, 14)];
+                       range:NSMakeRange(0, titleText.length)];
     [attributed addAttribute:NSFontAttributeName
                        value:[UIFont systemFontOfSize:11.0 weight:UIFontWeightRegular]
-                       range:NSMakeRange(15, subtitle.length)];
+                       range:NSMakeRange(titleText.length + 1, subtitle.length)];
     [attributed addAttribute:NSForegroundColorAttributeName
                        value:accent
-                       range:NSMakeRange(15, subtitle.length)];
+                       range:NSMakeRange(titleText.length + 1, subtitle.length)];
     [self.gameFileStatusButton setAttributedTitle:attributed forState:UIControlStateNormal];
 }
 
@@ -1621,7 +1622,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     topBar.layer.borderWidth = 1.0;
     [self.gameFileView addSubview:topBar];
 
-    UILabel *title = MakeLabel(@"GAMEFILE", 26.0, UIFontWeightBold);
+    UILabel *title = MakeLabel(@"ФАЙЛ ИГРЫ", 26.0, UIFontWeightBold);
     title.textAlignment = NSTextAlignmentLeft;
     [topBar addSubview:title];
 
@@ -1720,7 +1721,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 {
     [[GXGameFileManager sharedManager] cancelDownload];
     self.gameFileStage.text = @"Отмена…";
-    self.gameFileDetail.text = @"Отмена загрузки и распаковки GameFile…";
+    self.gameFileDetail.text = @"Отмена загрузки и распаковки файла игры…";
     self.gameFileCancelButton.enabled = NO;
 }
 
@@ -1785,7 +1786,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
             if (strongSelf.gameFileView != nil) {
                 strongSelf.gameFileProgress.progress = success ? 1.0 : strongSelf.gameFileProgress.progress;
                 strongSelf.gameFilePercentLabel.text = success ? @"100%" : @"";
-                strongSelf.gameFileStage.text = success ? @"✓ GAMEFILE ГОТОВ" : @"✕ ЗАВЕРШЕНО";
+                strongSelf.gameFileStage.text = success ? @"✓ ФАЙЛ ИГРЫ ГОТОВ" : @"✕ ЗАВЕРШЕНО";
                 strongSelf.gameFileDetail.text = message ?: @"";
                 if (success) strongSelf.gameFileProgress.progressTintColor = [UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0];
                 strongSelf.gameFileCancelButton.enabled = NO;
