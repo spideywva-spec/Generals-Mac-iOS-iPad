@@ -276,6 +276,8 @@ static uint16_t GXRead16(const uint8_t *p) {
             outData = decoded;
         }
 
+        // Always write archive entries relative to Documents/Generals ZH.
+        // Never create a second Documents/Generals ZH/Generals ZH layer.
         NSString *destination = [root stringByAppendingPathComponent:safe];
         NSString *parent = [destination stringByDeletingLastPathComponent];
         if (![fm createDirectoryAtPath:parent withIntermediateDirectories:YES attributes:nil error:nil]) {
