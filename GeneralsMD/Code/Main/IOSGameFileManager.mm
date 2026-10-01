@@ -90,12 +90,15 @@ didFinishDownloadingToURL:(NSURL *)location {
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
         __block NSString *message = nil;
         __block BOOL ok = [self extractZIPAtPath:tmp message:&message];
+        // The result is updated inside the main-queue verification block.
+        __block BOOL verified = ok;
         dispatch_async(dispatch_get_main_queue(), ^{
             if (self.status) self.status(@"Проверка", ok ? @"Проверка GameFile…" : @"Ошибка распаковки");
             if (ok) {
                 BOOL valid = [self verifyGameFiles:&message];
-                if (!valid) ok = NO;
+                verified = valid;
             }
+            ok = verified;
             [[NSFileManager defaultManager] removeItemAtPath:tmp error:nil];
             [self finish:ok message:message ?: (ok ? @"GAMEFILE готов." : @"GameFile не установлен.")];
         });
