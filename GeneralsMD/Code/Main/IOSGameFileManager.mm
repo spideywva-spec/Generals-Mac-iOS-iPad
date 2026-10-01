@@ -476,6 +476,18 @@ static uint16_t GXRead16(const uint8_t *p) {
         return NO;
     }
 
+    NSString *requiredArchive = [root stringByAppendingPathComponent:@"INIZH.big"];
+    NSString *zhGenerals = [root stringByAppendingPathComponent:@"ZH_Generals"];
+    BOOL archiveExists = [fm fileExistsAtPath:requiredArchive isDirectory:&isDirectory] && !isDirectory;
+    BOOL zhGeneralsExists = [fm fileExistsAtPath:zhGenerals isDirectory:&isDirectory] && isDirectory;
+    if (!archiveExists || !zhGeneralsExists) {
+        if (message) *message = [NSString stringWithFormat:
+            @"Файл игры: НЕ ГОТОВ — Documents/INIZH.big: %@; Documents/ZH_Generals: %@.",
+            archiveExists ? @"есть" : @"нет",
+            zhGeneralsExists ? @"есть" : @"нет"];
+        return NO;
+    }
+
     NSArray *items = [fm subpathsAtPath:root];
     NSUInteger files = 0;
     NSUInteger emptyFiles = 0;
@@ -487,10 +499,12 @@ static uint16_t GXRead16(const uint8_t *p) {
             NSDictionary *attr = [fm attributesOfItemAtPath:path error:nil];
             unsigned long long size = attr != nil ? [attr fileSize] : 0;
             NSString *lowerName = relative.lowercaseString;
-            BOOL launcherINI =
-                [lowerName isEqualToString:@"iosipadOverrides.ini".lowercaseString] ||
-                [lowerName isEqualToString:@"zerohoursettings.ini".lowercaseString];
-            if (launcherINI)
+            BOOL launcherOwned =
+                [lowerName isEqualToString:@"iosipadoverrides.ini"] ||
+                [lowerName isEqualToString:@"zerohoursettings.ini"] ||
+                [lowerName hasPrefix:@"generals-stderr"] ||
+                [lowerName hasSuffix:@".zip"];
+            if (launcherOwned)
                 continue;
             if (size == 0)
                 emptyFiles++;
