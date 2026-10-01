@@ -934,14 +934,14 @@ int main(int argc, char* argv[])
 		bool usingGameFileData = false;
 		bool usingBundleData = false;
 
-		// The downloaded game lives in Documents/Generals ZH and MUST win over
+		// The downloaded game lives in Documents and MUST win over
 		// the bundled fallback. The previous order always selected bundle/GameData
 		// first, so tapping "Играть" could create ZeroHourSettings.ini while never
 		// seeing the actual game files installed by the launcher.
 		if (home != nullptr) {
 			char gameRoot[1024];
 			char requiredArchive[1200];
-			snprintf(gameRoot, sizeof(gameRoot), "%s/Documents/Generals ZH", home);
+			snprintf(gameRoot, sizeof(gameRoot), "%s/Documents", home);
 			snprintf(requiredArchive, sizeof(requiredArchive), "%s/INIZH.big", gameRoot);
 
 			if (access(requiredArchive, R_OK) == 0 && chdir(gameRoot) == 0) {
@@ -951,7 +951,7 @@ int main(int argc, char* argv[])
 		}
 
 		// If the user has not installed the game yet, keep the bundled GameData
-		// development fallback. Once Documents/Generals ZH contains the real
+		// development fallback. Once Documents contains the real
 		// Zero Hour files, the bundle is never used as the game CWD.
 		if (!usingGameFileData && bundleData[0] != '\0' && access(bundleData, R_OK) == 0) {
 			if (chdir(bundleData) == 0) {
