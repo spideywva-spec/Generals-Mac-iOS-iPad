@@ -11,6 +11,7 @@ static NSString * const kGXGameFileURL = @"https://www.dropbox.com/scl/fi/11yzk5
 @property(nonatomic,strong) NSURL *downloadURL;
 @property(nonatomic,assign) NSTimeInterval startedAt;
 @property(nonatomic,assign) BOOL cancelRequested;
+@property(nonatomic,assign) BOOL extractionInProgress;
 @end
 
 @implementation GXGameFileManager
@@ -35,6 +36,7 @@ static NSString * const kGXGameFileURL = @"https://www.dropbox.com/scl/fi/11yzk5
     self.completion = completion;
     self.startedAt = [NSDate date].timeIntervalSince1970;
     self.cancelRequested = NO;
+    self.extractionInProgress = NO;
 
     // Никогда не оставляем старый временный ZIP от предыдущей установки.
     NSString *staleZIP = [NSTemporaryDirectory() stringByAppendingPathComponent:@"generals by spideywv.zip"];
@@ -59,7 +61,8 @@ static NSString * const kGXGameFileURL = @"https://www.dropbox.com/scl/fi/11yzk5
     // Удаляем временный ZIP и при ручной отмене. Если распаковка уже идёт,
     // открытый file handle закончит текущую операцию, а путь уже исчезнет.
     NSString *tmp = [NSTemporaryDirectory() stringByAppendingPathComponent:@"generals by spideywv.zip"];
-    [[NSFileManager defaultManager] removeItemAtPath:tmp error:nil];
+    if (!self.extractionInProgress)
+        [[NSFileManager defaultManager] removeItemAtPath:tmp error:nil];
 
     if (self.completion) self.completion(NO, @"Загрузка файла игры отменена.");
     self.progress = nil;
@@ -119,8 +122,10 @@ didFinishDownloadingToURL:(NSURL *)location {
     // Extraction AND verification stay off the main thread. Enumerating the
     // installed game after a large ZIP previously caused an iPhone UI freeze.
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        NSString *message = nil;
-        BOOL ok = [self extractZIPAtPath:tmp message:&message];
+        @autoreleasepool {
+            self.extractionInProgress = YES;
+            NSString *message = nil;
+            BOOL ok = [self extractZIPAtPath:tmp message:&message];
 
         // The archive is no longer needed once extraction has completed.
         // Delete it BEFORE the verification pass so the temporary ZIP never
@@ -134,9 +139,11 @@ didFinishDownloadingToURL:(NSURL *)location {
             ok = [self verifyGameFiles:&message];
         }
 
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [self finish:ok message:message ?: (ok ? @"Файл игры готов." : @"Файл игры не установлен.")];
-        });
+            self.extractionInProgress = NO;
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self finish:ok message:message ?: (ok ? @"Файл игры готов." : @"Файл игры не установлен.")];
+            });
+        }
     });
 }
 
@@ -443,11 +450,11 @@ static uint16_t GXRead16(const uint8_t *p) {
         return NO;
     }
 
-    // Canonical destination: Documents. It is the ONLY game root.
+    // Canonical destination: Documents/Generals ZH. It is the ONLY game root.
     // Merge every extracted file directly into it; never copy the archive's
-    // outer "Generals ZH" directory itself. It is stripped into Documents.
+    // outer "Generals ZH" directory itself. It is stripped into the canonical root.
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-    NSString *root = documents;
+    NSString *root = [documents stringByAppendingPathComponent:@"Generals ZH"];
 
     NSError *rootError = nil;
     if (![fm createDirectoryAtPath:root withIntermediateDirectories:YES attributes:nil error:&rootError]) {
@@ -456,7 +463,7 @@ static uint16_t GXRead16(const uint8_t *p) {
         return NO;
     }
 
-    // Never create or delete a Generals ZH wrapper. Documents is the canonical root.
+    // Never create or delete a Generals ZH wrapper. Documents/Generals ZH is the canonical root.
 
     NSArray<NSString *> *stagedFiles = [fm subpathsAtPath:staging];
     for (NSString *relative in stagedFiles) {
@@ -499,8 +506,8 @@ static uint16_t GXRead16(const uint8_t *p) {
     [fm removeItemAtPath:staging error:nil];
 
     // Launcher-owned INI files intentionally stay at Documents level:
-    //   Documents/iOSIPadOverrides.ini
-    //   Documents/ZeroHourSettings.ini
+    //   Documents/Generals ZH/iOSIPadOverrides.ini
+    //   Documents/Generals ZH/ZeroHourSettings.ini
     // They are created by the native launcher on first launch/settings save.
     // The ZIP installer must never move or recreate them inside Generals ZH.
 
@@ -567,7 +574,7 @@ static uint16_t GXRead16(const uint8_t *p) {
 
     if (!iosOverridesExists || !zeroHourSettingsExists) {
         if (message) *message = [NSString stringWithFormat:
-            @"Файл игры: НЕ ГОТОВ — 44/44 объектов, пустых: 0; Documents/iOSIPadOverrides.ini: %@; Documents/ZeroHourSettings.ini: %@.",
+            @"Файл игры: НЕ ГОТОВ — 44/44 объектов, пустых: 0; Generals ZH/iOSIPadOverrides.ini: %@; Generals ZH/ZeroHourSettings.ini: %@.",
             iosOverridesExists ? @"есть" : @"нет",
             zeroHourSettingsExists ? @"есть" : @"нет"];
         return NO;
