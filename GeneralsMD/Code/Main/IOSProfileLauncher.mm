@@ -522,6 +522,22 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     platform.clipsToBounds = YES;
     [header addSubview:platform];
 
+    // Header must have explicit constraints. Without them Auto Layout can
+    // collapse/overlap the title, iOS/iPad subtitle and device pill.
+    [NSLayoutConstraint activateConstraints:@[
+        [header.heightAnchor constraintEqualToConstant:58.0],
+        [title.leadingAnchor constraintEqualToAnchor:header.leadingAnchor],
+        [title.topAnchor constraintEqualToAnchor:header.topAnchor constant:2.0],
+        [title.trailingAnchor constraintLessThanOrEqualToAnchor:platform.leadingAnchor constant:-18.0],
+        [subtitle.leadingAnchor constraintEqualToAnchor:title.leadingAnchor],
+        [subtitle.topAnchor constraintEqualToAnchor:title.bottomAnchor constant:2.0],
+        [subtitle.trailingAnchor constraintLessThanOrEqualToAnchor:platform.leadingAnchor constant:-18.0],
+        [platform.trailingAnchor constraintEqualToAnchor:header.trailingAnchor],
+        [platform.centerYAnchor constraintEqualToAnchor:header.centerYAnchor],
+        [platform.widthAnchor constraintEqualToConstant:142.0],
+        [platform.heightAnchor constraintEqualToConstant:48.0]
+    ]];
+
     [content addArrangedSubview:header];
 
     UIView *hero = [[UIView alloc] init];
@@ -646,7 +662,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.gameFileStatusButton = [self makeLauncherCard:@"СТАТУС ФАЙЛА ИГРЫ"
                                         subtitle:@"Проверка…"
                                            icon:@"checkmark.circle.fill"
-                                          action:@selector(downloadGameFile)
+                                          action:NULL
                                       accentColor:[UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0]];
     [sideStack addArrangedSubview:self.gameFileStatusButton];
     [sidePanel addSubview:sideStack];
@@ -818,7 +834,10 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     button.titleLabel.numberOfLines = 2;
     button.titleLabel.textAlignment = NSTextAlignmentLeft;
     button.titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
-    [button addTarget:self action:action forControlEvents:UIControlEventTouchUpInside];
+    if (action != NULL)
+        [button addTarget:self action:action forControlEvents:UIControlEventTouchUpInside];
+    else
+        button.userInteractionEnabled = NO;
     [button.heightAnchor constraintGreaterThanOrEqualToConstant:92.0].active = YES;
 
     return button;
@@ -1234,12 +1253,21 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     if (self.gameFileStatusButton == nil)
         return;
 
+    NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+    NSString *gameRoot = [documents stringByAppendingPathComponent:@"Generals ZH"];
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    BOOL isDirectory = NO;
+    if (![fileManager fileExistsAtPath:gameRoot isDirectory:&isDirectory] || !isDirectory)
+        [fileManager createDirectoryAtPath:gameRoot withIntermediateDirectories:YES attributes:nil error:nil];
+
     NSString *message = nil;
     BOOL ready = [[GXGameFileManager sharedManager] validateInstalledGameFile:&message];
 
+    // Сам статус ничего не скачивает. Установка запускается только нижней
+    // кнопкой "Файл игры".
     NSString *subtitle = ready
         ? @"ГОТОВ  •  44/44 объектов  •  0 пустых"
-        : @"НЕ ГОТОВ  •  нажмите для установки/проверки";
+        : @"НЕ ГОТОВ  •  скачайте через кнопку «Файл игры»";
 
     UIColor *accent = ready
         ? [UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0]
@@ -1637,8 +1665,6 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.gameFileCloseButton.titleLabel.font = [UIFont systemFontOfSize:22.0 weight:UIFontWeightRegular];
     [self.gameFileMinimizeButton.widthAnchor constraintEqualToConstant:52.0].active = YES;
     [self.gameFileCloseButton.widthAnchor constraintEqualToConstant:52.0].active = YES;
-    [topBar addSubview:title];
-    [topBar addSubview:subtitle];
     [topBar addSubview:self.gameFileMinimizeButton];
     [topBar addSubview:self.gameFileCloseButton];
 
