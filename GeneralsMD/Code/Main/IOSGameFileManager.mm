@@ -10,6 +10,7 @@ static NSString * const kGXGameFileURL = @"https://www.dropbox.com/scl/fi/11yzk5
 @property(nonatomic,copy) GXGameFileCompletionBlock completion;
 @property(nonatomic,strong) NSURL *downloadURL;
 @property(nonatomic,assign) NSTimeInterval startedAt;
+@property(nonatomic,assign) BOOL cancelRequested;
 @end
 
 @implementation GXGameFileManager
@@ -33,6 +34,7 @@ static NSString * const kGXGameFileURL = @"https://www.dropbox.com/scl/fi/11yzk5
     self.status = status;
     self.completion = completion;
     self.startedAt = [NSDate date].timeIntervalSince1970;
+    self.cancelRequested = NO;
 
     NSURL *url = [NSURL URLWithString:kGXGameFileURL];
     NSURLSessionConfiguration *cfg = [NSURLSessionConfiguration defaultSessionConfiguration];
@@ -42,6 +44,17 @@ static NSString * const kGXGameFileURL = @"https://www.dropbox.com/scl/fi/11yzk5
 
     if (self.status) self.status(@"Скачивание", @"Подключение к GameFile…");
     [[self.session downloadTaskWithURL:url] resume];
+}
+
+- (void)cancelDownload {
+    self.cancelRequested = YES;
+    NSURLSession *s = self.session;
+    self.session = nil;
+    [s invalidateAndCancel];
+    if (self.completion) self.completion(NO, @"Загрузка GameFile отменена.");
+    self.progress = nil;
+    self.status = nil;
+    self.completion = nil;
 }
 
 - (void)finish:(BOOL)success message:(NSString *)message {
@@ -65,8 +78,9 @@ totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite {
         ? (double)(totalBytesExpectedToWrite - totalBytesWritten) / speed : 0;
     double p = totalBytesExpectedToWrite > 0 ? (double)totalBytesWritten / (double)totalBytesExpectedToWrite : 0;
     dispatch_async(dispatch_get_main_queue(), ^{
+        // Не перезаписываем detail после progress: лаунчер должен показывать
+        // размер, скорость и оставшееся время до следующего callback.
         if (self.progress) self.progress(p, totalBytesWritten, totalBytesExpectedToWrite, speed, remaining);
-        if (self.status) self.status(@"Скачивание", @"Загрузка GameFile…");
     });
 }
 
@@ -146,6 +160,9 @@ static uint16_t GXRead16(const uint8_t *p) {
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
     NSString *root = [documents stringByAppendingPathComponent:@"Generals ZH"];
     NSFileManager *fm = [NSFileManager defaultManager];
+    // Каждая новая установка начинается с чистого корня, чтобы старый вложенный
+    // "Generals ZH/Generals ZH/..." больше не сохранялся.
+    [fm removeItemAtPath:root error:nil];
     [fm createDirectoryAtPath:root withIntermediateDirectories:YES attributes:nil error:nil];
 
     [fh seekToFileOffset:cdOffset];
@@ -154,6 +171,11 @@ static uint16_t GXRead16(const uint8_t *p) {
     NSUInteger pos = 0;
 
     for (uint16_t index = 0; index < count; ++index) {
+        if (self.cancelRequested) {
+            [fh closeFile];
+            if (message) *message = @"Загрузка GameFile отменена.";
+            return NO;
+        }
         if (pos + 46 > cd.length || GXRead32(p+pos) != 0x02014b50) {
             [fh closeFile]; if (message) *message = @"ZIP: ошибка записи каталога."; return NO;
         }
@@ -173,6 +195,11 @@ static uint16_t GXRead16(const uint8_t *p) {
         if (!name) name = [[NSString alloc] initWithData:nameData encoding:NSISOLatin1StringEncoding];
         name = [name stringByReplacingOccurrencesOfString:@"\\" withString:@"/"];
         while ([name hasPrefix:@"/"]) name = [name substringFromIndex:1];
+
+        // Архив GameFile может иметь собственную папку "Generals ZH/".
+        // Она не должна дублироваться внутри Documents/Generals ZH/.
+        if ([name hasPrefix:@"Generals ZH/"])
+            name = [name substringFromIndex:[@"Generals ZH/" length]];
 
         // Prevent archive path traversal.
         NSString *safe = [name stringByStandardizingPath];
