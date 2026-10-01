@@ -496,25 +496,22 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                     const float cy =
                         (s_touch.twoFingerStart1Y + s_touch.twoFingerStart2Y) *
                         0.5f * (float)winH;
-                    // Two-finger cancel must not move the synthetic cursor.
-                    // Clicking at the current synthetic position prevents the
-                    // old "camera jumps right" behavior.
-                    const float cancelX = s_touch.syntheticX;
-                    const float cancelY = s_touch.syntheticY;
-                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
-                                       cancelX, cancelY, SDL_BUTTON_RIGHT);
-                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                                       cancelX, cancelY, SDL_BUTTON_RIGHT);
-                    // Never leave a synthetic drag button latched after a two-finger tap.
-                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                                       cancelX, cancelY, SDL_BUTTON_LEFT);
+                    // A two-finger tap is a touch-level cancel only. Do NOT
+                    // synthesize a right-click here: Generals can interpret that
+                    // as a world/camera command and the old path caused the camera
+                    // to jump sideways after a simple two-finger tap.
+                    // Pinch zoom remains fully enabled because moving the fingers
+                    // clears twoFingerTapCandidate and stays in PINCH.
+                    releaseSyntheticButtons(mouse, window,
+                                            s_touch.syntheticX, s_touch.syntheticY);
                     s_touch.phase = TouchState::IDLE;
                     s_touch.finger1 = 0;
                     s_touch.finger2 = 0;
                     s_touch.finger1Active = false;
                     s_touch.finger2Active = false;
                     s_touch.twoFingerTapCandidate = false;
-                    resetSyntheticPosition(cx, cy);
+                    s_touch.pinchDist = 0.0f;
+                    resetSyntheticPosition(s_touch.syntheticX, s_touch.syntheticY);
                 }
                 break;
             }
@@ -531,18 +528,11 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 }
 
                 if (!s_touch.finger1Active && !s_touch.finger2Active) {
-                    // Жёстко закрываем любое возможное старое состояние drag
-                    // перед cancel-click, но НИКОГДА не двигаем мышь к центру.
-                    const float cancelX = s_touch.syntheticX;
-                    const float cancelY = s_touch.syntheticY;
-                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                                       cancelX, cancelY, SDL_BUTTON_RIGHT);
-                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                                       cancelX, cancelY, SDL_BUTTON_LEFT);
-                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
-                                       cancelX, cancelY, SDL_BUTTON_RIGHT);
-                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                                       cancelX, cancelY, SDL_BUTTON_RIGHT);
+                    // Cancel the gesture without generating a mouse
+                    // button click. This prevents the two-finger tap from
+                    // turning into a camera/world command.
+                    releaseSyntheticButtons(mouse, window,
+                                            s_touch.syntheticX, s_touch.syntheticY);
 
                     s_touch.phase = TouchState::IDLE;
                     s_touch.finger1 = 0;
@@ -551,7 +541,7 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                     s_touch.finger2Active = false;
                     s_touch.twoFingerTapCandidate = false;
                     s_touch.pinchDist = 0.0f;
-                    resetSyntheticPosition(cancelX, cancelY);
+                    resetSyntheticPosition(s_touch.syntheticX, s_touch.syntheticY);
                 }
                 break;
             }
