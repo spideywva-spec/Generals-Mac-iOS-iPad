@@ -499,16 +499,6 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     UIView *header = [[UIView alloc] init];
     header.translatesAutoresizingMaskIntoConstraints = NO;
 
-    UIImageView *appIcon = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:@"shield.fill"]];
-    appIcon.translatesAutoresizingMaskIntoConstraints = NO;
-    appIcon.tintColor = [UIColor colorWithRed:0.25 green:0.65 blue:1.0 alpha:1.0];
-    appIcon.contentMode = UIViewContentModeScaleAspectFit;
-    appIcon.backgroundColor = [UIColor colorWithRed:0.05 green:0.12 blue:0.22 alpha:1.0];
-    appIcon.layer.cornerRadius = 13.0;
-    appIcon.layer.borderWidth = 1.0;
-    appIcon.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.10].CGColor;
-    [header addSubview:appIcon];
-
     UILabel *title = MakeLabel(@"Generals: Zero Hour", 23.0, UIFontWeightBold);
     title.textAlignment = NSTextAlignmentLeft;
     [header addSubview:title];
@@ -527,26 +517,6 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     platform.layer.borderColor = [UIColor colorWithRed:0.20 green:0.45 blue:0.72 alpha:0.8].CGColor;
     platform.clipsToBounds = YES;
     [header addSubview:platform];
-
-    [NSLayoutConstraint activateConstraints:@[
-        [appIcon.leadingAnchor constraintEqualToAnchor:header.leadingAnchor],
-        [appIcon.topAnchor constraintEqualToAnchor:header.topAnchor],
-        [appIcon.widthAnchor constraintEqualToConstant:54.0],
-        [appIcon.heightAnchor constraintEqualToConstant:54.0],
-
-        [title.leadingAnchor constraintEqualToAnchor:appIcon.trailingAnchor constant:14.0],
-        [title.topAnchor constraintEqualToAnchor:header.topAnchor constant:2.0],
-
-        [subtitle.leadingAnchor constraintEqualToAnchor:title.leadingAnchor],
-        [subtitle.topAnchor constraintEqualToAnchor:title.bottomAnchor constant:3.0],
-
-        [platform.trailingAnchor constraintEqualToAnchor:header.trailingAnchor],
-        [platform.centerYAnchor constraintEqualToAnchor:appIcon.centerYAnchor],
-        [platform.widthAnchor constraintGreaterThanOrEqualToConstant:122.0],
-        [platform.heightAnchor constraintEqualToConstant:54.0],
-
-        [header.heightAnchor constraintEqualToConstant:54.0]
-    ]];
 
     [content addArrangedSubview:header];
 
