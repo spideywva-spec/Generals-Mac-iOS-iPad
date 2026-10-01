@@ -116,18 +116,19 @@ didFinishDownloadingToURL:(NSURL *)location {
         if (self.status) self.status(@"Распаковка", @"Подготовка файлов…");
     });
 
+    // Extraction AND verification stay off the main thread. Enumerating the
+    // installed game after a large ZIP previously caused an iPhone UI freeze.
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        __block NSString *message = nil;
-        __block BOOL ok = [self extractZIPAtPath:tmp message:&message];
-        // The result is updated inside the main-queue verification block.
-        __block BOOL verified = ok;
+        NSString *message = nil;
+        BOOL ok = [self extractZIPAtPath:tmp message:&message];
+        if (ok) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (self.status) self.status(@"Проверка", @"Проверка файла игры…");
+            });
+            ok = [self verifyGameFiles:&message];
+        }
+
         dispatch_async(dispatch_get_main_queue(), ^{
-            if (self.status) self.status(@"Проверка", ok ? @"Проверка файла игры…" : @"Ошибка распаковки");
-            if (ok) {
-                BOOL valid = [self verifyGameFiles:&message];
-                verified = valid;
-            }
-            ok = verified;
             [[NSFileManager defaultManager] removeItemAtPath:tmp error:nil];
             [self finish:ok message:message ?: (ok ? @"Файл игры готов." : @"Файл игры не установлен.")];
         });
