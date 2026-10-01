@@ -151,157 +151,392 @@ static uint16_t GXRead16(const uint8_t *p) {
 
 - (BOOL)extractZIPAtPath:(NSString *)zipPath message:(NSString **)message {
     NSFileHandle *fh = [NSFileHandle fileHandleForReadingAtPath:zipPath];
-    if (!fh) { if (message) *message = @"Не удалось открыть ZIP."; return NO; }
+    if (!fh) {
+        if (message) *message = @"Не удалось открыть ZIP.";
+        return NO;
+    }
 
     unsigned long long size = fh.seekToEndOfFile;
-    if (size < 22) { [fh closeFile]; if (message) *message = @"ZIP повреждён."; return NO; }
+    if (size < 22) {
+        [fh closeFile];
+        if (message) *message = @"ZIP повреждён.";
+        return NO;
+    }
 
-    unsigned long long scan = MIN(size, 65557);
+    // Read only the ZIP tail to locate EOCD; never load the archive itself into RAM.
+    unsigned long long scan = MIN(size, 65557ULL);
     [fh seekToFileOffset:size - scan];
     NSData *tail = [fh readDataOfLength:(NSUInteger)scan];
     const uint8_t *b = (const uint8_t *)tail.bytes;
     NSInteger eocd = -1;
     for (NSInteger i = (NSInteger)tail.length - 22; i >= 0; --i) {
-        if (GXRead32(b+i) == 0x06054b50) { eocd = i; break; }
+        if (GXRead32(b + i) == 0x06054b50) {
+            eocd = i;
+            break;
+        }
     }
-    if (eocd < 0) { [fh closeFile]; if (message) *message = @"ZIP: центральный каталог не найден."; return NO; }
-
-    uint16_t count = GXRead16(b+eocd+10);
-    uint32_t cdSize = GXRead32(b+eocd+12);
-    uint32_t cdOffset = GXRead32(b+eocd+16);
-    if (count == 0 || cdOffset + cdSize > size) {
-        [fh closeFile]; if (message) *message = @"ZIP: неподдерживаемый или повреждённый архив."; return NO;
+    if (eocd < 0) {
+        [fh closeFile];
+        if (message) *message = @"ZIP: центральный каталог не найден.";
+        return NO;
     }
 
-    NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-    NSString *root = [documents stringByAppendingPathComponent:@"Generals ZH"];
+    uint16_t count = GXRead16(b + eocd + 10);
+    uint32_t cdSize = GXRead32(b + eocd + 12);
+    uint32_t cdOffset = GXRead32(b + eocd + 16);
+    if (count == 0 || (unsigned long long)cdOffset + cdSize > size) {
+        [fh closeFile];
+        if (message) *message = @"ZIP: неподдерживаемый или повреждённый архив.";
+        return NO;
+    }
+
+    // Extract into temporary staging first. This keeps the real game directory
+    // usable if extraction is interrupted or the app is killed by iOS.
+    NSString *staging = [NSTemporaryDirectory()
+        stringByAppendingPathComponent:[NSString stringWithFormat:@"GeneralsZH-Extract-%@", NSUUID.UUID.UUIDString]];
     NSFileManager *fm = [NSFileManager defaultManager];
-    // Каждая новая установка начинается с чистого корня, чтобы старый вложенный
-    // "Generals ZH/Generals ZH/..." больше не сохранялся.
-    [fm removeItemAtPath:root error:nil];
-    [fm createDirectoryAtPath:root withIntermediateDirectories:YES attributes:nil error:nil];
+    [fm removeItemAtPath:staging error:nil];
+
+    NSError *mkdirError = nil;
+    if (![fm createDirectoryAtPath:staging
+        withIntermediateDirectories:YES
+        attributes:nil
+        error:&mkdirError]) {
+        [fh closeFile];
+        if (message) *message = mkdirError.localizedDescription ?: @"Не удалось создать временную папку распаковки.";
+        return NO;
+    }
 
     [fh seekToFileOffset:cdOffset];
-    NSData *cd = [fh readDataOfLength:cdSize];
+    NSData *cd = [fh readDataOfLength:(NSUInteger)cdSize];
     const uint8_t *p = (const uint8_t *)cd.bytes;
     NSUInteger pos = 0;
+    BOOL ok = YES;
 
-    for (uint16_t index = 0; index < count; ++index) {
+    for (uint16_t index = 0; index < count && ok; ++index) {
         @autoreleasepool {
-        if (self.cancelRequested) {
-            [fh closeFile];
-            if (message) *message = @"Загрузка файла игры отменена.";
-            return NO;
-        }
-        if (pos + 46 > cd.length || GXRead32(p+pos) != 0x02014b50) {
-            [fh closeFile]; if (message) *message = @"ZIP: ошибка записи каталога."; return NO;
-        }
-        uint16_t method = GXRead16(p+pos+10);
-        uint32_t compressed = GXRead32(p+pos+20);
-        uint32_t uncompressed = GXRead32(p+pos+24);
-        uint16_t nameLen = GXRead16(p+pos+28);
-        uint16_t extraLen = GXRead16(p+pos+30);
-        uint16_t commentLen = GXRead16(p+pos+32);
-        uint32_t localOffset = GXRead32(p+pos+42);
-        if (pos + 46 + nameLen + extraLen + commentLen > cd.length) {
-            [fh closeFile]; if (message) *message = @"ZIP: повреждённое имя файла."; return NO;
-        }
-
-        NSData *nameData = [NSData dataWithBytes:p+pos+46 length:nameLen];
-        NSString *name = [[NSString alloc] initWithData:nameData encoding:NSUTF8StringEncoding];
-        if (!name) name = [[NSString alloc] initWithData:nameData encoding:NSISOLatin1StringEncoding];
-        name = [name stringByReplacingOccurrencesOfString:@"\\" withString:@"/"];
-        while ([name hasPrefix:@"/"]) name = [name substringFromIndex:1];
-
-        // Архив может содержать одну или несколько служебных обёрток
-        // "Generals ZH/". Их нельзя создавать повторно внутри
-        // Documents/Generals ZH/: файлы должны сразу попадать в этот корень.
-        while ([name hasPrefix:@"./"])
-            name = [name substringFromIndex:2];
-
-        // Убираем ЛЮБОЕ количество внешних обёрток "Generals ZH/".
-        // Например:
-        //   Generals ZH/Generals ZH/INIZH.big
-        // превращается в:
-        //   Documents/Generals ZH/INIZH.big
-        // Никакой второй "Generals ZH" внутри корня игры не создаём.
-        NSString *gameWrapper = @"Generals ZH/";
-        while ([name length] >= gameWrapper.length &&
-               [name rangeOfString:gameWrapper
-                            options:NSCaseInsensitiveSearch
-                              range:NSMakeRange(0, gameWrapper.length)].location == 0) {
-            name = [name substringFromIndex:gameWrapper.length];
-        }
-
-        // Prevent archive path traversal.
-        NSString *safe = [name stringByStandardizingPath];
-        if ([safe hasPrefix:@"../"] || [safe isEqualToString:@".."] || [safe containsString:@"/../"]) {
-            [fh closeFile]; if (message) *message = @"ZIP содержит небезопасный путь."; return NO;
-        }
-
-        pos += 46 + nameLen + extraLen + commentLen;
-        if (name.length == 0 || [name hasSuffix:@"/"]) continue;
-        if (method != 0 && method != 8) {
-            [fh closeFile]; if (message) *message = [NSString stringWithFormat:@"ZIP: неподдерживаемый метод для %@.", name]; return NO;
-        }
-
-        [fh seekToFileOffset:localOffset];
-        NSData *lh = [fh readDataOfLength:30];
-        if (lh.length != 30 || GXRead32((const uint8_t *)lh.bytes) != 0x04034b50) {
-            [fh closeFile]; if (message) *message = @"ZIP: неверная локальная запись."; return NO;
-        }
-        uint16_t localNameLen = GXRead16((const uint8_t *)lh.bytes+26);
-        uint16_t localExtraLen = GXRead16((const uint8_t *)lh.bytes+28);
-        [fh seekToFileOffset:localOffset + 30 + localNameLen + localExtraLen];
-        NSData *compressedData = [fh readDataOfLength:compressed];
-        if (compressedData.length != compressed) {
-            [fh closeFile]; if (message) *message = @"ZIP: файл обрезан."; return NO;
-        }
-
-        NSData *outData = nil;
-        if (method == 0) {
-            outData = compressedData;
-        } else {
-            NSMutableData *decoded = [NSMutableData dataWithLength:uncompressed];
-            z_stream zs;
-            memset(&zs, 0, sizeof(zs));
-            zs.next_in = (Bytef *)compressedData.bytes;
-            zs.avail_in = (uInt)compressedData.length;
-            zs.next_out = (Bytef *)decoded.mutableBytes;
-            zs.avail_out = (uInt)decoded.length;
-            if (inflateInit2(&zs, -MAX_WBITS) != Z_OK ||
-                inflate(&zs, Z_FINISH) != Z_STREAM_END) {
-                inflateEnd(&zs);
-                [fh closeFile]; if (message) *message = [NSString stringWithFormat:@"Ошибка распаковки: %@.", name]; return NO;
+            if (self.cancelRequested) {
+                ok = NO;
+                if (message) *message = @"Загрузка файла игры отменена.";
+                break;
             }
-            inflateEnd(&zs);
-            outData = decoded;
-        }
 
-        // Always write archive entries relative to Documents/Generals ZH.
-        // Never create a second Documents/Generals ZH/Generals ZH layer.
-        NSString *destination = [root stringByAppendingPathComponent:safe];
-        NSString *parent = [destination stringByDeletingLastPathComponent];
-        if (![fm createDirectoryAtPath:parent withIntermediateDirectories:YES attributes:nil error:nil]) {
-            [fh closeFile]; if (message) *message = @"Не удалось создать папку файла игры."; return NO;
-        }
-        if (![outData writeToFile:destination atomically:NO]) {
-            [fh closeFile]; if (message) *message = [NSString stringWithFormat:@"Не удалось записать %@.", name]; return NO;
-        }
+            if (pos + 46 > cd.length || GXRead32(p + pos) != 0x02014b50) {
+                ok = NO;
+                if (message) *message = @"ZIP: ошибка записи каталога.";
+                break;
+            }
 
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (self.status) self.status(@"Распаковка", [NSString stringWithFormat:@"Распакован: %@", name.lastPathComponent]);
-        });
+            uint16_t method = GXRead16(p + pos + 10);
+            uint32_t compressed = GXRead32(p + pos + 20);
+            uint32_t uncompressed = GXRead32(p + pos + 24);
+            uint16_t nameLen = GXRead16(p + pos + 28);
+            uint16_t extraLen = GXRead16(p + pos + 30);
+            uint16_t commentLen = GXRead16(p + pos + 32);
+            uint32_t localOffset = GXRead32(p + pos + 42);
+
+            if (pos + 46 + nameLen + extraLen + commentLen > cd.length) {
+                ok = NO;
+                if (message) *message = @"ZIP: повреждённое имя файла.";
+                break;
+            }
+
+            NSData *nameData = [NSData dataWithBytes:p + pos + 46 length:nameLen];
+            NSString *name = [[NSString alloc] initWithData:nameData encoding:NSUTF8StringEncoding];
+            if (!name)
+                name = [[NSString alloc] initWithData:nameData encoding:NSISOLatin1StringEncoding];
+
+            name = [name stringByReplacingOccurrencesOfString:@"\\" withString:@"/"];
+            while ([name hasPrefix:@"/"])
+                name = [name substringFromIndex:1];
+            while ([name hasPrefix:@"./"])
+                name = [name substringFromIndex:2];
+
+            // Strip every outer "Generals ZH/" wrapper. The canonical root is
+            // already Documents/Generals ZH, so this MUST never create a second
+            // Documents/Generals ZH/Generals ZH directory.
+            NSString *wrapper = @"Generals ZH/";
+            while (name.length >= wrapper.length &&
+                   [name rangeOfString:wrapper
+                               options:NSCaseInsensitiveSearch
+                                 range:NSMakeRange(0, wrapper.length)].location == 0) {
+                name = [name substringFromIndex:wrapper.length];
+            }
+
+            NSString *safe = [name stringByStandardizingPath];
+            if (safe.length == 0) {
+                pos += 46 + nameLen + extraLen + commentLen;
+                continue;
+            }
+            if ([safe hasPrefix:@"../"] || [safe isEqualToString:@".."] || [safe containsString:@"/../"]) {
+                ok = NO;
+                if (message) *message = @"ZIP содержит небезопасный путь.";
+                break;
+            }
+
+            pos += 46 + nameLen + extraLen + commentLen;
+
+            if ([name hasSuffix:@"/"])
+                continue;
+            if (method != 0 && method != 8) {
+                ok = NO;
+                if (message) *message = [NSString stringWithFormat:@"ZIP: неподдерживаемый метод для %@.", name];
+                break;
+            }
+
+            [fh seekToFileOffset:localOffset];
+            NSData *lh = [fh readDataOfLength:30];
+            if (lh.length != 30 || GXRead32((const uint8_t *)lh.bytes) != 0x04034b50) {
+                ok = NO;
+                if (message) *message = @"ZIP: неверная локальная запись.";
+                break;
+            }
+
+            const uint8_t *lhBytes = (const uint8_t *)lh.bytes;
+            uint16_t localNameLen = GXRead16(lhBytes + 26);
+            uint16_t localExtraLen = GXRead16(lhBytes + 28);
+            unsigned long long dataOffset =
+                (unsigned long long)localOffset + 30ULL + localNameLen + localExtraLen;
+            if (dataOffset + compressed > size) {
+                ok = NO;
+                if (message) *message = [NSString stringWithFormat:@"ZIP: файл обрезан: %@.", name];
+                break;
+            }
+
+            NSString *destination = [staging stringByAppendingPathComponent:safe];
+            NSString *parent = [destination stringByDeletingLastPathComponent];
+            NSError *dirError = nil;
+            if (![fm createDirectoryAtPath:parent withIntermediateDirectories:YES attributes:nil error:&dirError]) {
+                ok = NO;
+                if (message) *message = dirError.localizedDescription ?: @"Не удалось создать папку файла игры.";
+                break;
+            }
+
+            // Never keep a whole large ZIP entry in memory. Stream stored and
+            // deflated entries through 256 KiB buffers.
+            NSFileHandle *out = [NSFileHandle fileHandleForWritingAtPath:destination];
+            if (!out) {
+                if (![fm createFileAtPath:destination contents:nil attributes:nil]) {
+                    ok = NO;
+                    if (message) *message = [NSString stringWithFormat:@"Не удалось создать %@.", name];
+                    break;
+                }
+                out = [NSFileHandle fileHandleForWritingAtPath:destination];
+            }
+
+            [fh seekToFileOffset:dataOffset];
+            const NSUInteger chunkSize = 256 * 1024;
+            unsigned long long remainingCompressed = compressed;
+
+            if (method == 0) {
+                while (remainingCompressed > 0 && ok) {
+                    if (self.cancelRequested) {
+                        ok = NO;
+                        if (message) *message = @"Загрузка файла игры отменена.";
+                        break;
+                    }
+
+                    NSUInteger want = (NSUInteger)MIN((unsigned long long)chunkSize, remainingCompressed);
+                    NSData *chunk = [fh readDataOfLength:want];
+                    if (chunk.length != want) {
+                        ok = NO;
+                        if (message) *message = [NSString stringWithFormat:@"ZIP: файл обрезан: %@.", name];
+                        break;
+                    }
+                    [out writeData:chunk];
+                    remainingCompressed -= want;
+                }
+            } else {
+                z_stream zs;
+                memset(&zs, 0, sizeof(zs));
+                int zret = inflateInit2(&zs, -MAX_WBITS);
+                if (zret != Z_OK) {
+                    ok = NO;
+                    if (message) *message = [NSString stringWithFormat:@"Ошибка распаковки: %@.", name];
+                } else {
+                    uint8_t *inBuffer = (uint8_t *)malloc(chunkSize);
+                    uint8_t *outBuffer = (uint8_t *)malloc(chunkSize);
+                    if (!inBuffer || !outBuffer) {
+                        free(inBuffer);
+                        free(outBuffer);
+                        inflateEnd(&zs);
+                        ok = NO;
+                        if (message) *message = @"Недостаточно памяти для распаковки.";
+                    } else {
+                        unsigned long long bytesWritten = 0;
+                        while (remainingCompressed > 0 && ok) {
+                            if (self.cancelRequested) {
+                                ok = NO;
+                                if (message) *message = @"Загрузка файла игры отменена.";
+                                break;
+                            }
+
+                            NSUInteger want = (NSUInteger)MIN((unsigned long long)chunkSize, remainingCompressed);
+                            NSData *chunk = [fh readDataOfLength:want];
+                            if (chunk.length != want) {
+                                ok = NO;
+                                if (message) *message = [NSString stringWithFormat:@"ZIP: файл обрезан: %@.", name];
+                                break;
+                            }
+
+                            zs.next_in = (Bytef *)chunk.bytes;
+                            zs.avail_in = (uInt)chunk.length;
+                            remainingCompressed -= chunk.length;
+
+                            while (zs.avail_in > 0 && ok) {
+                                zs.next_out = outBuffer;
+                                zs.avail_out = (uInt)chunkSize;
+                                int inflateRet = inflate(&zs, Z_NO_FLUSH);
+
+                                if (inflateRet != Z_OK && inflateRet != Z_STREAM_END) {
+                                    ok = NO;
+                                    if (message) *message = [NSString stringWithFormat:@"Ошибка распаковки: %@.", name];
+                                    break;
+                                }
+
+                                NSUInteger produced = chunkSize - zs.avail_out;
+                                if (produced > 0) {
+                                    [out writeData:[NSData dataWithBytes:outBuffer length:produced]];
+                                    bytesWritten += produced;
+                                }
+
+                                if (inflateRet == Z_STREAM_END) {
+                                    remainingCompressed = 0;
+                                    break;
+                                }
+
+                                if (zs.avail_in == 0)
+                                    break;
+                            }
+                        }
+
+                        if (ok && bytesWritten != uncompressed) {
+                            ok = NO;
+                            if (message) *message = [NSString stringWithFormat:
+                                @"ZIP: размер после распаковки не совпал для %@.", name];
+                        }
+
+                        free(inBuffer);
+                        free(outBuffer);
+                        inflateEnd(&zs);
+                    }
+                }
+            }
+
+            [out closeFile];
+
+            if (!ok) {
+                [fm removeItemAtPath:destination error:nil];
+                break;
+            }
+
+            // Settings are created/updated by the native launcher. Do not let
+            // a later game-file update overwrite the user's saved settings.
         }
     }
 
     [fh closeFile];
+    if (!ok) {
+        [fm removeItemAtPath:staging error:nil];
+        return NO;
+    }
+
+    // Canonical destination: Documents/Generals ZH. It is the ONLY game root.
+    // Merge every extracted file directly into it; never copy the archive's
+    // outer "Generals ZH" directory itself.
+    NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+    NSString *root = [documents stringByAppendingPathComponent:@"Generals ZH"];
+
+    NSError *rootError = nil;
+    if (![fm createDirectoryAtPath:root withIntermediateDirectories:YES attributes:nil error:&rootError]) {
+        [fm removeItemAtPath:staging error:nil];
+        if (message) *message = rootError.localizedDescription ?: @"Не удалось создать папку игры.";
+        return NO;
+    }
+
+    NSArray<NSString *> *stagedFiles = [fm subpathsAtPath:staging];
+    for (NSString *relative in stagedFiles) {
+        @autoreleasepool {
+            if (self.cancelRequested) {
+                [fm removeItemAtPath:staging error:nil];
+                if (message) *message = @"Загрузка файла игры отменена.";
+                return NO;
+            }
+
+            NSString *source = [staging stringByAppendingPathComponent:relative];
+            BOOL isDirectory = NO;
+            if (![fm fileExistsAtPath:source isDirectory:&isDirectory] || isDirectory)
+                continue;
+
+            NSString *destination = [root stringByAppendingPathComponent:relative];
+
+            // Preserve launcher-owned settings on reinstallation.
+            NSString *lower = relative.lowercaseString;
+            BOOL protectedSettings =
+                [lower isEqualToString:@"iosipadOverrides.ini".lowercaseString] ||
+                [lower isEqualToString:@"zerohoursettings.ini".lowercaseString];
+
+            if (protectedSettings && [fm fileExistsAtPath:destination])
+                continue;
+
+            NSString *parent = [destination stringByDeletingLastPathComponent];
+            [fm createDirectoryAtPath:parent withIntermediateDirectories:YES attributes:nil error:nil];
+            [fm removeItemAtPath:destination error:nil];
+
+            NSError *moveError = nil;
+            if (![fm moveItemAtPath:source toPath:destination error:&moveError]) {
+                [fm removeItemAtPath:staging error:nil];
+                if (message) *message = moveError.localizedDescription ?: [NSString stringWithFormat:@"Не удалось установить %@.", relative];
+                return NO;
+            }
+        }
+    }
+
+    [fm removeItemAtPath:staging error:nil];
+
+    // Seed launcher-owned INI files in the same canonical game root after the
+    // archive is installed. The launcher will preserve these on later updates.
+    NSString *iosOverrides = [root stringByAppendingPathComponent:@"iOSIPadOverrides.ini"];
+    if (![fm fileExistsAtPath:iosOverrides]) {
+        NSString *defaults =
+            @"GameData\n"
+             "  MaxCameraHeight = 550.0\n"
+             "  MinCameraHeight = 70.0\n"
+             "  CameraPitch = 37.0\n"
+             "  EnforceMaxCameraHeight = No\n"
+             "  KeyboardScrollSpeedFactor = 1.0\n"
+             "  TerrainDrawDistanceScale = 1.20\n"
+             "  UseFPSLimit = Yes\n"
+             "  FramesPerSecondLimit = 60\n"
+             "End\n";
+        [defaults writeToFile:iosOverrides atomically:YES encoding:NSUTF8StringEncoding error:nil];
+    }
+
+    NSString *zeroHourSettings = [root stringByAppendingPathComponent:@"ZeroHourSettings.ini"];
+    if (![fm fileExistsAtPath:zeroHourSettings]) {
+        NSArray *defaults = @[
+            @"ControlBar = ZeroHour", @"Cameos = Standard", @"Music = Standard",
+            @"UnitVoices = English", @"Hotkeys = Original", @"HotkeyLanguage = English",
+            @"Portraits = Standard", @"FogEffects = No", @"WaterEffects = Yes",
+            @"ExtraBuildingProps = Yes", @"UseShadowVolumes = No", @"UseShadowDecals = Yes",
+            @"UseCloudMap = No", @"UseLightMap = Yes", @"ShowSoftWaterEdge = Yes",
+            @"BuildingOcclusion = Yes", @"ShowTrees = Yes", @"ExtraAnimations = Yes",
+            @"DynamicLOD = No", @"HeatEffects = No", @"TextureReduction = 0",
+            @"MaxParticleCount = 2500", @"TextureFilter = Anisotropic", @"AnisotropyLevel = 8"
+        ];
+        NSString *settings = [[defaults componentsJoinedByString:@"\n"] stringByAppendingString:@"\n"];
+        [settings writeToFile:zeroHourSettings atomically:YES encoding:NSUTF8StringEncoding error:nil];
+    }
+
+    if (message)
+        *message = @"Файл игры распакован в Documents/Generals ZH. iOSIPadOverrides.ini и ZeroHourSettings.ini находятся рядом с файлами игры.";
     return YES;
 }
 
 - (BOOL)validateInstalledGameFile:(NSString **)message {
     // Единая проверка файла игры: используется после установки, в статусе лаунчера
-    // и в разделе Диагностика. Ожидается ровно 44 обычных файла.
+    // и в разделе Диагностика. В корне игры также находятся два launcher-owned INI,
+    // поэтому они не входят в число 44 файлов игрового архива.
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
     NSString *root = [documents stringByAppendingPathComponent:@"Generals ZH"];
     NSFileManager *fm = [NSFileManager defaultManager];
@@ -322,6 +557,12 @@ static uint16_t GXRead16(const uint8_t *p) {
         if ([fm fileExistsAtPath:path isDirectory:&dir] && !dir) {
             NSDictionary *attr = [fm attributesOfItemAtPath:path error:nil];
             unsigned long long size = attr != nil ? [attr fileSize] : 0;
+            NSString *lowerName = relative.lowercaseString;
+            BOOL launcherINI =
+                [lowerName isEqualToString:@"iosipadOverrides.ini".lowercaseString] ||
+                [lowerName isEqualToString:@"zerohoursettings.ini".lowercaseString];
+            if (launcherINI)
+                continue;
             if (size == 0)
                 emptyFiles++;
             files++;
@@ -342,7 +583,20 @@ static uint16_t GXRead16(const uint8_t *p) {
         return NO;
     }
 
-    if (message) *message = @"Файл игры: ГОТОВ — 44/44 объектов, пустых: 0.";
+    NSString *iosOverrides = [root stringByAppendingPathComponent:@"iOSIPadOverrides.ini"];
+    NSString *zeroHourSettings = [root stringByAppendingPathComponent:@"ZeroHourSettings.ini"];
+    BOOL iosOverridesExists = [fm fileExistsAtPath:iosOverrides];
+    BOOL zeroHourSettingsExists = [fm fileExistsAtPath:zeroHourSettings];
+
+    if (!iosOverridesExists || !zeroHourSettingsExists) {
+        if (message) *message = [NSString stringWithFormat:
+            @"Файл игры: НЕ ГОТОВ — 44/44 объектов, пустых: 0; iOSIPadOverrides.ini: %@; ZeroHourSettings.ini: %@.",
+            iosOverridesExists ? @"есть" : @"нет",
+            zeroHourSettingsExists ? @"есть" : @"нет"];
+        return NO;
+    }
+
+    if (message) *message = @"Файл игры: ГОТОВ — 44/44 объектов, пустых: 0; iOSIPadOverrides.ini: есть; ZeroHourSettings.ini: есть.";
     return YES;
 }
 
