@@ -101,6 +101,33 @@ unsigned long long DirectorySizeAtPath(NSString *path)
     return total;
 }
 
+unsigned long long InstalledGameFilesSizeAtDocuments()
+{
+    NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSDirectoryEnumerator<NSString *> *enumerator = [fileManager enumeratorAtPath:documents];
+    if (enumerator == nil)
+        return 0;
+
+    unsigned long long total = 0;
+    for (NSString *relativePath in enumerator)
+    {
+        NSString *lower = relativePath.lowercaseString;
+        if ([lower isEqualToString:@"iosipadOverrides.ini"] ||
+            [lower isEqualToString:@"zerohoursettings.ini"] ||
+            [lower hasPrefix:@"generals-stderr"] ||
+            [lower hasSuffix:@".zip"])
+            continue;
+
+        NSString *fullPath = [documents stringByAppendingPathComponent:relativePath];
+        NSDictionary<NSFileAttributeKey, id> *attributes =
+            [fileManager attributesOfItemAtPath:fullPath error:nil];
+        if ([[attributes fileType] isEqualToString:NSFileTypeRegular])
+            total += [attributes fileSize];
+    }
+    return total;
+}
+
 bool IsSupportedProfile(const char *profile)
 {
     return profile != nullptr &&
@@ -162,8 +189,8 @@ NSString *IOSIPadOverridesPath()
 
 NSString *ZeroHourSettingsPath()
 {
-    // ZeroHourSettings.ini is also a Documents-level launcher setting, not part
-    // of Documents/Generals ZH and never nested inside another Generals ZH.
+    // ZeroHourSettings.ini is a Documents-level launcher setting, beside the
+    // installed game files. Never create a Generals ZH wrapper directory.
     return DocumentsFilePath(@"ZeroHourSettings.ini");
 }
 
@@ -1184,8 +1211,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     NSString *buildVersion = [bundle objectForInfoDictionaryKey:@"CFBundleVersion"] ?: @"unknown";
 
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-    NSString *gameRoot = documents;
-    BOOL gameRootExists = [[NSFileManager defaultManager] fileExistsAtPath:gameRoot];
+    BOOL documentsExists = [[NSFileManager defaultManager] fileExistsAtPath:documents];
     NSString *gameFileStatus = nil;
     BOOL gameFileReady = [[GXGameFileManager sharedManager] validateInstalledGameFile:&gameFileStatus];
     if (gameFileStatus == nil)
@@ -1233,7 +1259,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
          "Движок: v%s · %@\n"
          "Запуск базовой оболочки: %@\n\n"
          "ФАЙЛ ИГРЫ\n"
-         "Generals ZH: %@\n"
+         "Documents / файлы игры: %@\n"
          "Размер файла игры: %@\n"
          "%@\n"
          "Enhanced: %@\n"
@@ -1254,7 +1280,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         GX_ENGINE_VERSION,
         ShortBuildIdentifier(GX_ENGINE_COMMIT),
         ShortBuildIdentifier(GX_BASE_SHELL_RUN),
-        gameRootExists ? @"Папка найдена" : @"Папка отсутствует",
+        documentsExists ? (gameFileReady ? @"ГОТОВЫ" : @"НЕ ГОТОВЫ") : @"Documents недоступен",
         gameFileSize,
         gameFileStatus,
         enhancedУстановлено ? @"Установлено" : @"Не установлено",
@@ -1504,12 +1530,12 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.diagnosticsText.text = [self diagnosticsTextWithGameFileSize:@"Вычисление…"];
 
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-    NSString *gameRoot = [documents stringByAppendingPathComponent:@"Generals ZH"];
+    NSString *gameRoot = documents;
     BOOL exists = [[NSFileManager defaultManager] fileExistsAtPath:gameRoot];
 
     __weak GXProfileLauncherViewController *weakSelf = self;
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
-        unsigned long long bytes = exists ? DirectorySizeAtPath(gameRoot) : 0;
+        unsigned long long bytes = exists ? InstalledGameFilesSizeAtDocuments() : 0;
         NSString *sizeText = exists ? HumanReadableBytes(bytes) : @"нет данных";
 
         dispatch_async(dispatch_get_main_queue(), ^{
