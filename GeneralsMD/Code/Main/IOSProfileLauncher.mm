@@ -1673,10 +1673,10 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 {
     [self showGameFileProgress];
 
-    __weak typeof(self) weakSelf = self;
+    __weak id weakSelf = self;
     [[GXGameFileManager sharedManager]
         downloadAndInstallGameFileWithProgress:^(double progress, int64_t received, int64_t total, double speed, NSTimeInterval remaining) {
-            __strong typeof(weakSelf) self = weakSelf;
+            id self = weakSelf;
             if (!self) return;
             self.gameFileProgress.progress = (float)MAX(0.0, MIN(1.0, progress));
             self.gameFileStage.text = [NSString stringWithFormat:@"Скачивание  •  %.0f%%", progress * 100.0];
