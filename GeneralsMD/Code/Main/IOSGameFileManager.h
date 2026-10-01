@@ -14,6 +14,9 @@ typedef void (^GXGameFileCompletionBlock)(BOOL success, NSString *message);
                                         status:(GXGameFileStatusBlock)status
                                     completion:(GXGameFileCompletionBlock)completion;
 
+// Отменяет текущую загрузку/распаковку GameFile.
+- (void)cancelDownload;
+
 // Единственная проверка GameFile, используемая загрузкой, статусом и диагностикой.
 - (BOOL)validateInstalledGameFile:(NSString **)message;
 
