@@ -1160,15 +1160,15 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     [self resetНастройкиControls];
 }
 
-- (NSString *)diagnosticsTextWithGameDataSize:(NSString *)gameDataSize
+- (NSString *)diagnosticsTextWithGameFileSize:(NSString *)gameFileSize
 {
     NSBundle *bundle = [NSBundle mainBundle];
     NSString *shortVersion = [bundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"unknown";
     NSString *buildVersion = [bundle objectForInfoDictionaryKey:@"CFBundleVersion"] ?: @"unknown";
-    NSString *resourcePath = bundle.resourcePath ?: @"";
-    NSString *gameDataPath = [resourcePath stringByAppendingPathComponent:@"GameData"];
 
-    BOOL gameDataExists = [[NSFileManager defaultManager] fileExistsAtPath:gameDataPath];
+    NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+    NSString *gameRoot = [documents stringByAppendingPathComponent:@"Generals ZH"];
+    BOOL gameRootExists = [[NSFileManager defaultManager] fileExistsAtPath:gameRoot];
     NSString *gameFileStatus = nil;
     BOOL gameFileReady = [[GXGameFileManager sharedManager] validateInstalledGameFile:&gameFileStatus];
     if (gameFileStatus == nil)
@@ -1215,9 +1215,9 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
          "Запуск лаунчера: %@\n"
          "Движок: v%s · %@\n"
          "Запуск базовой оболочки: %@\n\n"
-         "КОНТЕНТ\n"
-         "GameData: %@\n"
-         "Размер GameData: %@\n"
+         "ФАЙЛ ИГРЫ\n"
+         "Generals ZH: %@\n"
+         "Размер файла игры: %@\n"
          "%@\n"
          "Enhanced: %@\n"
          "ZeroHour: %@\n\n"
@@ -1237,8 +1237,8 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         GX_ENGINE_VERSION,
         ShortBuildIdentifier(GX_ENGINE_COMMIT),
         ShortBuildIdentifier(GX_BASE_SHELL_RUN),
-        gameDataExists ? @"Установлено" : @"Отсутствует",
-        gameDataSize,
+        gameRootExists ? @"Папка найдена" : @"Папка отсутствует",
+        gameFileSize,
         gameFileStatus,
         enhancedУстановлено ? @"Установлено" : @"Не установлено",
         zeroHourУстановлено ? @"Установлено" : @"Не установлено",
@@ -1265,9 +1265,16 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
     // Сам статус ничего не скачивает. Установка запускается только нижней
     // кнопкой "Файл игры".
-    NSString *subtitle = ready
-        ? @"ГОТОВ  •  44/44 объектов  •  0 пустых"
-        : @"НЕ ГОТОВ  •  скачайте через кнопку «Файл игры»";
+    NSString *subtitle = nil;
+    if (ready) {
+        subtitle = message.length > 0 ? message : @"Файл игры: ГОТОВ";
+        if ([subtitle hasPrefix:@"Файл игры: "])
+            subtitle = [subtitle substringFromIndex:@"Файл игры: ".length];
+    } else {
+        subtitle = message.length > 0 ? message : @"Файл игры: НЕ ГОТОВ";
+        if (![subtitle containsString:@"скачайте через кнопку"])
+            subtitle = [NSString stringWithFormat:@"%@  •  скачайте через кнопку «Файл игры»", subtitle];
+    }
 
     UIColor *accent = ready
         ? [UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0]
@@ -1484,15 +1491,15 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         return;
 
     self.diagnosticsScanRunning = YES;
-    self.diagnosticsText.text = [self diagnosticsTextWithGameDataSize:@"Вычисление…"];
+    self.diagnosticsText.text = [self diagnosticsTextWithGameFileSize:@"Вычисление…"];
 
-    NSString *resourcePath = [NSBundle mainBundle].resourcePath ?: @"";
-    NSString *gameDataPath = [resourcePath stringByAppendingPathComponent:@"GameData"];
-    BOOL exists = [[NSFileManager defaultManager] fileExistsAtPath:gameDataPath];
+    NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+    NSString *gameRoot = [documents stringByAppendingPathComponent:@"Generals ZH"];
+    BOOL exists = [[NSFileManager defaultManager] fileExistsAtPath:gameRoot];
 
     __weak GXProfileLauncherViewController *weakSelf = self;
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
-        unsigned long long bytes = exists ? DirectorySizeAtPath(gameDataPath) : 0;
+        unsigned long long bytes = exists ? DirectorySizeAtPath(gameRoot) : 0;
         NSString *sizeText = exists ? HumanReadableBytes(bytes) : @"нет данных";
 
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -1502,7 +1509,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
             strongSelf.diagnosticsScanRunning = NO;
             strongSelf.diagnosticsText.text =
-                [strongSelf diagnosticsTextWithGameDataSize:sizeText];
+                [strongSelf diagnosticsTextWithGameFileSize:sizeText];
         });
     });
 }

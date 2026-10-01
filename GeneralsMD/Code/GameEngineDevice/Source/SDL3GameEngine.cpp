@@ -165,6 +165,11 @@ struct TouchState {
     // must populate SDL xrel/yrel instead of leaving them at zero.
     float syntheticX = 0.0f;
     float syntheticY = 0.0f;
+
+    // Track synthetic mouse buttons so iOS touch cancellation can never leave
+    // the camera RMB latched after a two-finger gesture.
+    bool syntheticRightHeld = false;
+    bool syntheticLeftHeld = false;
 };
 
 TouchState s_touch;
@@ -221,6 +226,26 @@ void sendSyntheticMouse(SDL3Mouse *mouse, SDL_Window *window, Uint32 type,
     }
 
     mouse->addSDLEvent(&ev);
+
+    if (type == SDL_EVENT_MOUSE_BUTTON_DOWN && button == SDL_BUTTON_RIGHT)
+        s_touch.syntheticRightHeld = true;
+    else if (type == SDL_EVENT_MOUSE_BUTTON_DOWN && button == SDL_BUTTON_LEFT)
+        s_touch.syntheticLeftHeld = true;
+    else if (type == SDL_EVENT_MOUSE_BUTTON_UP && button == SDL_BUTTON_RIGHT)
+        s_touch.syntheticRightHeld = false;
+    else if (type == SDL_EVENT_MOUSE_BUTTON_UP && button == SDL_BUTTON_LEFT)
+        s_touch.syntheticLeftHeld = false;
+}
+
+void releaseSyntheticButtons(SDL3Mouse *mouse, SDL_Window *window, float x, float y)
+{
+    if (s_touch.syntheticRightHeld)
+        sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP, x, y, SDL_BUTTON_RIGHT);
+    if (s_touch.syntheticLeftHeld)
+        sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP, x, y, SDL_BUTTON_LEFT);
+
+    s_touch.syntheticRightHeld = false;
+    s_touch.syntheticLeftHeld = false;
 }
 
 void resetSyntheticPosition(float x, float y)
@@ -339,13 +364,7 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             // Two fingers = ПКМ/cancel only. Do NOT start pinch/zoom and do NOT
             // allow the remaining finger to inherit the one-finger camera drag.
             // This makes the gesture deterministic and prevents a stuck camera.
-            if (s_touch.phase == TouchState::CAMERA_PAN) {
-                sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                                   s_touch.lastX, s_touch.lastY, SDL_BUTTON_RIGHT);
-            } else if (s_touch.phase == TouchState::SELECTING) {
-                sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                                   s_touch.lastX, s_touch.lastY, SDL_BUTTON_LEFT);
-            }
+            releaseSyntheticButtons(mouse, window, s_touch.lastX, s_touch.lastY);
 
             s_touch.finger2 = event.tfinger.fingerID;
             s_touch.finger2Active = true;
@@ -444,6 +463,7 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 s_touch.finger2 = 0;
                 s_touch.twoFingerTapCandidate = false;
                 s_touch.pinchDist = 0.0f;
+                releaseSyntheticButtons(mouse, window, px, py);
                 resetSyntheticPosition(px, py);
             }
             break;
@@ -588,13 +608,8 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 break;
 
             case TouchState::CAMERA_PAN:
-                sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                                   s_touch.lastX, s_touch.lastY, SDL_BUTTON_RIGHT);
-                break;
-
             case TouchState::SELECTING:
-                sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                                   s_touch.lastX, s_touch.lastY, SDL_BUTTON_LEFT);
+                releaseSyntheticButtons(mouse, window, s_touch.lastX, s_touch.lastY);
                 break;
 
             default:
