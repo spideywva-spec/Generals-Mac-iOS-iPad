@@ -520,8 +520,8 @@ static uint16_t GXRead16(const uint8_t *p) {
 
 - (BOOL)validateInstalledGameFile:(NSString **)message {
     // Единая проверка файла игры: используется после установки, в статусе лаунчера
-    // и в разделе Диагностика. В корне игры также находятся два launcher-owned INI,
-    // поэтому они не входят в число 44 файлов игрового архива.
+    // и в разделе Диагностика. Launcher-owned INI находятся рядом с папкой игры
+    // в Documents и никогда не считаются файлами внутри Generals ZH.
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
     NSString *root = [documents stringByAppendingPathComponent:@"Generals ZH"];
     NSFileManager *fm = [NSFileManager defaultManager];
