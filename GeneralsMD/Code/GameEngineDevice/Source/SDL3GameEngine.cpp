@@ -500,24 +500,27 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 break;
             }
 
-            if (firstReleased && s_touch.finger2Active) {
-                const SDL_FingerID remainingFinger = s_touch.finger2;
-                const float remainingX = s_touch.f2x * (float)winW;
-                const float remainingY = s_touch.f2y * (float)winH;
-                s_touch.finger2Active = false;
-                resetToSingleFingerPending(remainingFinger, remainingX, remainingY);
-            } else if (secondReleased && s_touch.finger1Active) {
-                const SDL_FingerID remainingFinger = s_touch.finger1;
-                const float remainingX = s_touch.f1x * (float)winW;
-                const float remainingY = s_touch.f1y * (float)winH;
+            // После любого двухпальцевого жеста НИКОГДА не превращаем
+            // оставшийся палец в PENDING/CAMERA_PAN. Иначе обычный двухпальцевый
+            // cancel заканчивается самопроизвольным движением камеры вправо/влево.
+            // Пользователь должен отпустить оба пальца и сделать новый
+            // однопальцевый touch, чтобы снова управлять камерой.
+            if (firstReleased) {
                 s_touch.finger1Active = false;
-                resetToSingleFingerPending(remainingFinger, remainingX, remainingY);
-            } else {
+            }
+            if (secondReleased) {
+                s_touch.finger2Active = false;
+            }
+
+            if (!s_touch.finger1Active && !s_touch.finger2Active) {
                 s_touch.phase = TouchState::IDLE;
                 s_touch.finger1 = 0;
                 s_touch.finger2 = 0;
                 s_touch.finger1Active = false;
                 s_touch.finger2Active = false;
+                s_touch.twoFingerTapCandidate = false;
+                s_touch.pinchDist = 0.0f;
+                resetSyntheticPosition(px, py);
             }
             break;
         }
