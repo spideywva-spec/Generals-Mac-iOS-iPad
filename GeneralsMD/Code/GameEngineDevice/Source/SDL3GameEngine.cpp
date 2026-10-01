@@ -260,13 +260,11 @@ void beginPinch(SDL3Mouse *mouse, SDL_Window *window, int winW, int winH)
     const float dy = (s_touch.f1y - s_touch.f2y) * (float)winH;
     s_touch.pinchDist = SDL_sqrtf(dx * dx + dy * dy);
 
-    if (s_touch.phase == TouchState::CAMERA_PAN) {
-        sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                           s_touch.lastX, s_touch.lastY, SDL_BUTTON_RIGHT);
-    } else if (s_touch.phase == TouchState::SELECTING) {
-        sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                           s_touch.lastX, s_touch.lastY, SDL_BUTTON_LEFT);
-    }
+    // A second finger permanently terminates the one-finger gesture.
+    // Release any synthetic button, then keep the mouse position frozen while
+    // the two-finger gesture owns the input. This prevents a hidden xrel delta
+    // from turning a two-finger tap into a camera pan.
+    releaseSyntheticButtons(mouse, window, s_touch.lastX, s_touch.lastY);
 
     s_touch.twoFingerTapCandidate = true;
     s_touch.twoFingerStart1X = s_touch.f1x;
@@ -381,6 +379,45 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             // Ignore all movement while the two-finger cancel gesture owns the touch.
             break;
         }
+        if (s_touch.phase == TouchState::PINCH) {
+            // PINCH owns both fingers completely. Do not update lastX/lastY:
+            // those coordinates belong to one-finger camera control and must
+            // not leak a delta back into the mouse/camera path.
+            if (s_touch.finger1Active && event.tfinger.fingerID == s_touch.finger1) {
+                s_touch.f1x = event.tfinger.x;
+                s_touch.f1y = event.tfinger.y;
+            } else if (s_touch.finger2Active && event.tfinger.fingerID == s_touch.finger2) {
+                s_touch.f2x = event.tfinger.x;
+                s_touch.f2y = event.tfinger.y;
+            } else {
+                break;
+            }
+
+            updateTwoFingerCandidate(winW, winH);
+
+            const float dx = (s_touch.f1x - s_touch.f2x) * (float)winW;
+            const float dy = (s_touch.f1y - s_touch.f2y) * (float)winH;
+            const float dist = SDL_sqrtf(dx * dx + dy * dy);
+            const float cx = (s_touch.f1x + s_touch.f2x) * 0.5f * (float)winW;
+            const float cy = (s_touch.f1y + s_touch.f2y) * 0.5f * (float)winH;
+
+            if (s_touch.pinchDist > 1.0f) {
+                const float ratio = dist / s_touch.pinchDist;
+                if (ratio > 1.0f + PINCH_STEP_RATIO) {
+                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_WHEEL,
+                                       cx, cy, 0, 1.0f);
+                    s_touch.pinchDist = dist;
+                    s_touch.twoFingerTapCandidate = false;
+                } else if (ratio < 1.0f - PINCH_STEP_RATIO) {
+                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_WHEEL,
+                                       cx, cy, 0, -1.0f);
+                    s_touch.pinchDist = dist;
+                    s_touch.twoFingerTapCandidate = false;
+                }
+            }
+            break;
+        }
+
         if (s_touch.finger1Active && event.tfinger.fingerID == s_touch.finger1) {
             s_touch.f1x = event.tfinger.x;
             s_touch.f1y = event.tfinger.y;
@@ -406,29 +443,6 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
         } else if (s_touch.phase == TouchState::SELECTING &&
                    event.tfinger.fingerID == s_touch.finger1) {
             sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, px, py);
-        } else if (s_touch.phase == TouchState::PINCH) {
-            updateTwoFingerCandidate(winW, winH);
-
-            const float dx = (s_touch.f1x - s_touch.f2x) * (float)winW;
-            const float dy = (s_touch.f1y - s_touch.f2y) * (float)winH;
-            const float dist = SDL_sqrtf(dx * dx + dy * dy);
-            const float cx = (s_touch.f1x + s_touch.f2x) * 0.5f * (float)winW;
-            const float cy = (s_touch.f1y + s_touch.f2y) * 0.5f * (float)winH;
-
-            if (s_touch.pinchDist > 1.0f) {
-                const float ratio = dist / s_touch.pinchDist;
-                if (ratio > 1.0f + PINCH_STEP_RATIO) {
-                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_WHEEL,
-                                       cx, cy, 0, 1.0f);
-                    s_touch.pinchDist = dist;
-                    s_touch.twoFingerTapCandidate = false;
-                } else if (ratio < 1.0f - PINCH_STEP_RATIO) {
-                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_WHEEL,
-                                       cx, cy, 0, -1.0f);
-                    s_touch.pinchDist = dist;
-                    s_touch.twoFingerTapCandidate = false;
-                }
-            }
         }
         break;
 
