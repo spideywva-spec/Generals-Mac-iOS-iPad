@@ -121,6 +121,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
     add_library(generalsx_ios_launcher SHARED
         IOSProfileLauncher.h
         IOSProfileLauncher.mm
+        IOSGameFileManager.h
+        IOSGameFileManager.mm
     )
     set_target_properties(generalsx_ios_launcher PROPERTIES
         OUTPUT_NAME "GeneralsXLauncher"
@@ -142,7 +144,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
     # dependencies explicitly instead of inheriting them from other targets.
     find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
     find_library(UIKIT_FRAMEWORK UIKit REQUIRED)
-    find_library(QUARTZCORE_FRAMEWORK QuartzCore REQUIRED)
     find_library(QUARTZCORE_FRAMEWORK QuartzCore REQUIRED)
     find_library(OBJC_LIBRARY objc REQUIRED)
     target_link_libraries(generalsx_ios_launcher PRIVATE
