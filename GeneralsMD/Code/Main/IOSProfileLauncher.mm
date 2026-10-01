@@ -1,4 +1,5 @@
 #include "IOSProfileLauncher.h"
+#import "IOSGameFileManager.h"
 
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 
@@ -431,6 +432,10 @@ UIButton *MakeButton(NSString *title, id target, SEL action)
 @property(nonatomic, strong) UIView *modalBackdrop;
 @property(nonatomic, strong) UIView *profileView;
 @property(nonatomic, strong) UILabel *diagnosticsText;
+@property(nonatomic, strong) UIView *gameFileView;
+@property(nonatomic, strong) UIProgressView *gameFileProgress;
+@property(nonatomic, strong) UILabel *gameFileStage;
+@property(nonatomic, strong) UILabel *gameFileDetail;
 @property(nonatomic, strong) UIButton *shareDiagnosticsButton;
 @property(nonatomic, assign) BOOL diagnosticsScanRunning;
 @end
@@ -1570,35 +1575,122 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     SetSelectedProfile(@"zerohour");
 }
 
+- (void)showGameFileProgress
+{
+    self.menuStack.hidden = NO;
+    self.settingsView.hidden = YES;
+    self.diagnosticsView.hidden = YES;
+    self.profileView.hidden = YES;
+    self.modalBackdrop.hidden = NO;
+
+    self.gameFileView = [[UIView alloc] init];
+    self.gameFileView.translatesAutoresizingMaskIntoConstraints = NO;
+    self.gameFileView.backgroundColor = [UIColor colorWithWhite:0.025 alpha:0.94];
+    self.gameFileView.layer.cornerRadius = 24.0;
+    self.gameFileView.layer.borderWidth = 1.0;
+    self.gameFileView.layer.borderColor = [UIColor colorWithRed:0.25 green:0.60 blue:1.0 alpha:0.55].CGColor;
+    self.gameFileView.layer.shadowColor = UIColor.blackColor.CGColor;
+    self.gameFileView.layer.shadowOpacity = 0.6;
+    self.gameFileView.layer.shadowRadius = 28.0;
+    self.gameFileView.layer.shadowOffset = CGSizeMake(0, 12);
+    [self.modalBackdrop addSubview:self.gameFileView];
+
+    UILabel *title = MakeLabel(@"GAMEFILE", 27.0, UIFontWeightBold);
+    self.gameFileStage = MakeLabel(@"Скачивание", 16.0, UIFontWeightSemibold);
+    self.gameFileDetail = MakeLabel(@"Подключение…", 13.0, UIFontWeightRegular);
+    self.gameFileDetail.numberOfLines = 0;
+    self.gameFileProgress = [[UIProgressView alloc] initWithProgressViewStyle:UIProgressViewStyleDefault];
+    self.gameFileProgress.translatesAutoresizingMaskIntoConstraints = NO;
+    self.gameFileProgress.progress = 0.0;
+    self.gameFileProgress.trackTintColor = [UIColor colorWithWhite:1.0 alpha:0.10];
+    self.gameFileProgress.progressTintColor = [UIColor colorWithRed:0.25 green:0.65 blue:1.0 alpha:1.0];
+
+    [self.gameFileView addSubview:title];
+    [self.gameFileView addSubview:self.gameFileStage];
+    [self.gameFileView addSubview:self.gameFileProgress];
+    [self.gameFileView addSubview:self.gameFileDetail];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [self.gameFileView.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [self.gameFileView.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor],
+        [self.gameFileView.leadingAnchor constraintGreaterThanOrEqualToAnchor:self.view.safeAreaLayoutGuide.leadingAnchor constant:24.0],
+        [self.gameFileView.trailingAnchor constraintLessThanOrEqualToAnchor:self.view.safeAreaLayoutGuide.trailingAnchor constant:-24.0],
+        [self.gameFileView.widthAnchor constraintLessThanOrEqualToConstant:430.0],
+        [title.topAnchor constraintEqualToAnchor:self.gameFileView.topAnchor constant:26.0],
+        [title.leadingAnchor constraintEqualToAnchor:self.gameFileView.leadingAnchor constant:26.0],
+        [title.trailingAnchor constraintEqualToAnchor:self.gameFileView.trailingAnchor constant:-26.0],
+        [self.gameFileStage.topAnchor constraintEqualToAnchor:title.bottomAnchor constant:14.0],
+        [self.gameFileStage.leadingAnchor constraintEqualToAnchor:title.leadingAnchor],
+        [self.gameFileStage.trailingAnchor constraintEqualToAnchor:title.trailingAnchor],
+        [self.gameFileProgress.topAnchor constraintEqualToAnchor:self.gameFileStage.bottomAnchor constant:18.0],
+        [self.gameFileProgress.leadingAnchor constraintEqualToAnchor:title.leadingAnchor],
+        [self.gameFileProgress.trailingAnchor constraintEqualToAnchor:title.trailingAnchor],
+        [self.gameFileDetail.topAnchor constraintEqualToAnchor:self.gameFileProgress.bottomAnchor constant:14.0],
+        [self.gameFileDetail.leadingAnchor constraintEqualToAnchor:title.leadingAnchor],
+        [self.gameFileDetail.trailingAnchor constraintEqualToAnchor:title.trailingAnchor],
+        [self.gameFileDetail.bottomAnchor constraintEqualToAnchor:self.gameFileView.bottomAnchor constant:-26.0]
+    ];
+}
+
+- (void)hideGameFileProgress
+{
+    [self.gameFileView removeFromSuperview];
+    self.gameFileView = nil;
+    self.gameFileProgress = nil;
+    self.gameFileStage = nil;
+    self.gameFileDetail = nil;
+    self.modalBackdrop.hidden = YES;
+}
+
+- (NSString *)gxFormatBytes:(int64_t)bytes
+{
+    if (bytes < 1024) return [NSString stringWithFormat:@"%lld B", bytes];
+    if (bytes < 1024 * 1024) return [NSString stringWithFormat:@"%.1f KB", bytes / 1024.0];
+    if (bytes < 1024LL * 1024LL * 1024LL) return [NSString stringWithFormat:@"%.1f MB", bytes / (1024.0 * 1024.0)];
+    return [NSString stringWithFormat:@"%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0)];
+}
+
+- (NSString *)gxFormatTime:(NSTimeInterval)seconds
+{
+    if (seconds <= 0 || !isfinite(seconds)) return @"—";
+    NSInteger s = (NSInteger)ceil(seconds);
+    return [NSString stringWithFormat:@"%02ld:%02ld", (long)(s / 60), (long)(s % 60)];
+}
+
 - (void)downloadGameFile
 {
-    UIAlertController *alert =
-        [UIAlertController alertControllerWithTitle:@"GAMEFILE"
-                                            message:@"GameFile будет открыт для скачивания. После загрузки распакуйте содержимое в папку «Generals ZH» без дополнительной вложенной папки."
-                                     preferredStyle:UIAlertControllerStyleAlert];
+    [self showGameFileProgress];
 
-    [alert addAction:[UIAlertAction actionWithTitle:@"Отмена"
-                                              style:UIAlertActionStyleCancel
-                                            handler:nil]];
-    [alert addAction:[UIAlertAction actionWithTitle:@"Скачать"
-                                              style:UIAlertActionStyleDefault
-                                            handler:^(UIAlertAction *action) {
-        NSURL *url = [NSURL URLWithString:
-            @"https://www.dropbox.com/scl/fi/11yzk5dnym9d7cm1ie45g/generals-by-spideywv.zip?rlkey=c8wtkjf7dzos0kzq31vyfmomm&st=ts5phkhp&dl=1"];
-        if (url == nil)
-        {
-            fprintf(stderr, "ERROR: invalid GameFile download URL\\n");
-            return;
-        }
-
-        [[UIApplication sharedApplication] openURL:url
-                                           options:@{}
-                                 completionHandler:^(BOOL success) {
-            if (!success)
-                fprintf(stderr, "ERROR: failed to open GameFile download URL\\n");
+    __weak typeof(self) weakSelf = self;
+    [[GXGameFileManager sharedManager]
+        downloadAndInstallGameFileWithProgress:^(double progress, int64_t received, int64_t total, double speed, NSTimeInterval remaining) {
+            __strong typeof(weakSelf) self = weakSelf;
+            if (!self) return;
+            self.gameFileProgress.progress = (float)MAX(0.0, MIN(1.0, progress));
+            self.gameFileStage.text = [NSString stringWithFormat:@"Скачивание  •  %.0f%%", progress * 100.0];
+            NSString *sizeText = total > 0
+                ? [NSString stringWithFormat:@"%@ из %@", [self gxFormatBytes:received], [self gxFormatBytes:total]]
+                : [NSString stringWithFormat:@"%@", [self gxFormatBytes:received]];
+            NSString *speedText = speed > 0 ? [NSString stringWithFormat:@"Скорость: %@/s", [self gxFormatBytes:(int64_t)speed]] : @"Скорость: —";
+            NSString *timeText = [NSString stringWithFormat:@"Осталось: %@", [self gxFormatTime:remaining]];
+            self.gameFileDetail.text = [NSString stringWithFormat:@"%@\n%@\n%@", sizeText, speedText, timeText];
+        } status:^(NSString *stage, NSString *detail) {
+            __strong typeof(weakSelf) self = weakSelf;
+            if (!self) return;
+            self.gameFileStage.text = stage;
+            self.gameFileDetail.text = detail;
+        } completion:^(BOOL success, NSString *message) {
+            __strong typeof(weakSelf) self = weakSelf;
+            if (!self) return;
+            self.gameFileProgress.progress = success ? 1.0 : self.gameFileProgress.progress;
+            self.gameFileStage.text = success ? @"✓ GAMEFILE ГОТОВ" : @"✕ ОШИБКА";
+            self.gameFileDetail.text = message ?: @"";
+            if (success) self.gameFileProgress.progressTintColor = [UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0];
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                [self hideGameFileProgress];
+                [self loadНастройкиControls];
+            });
         }];
-    }]];
-    [self presentViewController:alert animated:YES completion:nil];
 }
 
 - (NSString *)valueForKey:(NSString *)key inContents:(NSString *)contents
