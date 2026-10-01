@@ -146,11 +146,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
     find_library(UIKIT_FRAMEWORK UIKit REQUIRED)
     find_library(QUARTZCORE_FRAMEWORK QuartzCore REQUIRED)
     find_library(OBJC_LIBRARY objc REQUIRED)
+    find_library(ZLIB_LIBRARY z REQUIRED)
     target_link_libraries(generalsx_ios_launcher PRIVATE
         ${FOUNDATION_FRAMEWORK}
         ${UIKIT_FRAMEWORK}
         ${QUARTZCORE_FRAMEWORK}
         ${OBJC_LIBRARY}
+        ${ZLIB_LIBRARY}
     )
     # The ESC overlay is compiled into z_generals itself, so its UIKit symbols
     # must also be linked into the game executable (not only the launcher dylib).
