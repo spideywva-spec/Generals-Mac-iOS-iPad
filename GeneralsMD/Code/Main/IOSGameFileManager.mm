@@ -354,10 +354,8 @@ static uint16_t GXRead16(const uint8_t *p) {
                     ok = NO;
                     if (message) *message = [NSString stringWithFormat:@"Ошибка распаковки: %@.", name];
                 } else {
-                    uint8_t *inBuffer = (uint8_t *)malloc(chunkSize);
                     uint8_t *outBuffer = (uint8_t *)malloc(chunkSize);
-                    if (!inBuffer || !outBuffer) {
-                        free(inBuffer);
+                    if (!outBuffer) {
                         free(outBuffer);
                         inflateEnd(&zs);
                         ok = NO;
@@ -416,7 +414,6 @@ static uint16_t GXRead16(const uint8_t *p) {
                                 @"ZIP: размер после распаковки не совпал для %@.", name];
                         }
 
-                        free(inBuffer);
                         free(outBuffer);
                         inflateEnd(&zs);
                     }
@@ -452,6 +449,17 @@ static uint16_t GXRead16(const uint8_t *p) {
         [fm removeItemAtPath:staging error:nil];
         if (message) *message = rootError.localizedDescription ?: @"Не удалось создать папку игры.";
         return NO;
+    }
+
+    // Remove only the legacy nested wrapper from older builds.
+    // This code never creates Documents/Generals ZH/Generals ZH.
+    NSString *legacyNestedRoot = [root stringByAppendingPathComponent:@"Generals ZH"];
+    while ([fm fileExistsAtPath:legacyNestedRoot]) {
+        [fm removeItemAtPath:legacyNestedRoot error:nil];
+        NSString *next = [legacyNestedRoot stringByAppendingPathComponent:@"Generals ZH"];
+        if ([next isEqualToString:legacyNestedRoot])
+            break;
+        legacyNestedRoot = next;
     }
 
     NSArray<NSString *> *stagedFiles = [fm subpathsAtPath:staging];
