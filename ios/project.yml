@@ -19,6 +19,8 @@ targets:
     platform: iOS
     sources:
       - path: Stub
+    frameworks:
+      - AVFoundation
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: me.ammaar.generalszh
