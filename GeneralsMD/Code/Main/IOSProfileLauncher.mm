@@ -487,6 +487,7 @@ UIButton *MakeButton(NSString *title, id target, SEL action)
 @property(nonatomic, strong) UILabel *gameFileStage;
 @property(nonatomic, strong) UILabel *gameFileDetail;
 @property(nonatomic, strong) UIButton *gameFileCancelButton;
+@property(nonatomic, strong) UIButton *gameFileReinstallButton;
 @property(nonatomic, strong) UIButton *gameFileMinimizeButton;
 @property(nonatomic, strong) UIButton *gameFileCloseButton;
 @property(nonatomic, strong) UILabel *gameFilePercentLabel;
@@ -1807,6 +1808,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     [self.gameFileView bringSubviewToFront:self.gameFileProgress];
     [self.gameFileView bringSubviewToFront:self.gameFileDetail];
     [self.gameFileView bringSubviewToFront:self.gameFileCancelButton];
+    [self.gameFileView bringSubviewToFront:self.gameFileReinstallButton];
     [self.gameFileView bringSubviewToFront:self.gameFileMinimizeButton];
     [self.gameFileView bringSubviewToFront:self.gameFileCloseButton];
 
@@ -1920,6 +1922,10 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.gameFileCancelButton.backgroundColor = [UIColor colorWithRed:0.40 green:0.08 blue:0.08 alpha:0.78];
     [self.gameFileView addSubview:self.gameFileCancelButton];
 
+    self.gameFileReinstallButton = MakeButton(@"Переустановить игру", self, @selector(reinstallGameFile));
+    self.gameFileReinstallButton.backgroundColor = [UIColor colorWithRed:0.08 green:0.30 blue:0.48 alpha:0.86];
+    [self.gameFileView addSubview:self.gameFileReinstallButton];
+
     [NSLayoutConstraint activateConstraints:@[
         [topBar.topAnchor constraintEqualToAnchor:self.gameFileView.topAnchor],
         [topBar.leadingAnchor constraintEqualToAnchor:self.gameFileView.leadingAnchor],
@@ -1953,8 +1959,23 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
         [self.gameFileCancelButton.leadingAnchor constraintEqualToAnchor:self.gameFileProgress.leadingAnchor],
         [self.gameFileCancelButton.bottomAnchor constraintEqualToAnchor:self.gameFileView.safeAreaLayoutGuide.bottomAnchor constant:-28.0],
-        [self.gameFileCancelButton.widthAnchor constraintEqualToConstant:230.0]
+        [self.gameFileCancelButton.widthAnchor constraintEqualToConstant:230.0],
+
+        [self.gameFileReinstallButton.leadingAnchor constraintEqualToAnchor:self.gameFileProgress.leadingAnchor],
+        [self.gameFileReinstallButton.bottomAnchor constraintEqualToAnchor:self.gameFileView.safeAreaLayoutGuide.bottomAnchor constant:-28.0],
+        [self.gameFileReinstallButton.widthAnchor constraintEqualToConstant:230.0]
     ]];
+
+    NSString *validationMessage = nil;
+    BOOL installed = [[GXGameFileManager sharedManager] validateInstalledGameFile:&validationMessage];
+    self.gameFileCancelButton.hidden = installed;
+    self.gameFileReinstallButton.hidden = !installed;
+    if (installed) {
+        self.gameFileStage.text = @"Игра уже установлена";
+        self.gameFileDetail.text = validationMessage.length > 0
+            ? validationMessage
+            : @"Файлы игры найдены и готовы к запуску. Если нужно, нажмите «Переустановить игру».";
+    }
 
     [self startGameFileBackgroundVideo];
 }
@@ -1978,6 +1999,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.gameFileStage.text = @"Отмена…";
     self.gameFileDetail.text = @"Отмена загрузки и распаковки файла игры…";
     self.gameFileCancelButton.enabled = NO;
+    self.gameFileReinstallButton.enabled = NO;
 }
 
 - (void)hideGameFileProgress
@@ -1989,6 +2011,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.gameFileStage = nil;
     self.gameFileDetail = nil;
     self.gameFileCancelButton = nil;
+    self.gameFileReinstallButton = nil;
     self.gameFileMinimizeButton = nil;
     self.gameFileCloseButton = nil;
     self.gameFilePercentLabel = nil;
@@ -2013,9 +2036,33 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
 - (void)downloadGameFile
 {
-    // Always open the installer. If the game is already installed, the same
-    // screen can be used to re-download/reinstall it instead of becoming inert.
+    // Always open the installer. When the game is already installed, the
+    // installer screen shows a dedicated «Переустановить игру» button.
     [self showGameFileProgress];
+
+    if ([[GXGameFileManager sharedManager] validateInstalledGameFile:nil])
+        return;
+
+    [self beginGameFileDownload];
+}
+
+- (void)reinstallGameFile
+{
+    if (self.gameFileReinstallButton != nil)
+        self.gameFileReinstallButton.hidden = YES;
+    [self beginGameFileDownload];
+}
+
+- (void)beginGameFileDownload
+{
+    self.gameFileCancelButton.hidden = NO;
+    self.gameFileCancelButton.enabled = YES;
+    self.gameFileReinstallButton.hidden = YES;
+    self.gameFileProgress.progress = 0.0;
+    self.gameFilePercentLabel.text = @"0%";
+    self.gameFileStage.text = @"Скачивание";
+    self.gameFileDetail.text = @"Подключение…";
+    [self startGameFileBackgroundVideo];
 
     __weak GXProfileLauncherViewController *weakSelf = self;
     [[GXGameFileManager sharedManager]
@@ -2298,227 +2345,3 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.fpsSlider.alpha = enabled ? 1.0 : 0.35;
     self.fpsValue.alpha = enabled ? 1.0 : 0.35;
 }
-
-- (BOOL)saveZeroHourSettingsAndOptions:(NSError **)error
-{
-    NSArray<NSString *> *controlBars = @[@"ZeroHour", @"Pro", @"Standard"];
-    NSArray<NSString *> *cameos = @[@"Standard", @"HD"];
-    NSArray<NSString *> *music = @[@"Standard", @"Enhanced", @"The Score"];
-    NSArray<NSString *> *voices = @[@"English", @"Native"];
-    NSArray<NSString *> *hotkeys = @[@"Original", @"Leikeze"];
-    NSArray<NSString *> *languages = @[@"English", @"Russian"];
-    NSArray<NSString *> *portraits = @[@"Standard", @"Funny"];
-
-    NSInteger particleIndex = self.particleQualitySegment.selectedSegmentIndex;
-    NSInteger particleCount = particleIndex == 0 ? 1000 : (particleIndex == 2 ? 5000 : 2500);
-
-    NSArray<NSString *> *filters = @[@"Bilinear", @"Trilinear", @"Anisotropic"];
-    NSString *filter = filters[MAX(0, MIN(2, self.textureFilterSegment.selectedSegmentIndex))];
-
-    NSMutableDictionary<NSString *, NSString *> *zeroHour = [DefaultZeroHourSettings() mutableCopy];
-    zeroHour[@"ControlBar"] = controlBars[self.zeroHourControlBarSegment.selectedSegmentIndex];
-    zeroHour[@"Cameos"] = cameos[self.zeroHourCameosSegment.selectedSegmentIndex];
-    zeroHour[@"Music"] = music[self.zeroHourMusicSegment.selectedSegmentIndex];
-    zeroHour[@"UnitVoices"] = voices[self.zeroHourVoicesSegment.selectedSegmentIndex];
-    zeroHour[@"Hotkeys"] = hotkeys[self.zeroHourHotkeysSegment.selectedSegmentIndex];
-    zeroHour[@"HotkeyLanguage"] = languages[self.zeroHourHotkeyLanguageSegment.selectedSegmentIndex];
-    zeroHour[@"Portraits"] = portraits[self.zeroHourPortraitsSegment.selectedSegmentIndex];
-    zeroHour[@"FogEffects"] = self.zeroHourFogSwitch.on ? @"Yes" : @"No";
-    zeroHour[@"WaterEffects"] = self.zeroHourWaterSwitch.on ? @"Yes" : @"No";
-    zeroHour[@"ExtraBuildingProps"] = self.zeroHourExtraBuildingPropsSwitch.on ? @"Yes" : @"No";
-
-    zeroHour[@"UseShadowVolumes"] = self.shadow3DSwitch.on ? @"Yes" : @"No";
-    zeroHour[@"UseShadowDecals"] = self.shadow2DSwitch.on ? @"Yes" : @"No";
-    zeroHour[@"UseCloudMap"] = self.cloudShadowsSwitch.on ? @"Yes" : @"No";
-    zeroHour[@"UseLightMap"] = self.groundLightingSwitch.on ? @"Yes" : @"No";
-    zeroHour[@"ShowSoftWaterEdge"] = self.softWaterSwitch.on ? @"Yes" : @"No";
-    zeroHour[@"BuildingOcclusion"] = self.buildingOcclusionSwitch.on ? @"Yes" : @"No";
-    zeroHour[@"ShowTrees"] = self.showPropsSwitch.on ? @"Yes" : @"No";
-    zeroHour[@"ExtraAnimations"] = self.extraAnimationsSwitch.on ? @"Yes" : @"No";
-    zeroHour[@"DynamicLOD"] = self.dynamicLODSwitch.on ? @"Yes" : @"No";
-    zeroHour[@"HeatEffects"] = self.heatEffectsSwitch.on ? @"Yes" : @"No";
-    zeroHour[@"TextureReduction"] = [NSString stringWithFormat:@"%ld", (long)self.textureQualitySegment.selectedSegmentIndex];
-    zeroHour[@"MaxParticleCount"] = [NSString stringWithFormat:@"%ld", (long)particleCount];
-    zeroHour[@"TextureFilter"] = filter;
-    zeroHour[@"AnisotropyLevel"] = self.textureFilterSegment.selectedSegmentIndex == 2 ? @"8" : @"2";
-
-    if (!WriteKeyValueFile(ZeroHourSettingsPath(), zeroHour, error))
-        return NO;
-
-    NSMutableDictionary<NSString *, NSString *> *options = ReadKeyValueFile(EngineOptionsPath());
-    options[@"IdealStaticGameLOD"] = @"High";
-    options[@"StaticGameLOD"] = @"Custom";
-    for (NSString *key in @[
-        @"UseShadowVolumes", @"UseShadowDecals", @"UseCloudMap", @"UseLightMap",
-        @"ShowSoftWaterEdge", @"BuildingOcclusion", @"ShowTrees", @"ExtraAnimations",
-        @"DynamicLOD", @"HeatEffects", @"TextureReduction", @"MaxParticleCount",
-        @"TextureFilter", @"AnisotropyLevel"
-    ])
-    {
-        options[key] = zeroHour[key];
-    }
-
-    return WriteKeyValueFile(EngineOptionsPath(), options, error);
-}
-
-- (void)saveНастройки
-{
-    NSString *contents = [NSString stringWithFormat:
-        @"GameData\n"
-         "  MaxCameraHeight = %.1f\n"
-         "  MinCameraHeight = %.1f\n"
-         "  CameraPitch = %.1f\n"
-         "  EnforceMaxCameraHeight = %@\n"
-         "  KeyboardScrollSpeedFactor = %.1f\n"
-         "  TerrainDrawDistanceScale = %.2f\n"
-         "  UseFPSLimit = %@\n"
-         "  FramesPerSecondLimit = %.0f\n"
-         "End\n",
-        self.maxCameraSlider.value,
-        self.minCameraSlider.value,
-        self.cameraPitchSlider.value,
-        self.enforceMaxSwitch.on ? @"Yes" : @"No",
-        self.scrollSpeedSlider.value,
-        self.drawDistanceSlider.value,
-        self.fpsLimitSwitch.on ? @"Yes" : @"No",
-        self.fpsSlider.value];
-
-    NSError *error = nil;
-    BOOL cameraOK = [contents writeToFile:IOSIPadOverridesPath()
-                               atomically:YES
-                                 encoding:NSUTF8StringEncoding
-                                    error:&error];
-    BOOL zeroHourOK = cameraOK ? [self saveZeroHourSettingsAndOptions:&error] : NO;
-
-    if (cameraOK && zeroHourOK)
-    {
-        self.settingsStatus.text = @"Сохранитьd. Changes apply on the next game launch.";
-        self.settingsStatus.textColor = [UIColor systemGreenColor];
-        fprintf(stderr,
-                "[ZEROHOUR-SETTINGS] saved settings=%s options=%s camera=%s\n",
-                ZeroHourSettingsPath().fileSystemRepresentation,
-                EngineOptionsPath().fileSystemRepresentation,
-                IOSIPadOverridesPath().fileSystemRepresentation);
-    }
-    else
-    {
-        self.settingsStatus.text = @"Сохранить failed. See generals-stderr.log.";
-        self.settingsStatus.textColor = [UIColor systemRedColor];
-        fprintf(stderr, "ERROR: iOS launcher failed to save settings: %s\n",
-                error != nil ? [[error description] UTF8String] : "unknown");
-    }
-}
-
-- (void)resetНастройки
-{
-    [self resetНастройкиControls];
-    self.settingsStatus.text = @"Default values loaded. Tap Сохранить to apply.";
-    self.settingsStatus.textColor = [UIColor colorWithWhite:0.65 alpha:1.0];
-}
-
-@end
-
-const char *GeneralsXRunIOSProfileLauncher()
-{
-    // GeneralsX @feature dvorovrus 25/09/2026 Allow automation/debug builds to skip the UI.
-    const char *forcedProfile = getenv("GX_LAUNCH_PROFILE");
-    if (IsSupportedProfile(forcedProfile))
-    {
-        strlcpy(gSelectedProfile, forcedProfile, sizeof(gSelectedProfile));
-        fprintf(stderr, "INFO: iOS launcher forced profile: %s\n", gSelectedProfile);
-        return gSelectedProfile;
-    }
-
-    // Dedicated variants keep a single-game launcher so settings remain
-    // accessible. Quick Start restores direct boot when the user enables it.
-    NSString *autoProfile = BundledAutoLaunchProfile();
-    if (autoProfile != nil)
-    {
-        const char *utf8 = [autoProfile UTF8String];
-        strlcpy(gSelectedProfile, utf8, sizeof(gSelectedProfile));
-
-        if (![autoProfile isEqualToString:@"zerohour"])
-        {
-            fprintf(stderr, "INFO: iOS launcher auto-selected bundled profile: %s\n",
-                    gSelectedProfile);
-            return gSelectedProfile;
-        }
-
-        fprintf(stderr,
-                "[ZEROHOUR-SETTINGS] dedicated ZeroHour launcher shown for settings access\n");
-    }
-
-    gLauncherFinished.store(false, std::memory_order_release);
-    if (autoProfile == nil)
-        strlcpy(gSelectedProfile, "vanilla", sizeof(gSelectedProfile));
-
-    __block UIWindow *launcherWindow = nil;
-
-    void (^presentLauncher)(void) = ^{
-        UIWindowScene *scene = FindActiveWindowScene();
-        if (scene != nil)
-        {
-            launcherWindow = [[UIWindow alloc] initWithWindowScene:scene];
-            launcherWindow.frame = scene.coordinateSpace.bounds;
-        }
-        else
-        {
-            launcherWindow = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-        }
-
-        launcherWindow.windowLevel = UIWindowLevelNormal + 1.0;
-        launcherWindow.rootViewController = [[GXProfileLauncherViewController alloc] init];
-        [launcherWindow makeKeyAndVisible];
-
-        fprintf(stderr, "INFO: iOS native launcher presented\n");
-    };
-
-    if ([NSThread isMainThread])
-    {
-        presentLauncher();
-    }
-    else
-    {
-        dispatch_sync(dispatch_get_main_queue(), presentLauncher);
-    }
-
-    // SDL's iOS bootstrap is already inside UIApplicationMain. Keep the native
-    // main run loop alive until a profile is selected.
-    if ([NSThread isMainThread])
-    {
-        while (!gLauncherFinished.load(std::memory_order_acquire))
-        {
-            @autoreleasepool
-            {
-                [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode
-                                      beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
-            }
-        }
-    }
-    else
-    {
-        while (!gLauncherFinished.load(std::memory_order_acquire))
-        {
-            usleep(10000);
-        }
-    }
-
-    void (^dismissLauncher)(void) = ^{
-        launcherWindow.hidden = YES;
-        launcherWindow.rootViewController = nil;
-        launcherWindow = nil;
-    };
-
-    if ([NSThread isMainThread])
-    {
-        dismissLauncher();
-    }
-    else
-    {
-        dispatch_sync(dispatch_get_main_queue(), dismissLauncher);
-    }
-
-    return gSelectedProfile;
-}
-
-#endif
