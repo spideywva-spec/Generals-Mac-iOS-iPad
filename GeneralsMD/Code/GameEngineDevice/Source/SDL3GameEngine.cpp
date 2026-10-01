@@ -504,10 +504,10 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
                                        cancelX, cancelY, SDL_BUTTON_RIGHT);
                     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                                       cx, cy, SDL_BUTTON_RIGHT);
+                                       cancelX, cancelY, SDL_BUTTON_RIGHT);
                     // Never leave a synthetic drag button latched after a two-finger tap.
                     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                                       cx, cy, SDL_BUTTON_LEFT);
+                                       cancelX, cancelY, SDL_BUTTON_LEFT);
                     s_touch.phase = TouchState::IDLE;
                     s_touch.finger1 = 0;
                     s_touch.finger2 = 0;
@@ -531,13 +531,6 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 }
 
                 if (!s_touch.finger1Active && !s_touch.finger2Active) {
-                    const float cx =
-                        (s_touch.twoFingerStart1X + s_touch.twoFingerStart2X) *
-                        0.5f * (float)winW;
-                    const float cy =
-                        (s_touch.twoFingerStart1Y + s_touch.twoFingerStart2Y) *
-                        0.5f * (float)winH;
-
                     // Жёстко закрываем любое возможное старое состояние drag
                     // перед cancel-click, но НИКОГДА не двигаем мышь к центру.
                     const float cancelX = s_touch.syntheticX;
@@ -558,7 +551,7 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                     s_touch.finger2Active = false;
                     s_touch.twoFingerTapCandidate = false;
                     s_touch.pinchDist = 0.0f;
-                    resetSyntheticPosition(cx, cy);
+                    resetSyntheticPosition(cancelX, cancelY);
                 }
                 break;
             }
