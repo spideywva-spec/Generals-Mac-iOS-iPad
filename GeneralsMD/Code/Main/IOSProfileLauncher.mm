@@ -654,7 +654,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     zeroHour.textColor = UIColor.whiteColor;
     [hero addSubview:zeroHour];
 
-    UILabel *tagline = MakeLabel(@"Modern gaming launcher • Dark tactical edition", 13.0, UIFontWeightRegular);
+    UILabel *tagline = MakeLabel(@"Нативный лаунчер от spideywv", 13.0, UIFontWeightRegular);
     tagline.textAlignment = NSTextAlignmentLeft;
     tagline.textColor = [UIColor colorWithWhite:0.65 alpha:1.0];
     [hero addSubview:tagline];
