@@ -277,9 +277,11 @@ void beginPinch(SDL3Mouse *mouse, SDL_Window *window, int winW, int winH)
     s_touch.twoFingerStartDist = s_touch.pinchDist;
     s_touch.phase = TouchState::PINCH;
 
-    resetSyntheticPosition(
-        (s_touch.f1x + s_touch.f2x) * 0.5f * (float)winW,
-        (s_touch.f1y + s_touch.f2y) * 0.5f * (float)winH);
+    // Do not synthesize a mouse move to the pinch center. The game can treat
+    // that xrel/yrel jump as camera motion even though RMB was released.
+    // Keep the current synthetic cursor position stable while the two-finger
+    // gesture owns the input.
+    resetSyntheticPosition(s_touch.lastX, s_touch.lastY);
 }
 
 void beginCameraPan(SDL3Mouse *mouse, SDL_Window *window)
@@ -462,9 +464,9 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             if (event.type == SDL_EVENT_FINGER_CANCELED) {
                 // Cancel any synthetic drag state before dropping the touch state.
                 sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                                   px, py, SDL_BUTTON_RIGHT);
+                                   s_touch.syntheticX, s_touch.syntheticY, SDL_BUTTON_RIGHT);
                 sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                                   px, py, SDL_BUTTON_LEFT);
+                                   s_touch.syntheticX, s_touch.syntheticY, SDL_BUTTON_LEFT);
                 s_touch.phase = TouchState::IDLE;
                 s_touch.finger1 = 0;
                 s_touch.finger2 = 0;
@@ -494,9 +496,13 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                     const float cy =
                         (s_touch.twoFingerStart1Y + s_touch.twoFingerStart2Y) *
                         0.5f * (float)winH;
-                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, cx, cy);
+                    // Two-finger cancel must not move the synthetic cursor.
+                    // Clicking at the current synthetic position prevents the
+                    // old "camera jumps right" behavior.
+                    const float cancelX = s_touch.syntheticX;
+                    const float cancelY = s_touch.syntheticY;
                     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
-                                       cx, cy, SDL_BUTTON_RIGHT);
+                                       cancelX, cancelY, SDL_BUTTON_RIGHT);
                     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
                                        cx, cy, SDL_BUTTON_RIGHT);
                     // Never leave a synthetic drag button latched after a two-finger tap.
@@ -532,16 +538,18 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                         (s_touch.twoFingerStart1Y + s_touch.twoFingerStart2Y) *
                         0.5f * (float)winH;
 
-                    // Жёстко закрываем любое возможное старое состояние drag перед cancel-click.
+                    // Жёстко закрываем любое возможное старое состояние drag
+                    // перед cancel-click, но НИКОГДА не двигаем мышь к центру.
+                    const float cancelX = s_touch.syntheticX;
+                    const float cancelY = s_touch.syntheticY;
                     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                                       cx, cy, SDL_BUTTON_RIGHT);
+                                       cancelX, cancelY, SDL_BUTTON_RIGHT);
                     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                                       cx, cy, SDL_BUTTON_LEFT);
-                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, cx, cy);
+                                       cancelX, cancelY, SDL_BUTTON_LEFT);
                     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
-                                       cx, cy, SDL_BUTTON_RIGHT);
+                                       cancelX, cancelY, SDL_BUTTON_RIGHT);
                     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                                       cx, cy, SDL_BUTTON_RIGHT);
+                                       cancelX, cancelY, SDL_BUTTON_RIGHT);
 
                     s_touch.phase = TouchState::IDLE;
                     s_touch.finger1 = 0;
