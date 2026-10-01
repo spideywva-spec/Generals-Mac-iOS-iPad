@@ -144,6 +144,8 @@ struct TouchState {
     Phase phase = IDLE;
     SDL_FingerID finger1 = 0;
     SDL_FingerID finger2 = 0;
+    bool finger1Active = false;
+    bool finger2Active = false;
 
     float downX = 0.0f, downY = 0.0f;
     float lastX = 0.0f, lastY = 0.0f;
@@ -279,6 +281,8 @@ void resetToSingleFingerPending(SDL_FingerID finger, float x, float y)
 {
     s_touch.finger1 = finger;
     s_touch.finger2 = 0;
+    s_touch.finger1Active = true;
+    s_touch.finger2Active = false;
     s_touch.downX = s_touch.lastX = x;
     s_touch.downY = s_touch.lastY = y;
     s_touch.f1x = x;
@@ -333,6 +337,7 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                    s_touch.phase == TouchState::CAMERA_PAN ||
                    s_touch.phase == TouchState::SELECTING) {
             s_touch.finger2 = event.tfinger.fingerID;
+            s_touch.finger2Active = true;
             s_touch.f2x = event.tfinger.x;
             s_touch.f2y = event.tfinger.y;
             beginPinch(mouse, window, winW, winH);
@@ -407,17 +412,19 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 break;
             }
 
-            const bool firstReleased = event.tfinger.fingerID == s_touch.finger1;
-            const bool secondReleased = event.tfinger.fingerID == s_touch.finger2;
+            const bool firstReleased =
+                s_touch.finger1Active && event.tfinger.fingerID == s_touch.finger1;
+            const bool secondReleased =
+                s_touch.finger2Active && event.tfinger.fingerID == s_touch.finger2;
 
             if (s_touch.twoFingerTapCandidate && (firstReleased || secondReleased)) {
                 if (firstReleased) {
-                    s_touch.finger1 = 0;
+                    s_touch.finger1Active = false;
                 } else {
-                    s_touch.finger2 = 0;
+                    s_touch.finger2Active = false;
                 }
 
-                if (s_touch.finger1 == 0 && s_touch.finger2 == 0) {
+                if (!s_touch.finger1Active && !s_touch.finger2Active) {
                     const float cx =
                         (s_touch.twoFingerStart1X + s_touch.twoFingerStart2X) *
                         0.5f * (float)winW;
@@ -429,31 +436,43 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                                        cx, cy, SDL_BUTTON_RIGHT);
                     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
                                        cx, cy, SDL_BUTTON_RIGHT);
+                    // Never leave a synthetic drag button latched after a two-finger tap.
+                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
+                                       cx, cy, SDL_BUTTON_LEFT);
                     s_touch.phase = TouchState::IDLE;
+                    s_touch.finger1 = 0;
+                    s_touch.finger2 = 0;
+                    s_touch.finger1Active = false;
+                    s_touch.finger2Active = false;
                     s_touch.twoFingerTapCandidate = false;
+                    resetSyntheticPosition(cx, cy);
                 }
                 break;
             }
 
-            if (firstReleased && s_touch.finger2 != 0) {
-                resetToSingleFingerPending(
-                    s_touch.finger2,
-                    s_touch.f2x * (float)winW,
-                    s_touch.f2y * (float)winH);
-            } else if (secondReleased && s_touch.finger1 != 0) {
-                resetToSingleFingerPending(
-                    s_touch.finger1,
-                    s_touch.f1x * (float)winW,
-                    s_touch.f1y * (float)winH);
+            if (firstReleased && s_touch.finger2Active) {
+                const SDL_FingerID remainingFinger = s_touch.finger2;
+                const float remainingX = s_touch.f2x * (float)winW;
+                const float remainingY = s_touch.f2y * (float)winH;
+                s_touch.finger2Active = false;
+                resetToSingleFingerPending(remainingFinger, remainingX, remainingY);
+            } else if (secondReleased && s_touch.finger1Active) {
+                const SDL_FingerID remainingFinger = s_touch.finger1;
+                const float remainingX = s_touch.f1x * (float)winW;
+                const float remainingY = s_touch.f1y * (float)winH;
+                s_touch.finger1Active = false;
+                resetToSingleFingerPending(remainingFinger, remainingX, remainingY);
             } else {
                 s_touch.phase = TouchState::IDLE;
                 s_touch.finger1 = 0;
                 s_touch.finger2 = 0;
+                s_touch.finger1Active = false;
+                s_touch.finger2Active = false;
             }
             break;
         }
 
-        if (event.tfinger.fingerID != s_touch.finger1) {
+        if (!s_touch.finger1Active || event.tfinger.fingerID != s_touch.finger1) {
             break;
         }
 
@@ -486,6 +505,9 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
         s_touch.phase = TouchState::IDLE;
         s_touch.finger1 = 0;
         s_touch.finger2 = 0;
+        s_touch.finger1Active = false;
+        s_touch.finger2Active = false;
+        resetSyntheticPosition(s_touch.lastX, s_touch.lastY);
         break;
     }
 }
