@@ -150,22 +150,21 @@ NSString *BundledAutoLaunchProfile()
 NSString *GameRootPath()
 {
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-    NSString *root = [documents stringByAppendingPathComponent:@"Generals ZH"];
-    [[NSFileManager defaultManager] createDirectoryAtPath:root
-                              withIntermediateDirectories:YES
-                                               attributes:nil
-                                                    error:nil];
-    return root;
+    return [documents stringByAppendingPathComponent:@"Generals ZH"];
 }
 
 NSString *IOSIPadOverridesPath()
 {
-    return [GameRootPath() stringByAppendingPathComponent:@"iOSIPadOverrides.ini"];
+    // Keep launcher-owned iOS settings beside the game directory, exactly where
+    // the native launcher originally created them: Documents/iOSIPadOverrides.ini.
+    return DocumentsFilePath(@"iOSIPadOverrides.ini");
 }
 
 NSString *ZeroHourSettingsPath()
 {
-    return [GameRootPath() stringByAppendingPathComponent:@"ZeroHourSettings.ini"];
+    // ZeroHourSettings.ini is also a Documents-level launcher setting, not part
+    // of Documents/Generals ZH and never nested inside another Generals ZH.
+    return DocumentsFilePath(@"ZeroHourSettings.ini");
 }
 
 NSString *EngineOptionsPath()
@@ -875,8 +874,8 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         {
             // Keep the status card compact; the hero is the dominant panel.
             // This prevents UIStackView from stretching status to half-screen.
-            [sidePanel.widthAnchor constraintEqualToConstant:268.0].active = YES;
-            [hero.widthAnchor constraintGreaterThanOrEqualToConstant:420.0].active = YES;
+            [sidePanel.widthAnchor constraintEqualToConstant:210.0].active = YES;
+            [hero.widthAnchor constraintGreaterThanOrEqualToConstant:520.0].active = YES;
         }
     };
 
