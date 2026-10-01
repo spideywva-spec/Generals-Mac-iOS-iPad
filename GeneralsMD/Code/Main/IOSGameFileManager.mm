@@ -121,6 +121,12 @@ didFinishDownloadingToURL:(NSURL *)location {
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
         NSString *message = nil;
         BOOL ok = [self extractZIPAtPath:tmp message:&message];
+
+        // The archive is no longer needed once extraction has completed.
+        // Delete it BEFORE the verification pass so the temporary ZIP never
+        // competes with the installed game for disk space during the final scan.
+        [[NSFileManager defaultManager] removeItemAtPath:tmp error:nil];
+
         if (ok) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (self.status) self.status(@"Проверка", @"Проверка файла игры…");
@@ -129,7 +135,6 @@ didFinishDownloadingToURL:(NSURL *)location {
         }
 
         dispatch_async(dispatch_get_main_queue(), ^{
-            [[NSFileManager defaultManager] removeItemAtPath:tmp error:nil];
             [self finish:ok message:message ?: (ok ? @"Файл игры готов." : @"Файл игры не установлен.")];
         });
     });
