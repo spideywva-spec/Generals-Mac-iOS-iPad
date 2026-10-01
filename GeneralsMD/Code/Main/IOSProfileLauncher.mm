@@ -543,15 +543,16 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
     UIScrollView *scrollView = [[UIScrollView alloc] init];
     scrollView.translatesAutoresizingMaskIntoConstraints = NO;
-    scrollView.alwaysBounceVertical = YES;
+    scrollView.scrollEnabled = NO;
+    scrollView.alwaysBounceVertical = NO;
     scrollView.showsVerticalScrollIndicator = NO;
     scrollView.backgroundColor = UIColor.clearColor;
 
     UIStackView *content = [[UIStackView alloc] init];
     content.translatesAutoresizingMaskIntoConstraints = NO;
     content.axis = UILayoutConstraintAxisVertical;
-    content.spacing = 14.0;
-    content.layoutMargins = UIEdgeInsetsMake(20.0, 18.0, 28.0, 18.0);
+    content.spacing = 7.0;
+    content.layoutMargins = UIEdgeInsetsMake(8.0, 12.0, 10.0, 12.0);
     content.layoutMarginsRelativeArrangement = YES;
 
     UIView *header = [[UIView alloc] init];
@@ -693,13 +694,13 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
         [play.leadingAnchor constraintEqualToAnchor:hero.leadingAnchor constant:28.0],
         [play.bottomAnchor constraintEqualToAnchor:hero.bottomAnchor constant:-28.0],
-        [play.widthAnchor constraintEqualToConstant:300.0],
-        [play.heightAnchor constraintEqualToConstant:62.0],
+        [play.widthAnchor constraintEqualToConstant:250.0],
+        [play.heightAnchor constraintEqualToConstant:46.0],
 
         [heroHint.trailingAnchor constraintEqualToAnchor:hero.trailingAnchor constant:-28.0],
         [heroHint.centerYAnchor constraintEqualToAnchor:play.centerYAnchor],
 
-        [hero.heightAnchor constraintGreaterThanOrEqualToConstant:310.0]
+        [hero.heightAnchor constraintGreaterThanOrEqualToConstant:172.0]
     ]];
 
     [content addArrangedSubview:hero];
@@ -716,7 +717,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.gameFileStatusButton = [self makeLauncherCard:@"СТАТУС ФАЙЛА ИГРЫ"
                                         subtitle:@"Проверка…"
                                            icon:@"checkmark.circle.fill"
-                                          action:NULL
+                                          action:@selector(downloadGameFile)
                                       accentColor:[UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0]];
     [sideStack addArrangedSubview:self.gameFileStatusButton];
     [sidePanel addSubview:sideStack];
@@ -858,7 +859,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     button.layer.cornerRadius = 18.0;
     button.layer.borderWidth = 1.0;
     button.layer.borderColor = [UIColor colorWithRed:0.12 green:0.30 blue:0.50 alpha:0.75].CGColor;
-    button.contentEdgeInsets = UIEdgeInsetsMake(14.0, 16.0, 14.0, 16.0);
+    button.contentEdgeInsets = UIEdgeInsetsMake(8.0, 12.0, 8.0, 12.0);
 
     UIImage *image = [UIImage systemImageNamed:iconName];
     if (image != nil)
@@ -918,8 +919,8 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         {
             // Keep the status card compact; the hero is the dominant panel.
             // This prevents UIStackView from stretching status to half-screen.
-            [sidePanel.widthAnchor constraintEqualToConstant:210.0].active = YES;
-            [hero.widthAnchor constraintGreaterThanOrEqualToConstant:520.0].active = YES;
+            [sidePanel.widthAnchor constraintEqualToConstant:190.0].active = YES;
+            [hero.widthAnchor constraintGreaterThanOrEqualToConstant:0.0].active = YES;
         }
     };
 
@@ -1333,9 +1334,9 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         ? [UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0]
         : [UIColor colorWithRed:1.0 green:0.55 blue:0.25 alpha:1.0];
 
-    NSString *display = [NSString stringWithFormat:@"СТАТУС ФАЙЛА ИГРЫ\n%@", subtitle];
+    NSString *display = [NSString stringWithFormat:@"%@  СТАТУС ФАЙЛА ИГРЫ\n%@", ready ? @"✓" : @"⚠", subtitle];
     NSMutableAttributedString *attributed = [[NSMutableAttributedString alloc] initWithString:display];
-    NSString *titleText = @"СТАТУС ФАЙЛА ИГРЫ";
+    NSString *titleText = ready ? @"✓  СТАТУС ФАЙЛА ИГРЫ" : @"⚠  СТАТУС ФАЙЛА ИГРЫ";
     [attributed addAttribute:NSFontAttributeName
                        value:[UIFont systemFontOfSize:15.0 weight:UIFontWeightBold]
                        range:NSMakeRange(0, titleText.length)];
@@ -1699,7 +1700,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
     self.gameFileVideoLayer = [AVPlayerLayer playerLayerWithPlayer:self.gameFileVideoPlayer];
     self.gameFileVideoLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
-    self.gameFileVideoLayer.opacity = 0.92;
+    self.gameFileVideoLayer.opacity = 1.0;
     self.gameFileVideoLayer.frame = self.gameFileView.bounds;
     [self.gameFileView.layer insertSublayer:self.gameFileVideoLayer atIndex:0];
 
@@ -1831,6 +1832,13 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         [edge removeFromSuperview];
     [self.gameFileEdgeBlurViews removeAllObjects];
     self.gameFileEdgeBlurViews = nil;
+}
+
+- (void)viewDidLayoutSubviews
+{
+    [super viewDidLayoutSubviews];
+    if (self.gameFileVideoLayer != nil)
+        self.gameFileVideoLayer.frame = self.gameFileView.bounds;
 }
 
 - (void)dealloc
@@ -2005,14 +2013,8 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
 - (void)downloadGameFile
 {
-    NSString *existingMessage = nil;
-    if ([[GXGameFileManager sharedManager] validateInstalledGameFile:&existingMessage])
-    {
-        [self refreshGameFileStatusCard];
-        fprintf(stderr, "INFO: iOS launcher skipped game-file download screen because the game is already installed.\\n");
-        return;
-    }
-
+    // Always open the installer. If the game is already installed, the same
+    // screen can be used to re-download/reinstall it instead of becoming inert.
     [self showGameFileProgress];
 
     __weak GXProfileLauncherViewController *weakSelf = self;
