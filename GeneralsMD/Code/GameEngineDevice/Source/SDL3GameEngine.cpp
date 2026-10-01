@@ -361,27 +361,16 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
         } else if (s_touch.phase == TouchState::PENDING ||
                    s_touch.phase == TouchState::CAMERA_PAN ||
                    s_touch.phase == TouchState::SELECTING) {
-            // Two fingers = ПКМ/cancel only. Do NOT start pinch/zoom and do NOT
-            // allow the remaining finger to inherit the one-finger camera drag.
-            // This makes the gesture deterministic and prevents a stuck camera.
+            // Second finger cancels one-finger camera/selection state and starts
+            // the real two-finger pinch. The previous cancel-only path disabled
+            // zoom completely.
             releaseSyntheticButtons(mouse, window, s_touch.lastX, s_touch.lastY);
 
             s_touch.finger2 = event.tfinger.fingerID;
             s_touch.finger2Active = true;
             s_touch.f2x = event.tfinger.x;
             s_touch.f2y = event.tfinger.y;
-            s_touch.phase = TouchState::TWO_FINGER_CANCEL;
-
-            const float cx = (px + s_touch.lastX) * 0.5f;
-            const float cy = (py + s_touch.lastY) * 0.5f;
-            sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, cx, cy);
-            sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
-                               cx, cy, SDL_BUTTON_RIGHT);
-            sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                               cx, cy, SDL_BUTTON_RIGHT);
-
-            // Both fingers are now owned by the cancel gesture. A new
-            // one-finger touch is required before camera control can resume.
+            beginPinch(mouse, window, winW, winH);
         }
         break;
 
