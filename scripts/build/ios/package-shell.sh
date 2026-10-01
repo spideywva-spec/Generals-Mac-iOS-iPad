@@ -70,6 +70,16 @@ if [[ -f "${PLIST}" ]]; then
 fi
 
 cp "${GAME_BIN}" "${APP}/${APP_NAME}"
+
+# Native install-screen background video. The launcher loads this from the main bundle.
+VIDEO_SRC="${PROJECT_ROOT}/resources/intro.mp4"
+if [[ -f "${VIDEO_SRC}" ]]; then
+  cp "${VIDEO_SRC}" "${APP}/intro.mp4"
+  echo "==> Embedded install background video: intro.mp4"
+else
+  echo "ERROR: missing install background video: ${VIDEO_SRC}"
+  exit 1
+fi
 mkdir -p "${APP}/Frameworks"
 
 for lib in \
