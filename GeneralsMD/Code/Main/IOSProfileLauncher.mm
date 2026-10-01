@@ -147,14 +147,25 @@ NSString *BundledAutoLaunchProfile()
     return value;
 }
 
+NSString *GameRootPath()
+{
+    NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+    NSString *root = [documents stringByAppendingPathComponent:@"Generals ZH"];
+    [[NSFileManager defaultManager] createDirectoryAtPath:root
+                              withIntermediateDirectories:YES
+                                               attributes:nil
+                                                    error:nil];
+    return root;
+}
+
 NSString *IOSIPadOverridesPath()
 {
-    return [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/iOSIPadOverrides.ini"];
+    return [GameRootPath() stringByAppendingPathComponent:@"iOSIPadOverrides.ini"];
 }
 
 NSString *ZeroHourSettingsPath()
 {
-    return DocumentsFilePath(@"ZeroHourSettings.ini");
+    return [GameRootPath() stringByAppendingPathComponent:@"ZeroHourSettings.ini"];
 }
 
 NSString *EngineOptionsPath()
@@ -1259,9 +1270,6 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 {
     if (self.gameFileStatusButton == nil)
         return;
-
-    NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-    NSString *gameRoot = [documents stringByAppendingPathComponent:@"Generals ZH"];
 
     NSString *message = nil;
     BOOL ready = [[GXGameFileManager sharedManager] validateInstalledGameFile:&message];
