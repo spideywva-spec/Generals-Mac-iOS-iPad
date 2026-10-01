@@ -234,30 +234,55 @@ static uint16_t GXRead16(const uint8_t *p) {
     return YES;
 }
 
-- (BOOL)verifyGameFiles:(NSString **)message {
+- (BOOL)validateInstalledGameFile:(NSString **)message {
+    // Единая проверка GameFile: используется после установки, в статусе лаунчера
+    // и в разделе Диагностика. Ожидается ровно 44 обычных файла.
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
     NSString *root = [documents stringByAppendingPathComponent:@"Generals ZH"];
     NSFileManager *fm = [NSFileManager defaultManager];
-    NSArray *items = [fm subpathsAtPath:root];
-    if (items.count == 0) {
-        if (message) *message = @"Проверка: папка Generals ZH пуста.";
+
+    BOOL isDirectory = NO;
+    if (![fm fileExistsAtPath:root isDirectory:&isDirectory] || !isDirectory) {
+        if (message) *message = @"GameFile: НЕ УСТАНОВЛЕН — папка Generals ZH отсутствует.";
         return NO;
     }
+
+    NSArray *items = [fm subpathsAtPath:root];
     NSUInteger files = 0;
+    NSUInteger emptyFiles = 0;
+
     for (NSString *relative in items) {
         NSString *path = [root stringByAppendingPathComponent:relative];
         BOOL dir = NO;
         if ([fm fileExistsAtPath:path isDirectory:&dir] && !dir) {
             NSDictionary *attr = [fm attributesOfItemAtPath:path error:nil];
-            if (attr.fileSize == 0) {
-                if (message) *message = [NSString stringWithFormat:@"Проверка: пустой файл %@", relative];
-                return NO;
-            }
+            unsigned long long size = attr != nil ? [attr fileSize] : 0;
+            if (size == 0)
+                emptyFiles++;
             files++;
         }
     }
-    if (message) *message = [NSString stringWithFormat:@"GAMEFILE готов: проверено %lu файлов.", (unsigned long)files];
+
+    if (files != 44) {
+        if (message) *message = [NSString stringWithFormat:
+            @"GameFile: НЕ ГОТОВ — объектов %lu/44, пустых: %lu.",
+            (unsigned long)files, (unsigned long)emptyFiles];
+        return NO;
+    }
+
+    if (emptyFiles != 0) {
+        if (message) *message = [NSString stringWithFormat:
+            @"GameFile: НЕ ГОТОВ — объектов 44/44, пустых: %lu.",
+            (unsigned long)emptyFiles];
+        return NO;
+    }
+
+    if (message) *message = @"GameFile: ГОТОВ — 44/44 объектов, пустых: 0.";
     return YES;
+}
+
+- (BOOL)verifyGameFiles:(NSString **)message {
+    return [self validateInstalledGameFile:message];
 }
 
 @end
