@@ -1002,9 +1002,6 @@ void SDL3GameEngine::pollSDL3Events(void)
 		}
 	}
 #endif
-		}
-		m_TextInputFocusWindow = nullptr;
-	}
 }
 
 // GeneralsX @bugfix felipebraz 01/04/2026 Forward SDL UTF-8 text input through existing GWM_IME_CHAR path.
