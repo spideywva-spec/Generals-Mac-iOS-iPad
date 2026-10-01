@@ -14,6 +14,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 LAUNCHER_SRC="${PROJECT_ROOT}/GeneralsMD/Code/Main/IOSProfileLauncher.mm"
 LAUNCHER_HEADER="${PROJECT_ROOT}/GeneralsMD/Code/Main/IOSProfileLauncher.h"
+GAME_FILE_MANAGER_SRC="${PROJECT_ROOT}/GeneralsMD/Code/Main/IOSGameFileManager.mm"
+GAME_FILE_MANAGER_HEADER="${PROJECT_ROOT}/GeneralsMD/Code/Main/IOSGameFileManager.h"
 VERSION_FILE="${PROJECT_ROOT}/ios/version.env"
 
 PROJECT_VERSION="0.0.0"
@@ -27,6 +29,8 @@ fi
 test -f "${BASE_IPA}" || { echo "ERROR: base shell IPA not found: ${BASE_IPA}" >&2; exit 1; }
 test -f "${LAUNCHER_SRC}" || { echo "ERROR: launcher source not found: ${LAUNCHER_SRC}" >&2; exit 1; }
 test -f "${LAUNCHER_HEADER}" || { echo "ERROR: launcher header not found: ${LAUNCHER_HEADER}" >&2; exit 1; }
+test -f "${GAME_FILE_MANAGER_SRC}" || { echo "ERROR: game file manager source not found: ${GAME_FILE_MANAGER_SRC}" >&2; exit 1; }
+test -f "${GAME_FILE_MANAGER_HEADER}" || { echo "ERROR: game file manager header not found: ${GAME_FILE_MANAGER_HEADER}" >&2; exit 1; }
 
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -59,8 +63,10 @@ xcrun --sdk iphoneos clang++ \
   -Wl,-install_name,@rpath/libGeneralsXLauncher.dylib \
   -framework Foundation \
   -framework UIKit \
+  -framework QuartzCore \
   -lobjc \
   "${LAUNCHER_SRC}" \
+  "${GAME_FILE_MANAGER_SRC}" \
   -o "${LAUNCHER_LIB}"
 
 file "${LAUNCHER_LIB}" | grep -q "Mach-O"
