@@ -55,6 +55,12 @@ static NSString * const kGXGameFileURL = @"https://www.dropbox.com/scl/fi/11yzk5
     NSURLSession *s = self.session;
     self.session = nil;
     [s invalidateAndCancel];
+
+    // Удаляем временный ZIP и при ручной отмене. Если распаковка уже идёт,
+    // открытый file handle закончит текущую операцию, а путь уже исчезнет.
+    NSString *tmp = [NSTemporaryDirectory() stringByAppendingPathComponent:@"GeneralsGameFile.zip"];
+    [[NSFileManager defaultManager] removeItemAtPath:tmp error:nil];
+
     if (self.completion) self.completion(NO, @"Загрузка файла игры отменена.");
     self.progress = nil;
     self.status = nil;
@@ -65,6 +71,11 @@ static NSString * const kGXGameFileURL = @"https://www.dropbox.com/scl/fi/11yzk5
     NSURLSession *s = self.session;
     self.session = nil;
     [s invalidateAndCancel];
+
+    // ZIP никогда не остаётся после завершения, ошибки или отмены.
+    NSString *tmp = [NSTemporaryDirectory() stringByAppendingPathComponent:@"GeneralsGameFile.zip"];
+    [[NSFileManager defaultManager] removeItemAtPath:tmp error:nil];
+
     if (self.completion) self.completion(success, message);
     self.progress = nil;
     self.status = nil;
