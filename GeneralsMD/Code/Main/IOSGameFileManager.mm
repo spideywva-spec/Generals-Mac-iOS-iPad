@@ -88,7 +88,7 @@ didFinishDownloadingToURL:(NSURL *)location {
     });
 
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        NSString *message = nil;
+        __block NSString *message = nil;
         BOOL ok = [self extractZIPAtPath:tmp message:&message];
         dispatch_async(dispatch_get_main_queue(), ^{
             if (self.status) self.status(@"Проверка", ok ? @"Проверка GameFile…" : @"Ошибка распаковки");
@@ -126,7 +126,7 @@ static uint16_t GXRead16(const uint8_t *p) {
     unsigned long long scan = MIN(size, 65557);
     [fh seekToFileOffset:size - scan];
     NSData *tail = [fh readDataOfLength:(NSUInteger)scan];
-    const uint8_t *b = tail.bytes;
+    const uint8_t *b = (const uint8_t *)tail.bytes;
     NSInteger eocd = -1;
     for (NSInteger i = (NSInteger)tail.length - 22; i >= 0; --i) {
         if (GXRead32(b+i) == 0x06054b50) { eocd = i; break; }
@@ -147,7 +147,7 @@ static uint16_t GXRead16(const uint8_t *p) {
 
     [fh seekToFileOffset:cdOffset];
     NSData *cd = [fh readDataOfLength:cdSize];
-    const uint8_t *p = cd.bytes;
+    const uint8_t *p = (const uint8_t *)cd.bytes;
     NSUInteger pos = 0;
 
     for (uint16_t index = 0; index < count; ++index) {
@@ -185,7 +185,7 @@ static uint16_t GXRead16(const uint8_t *p) {
 
         [fh seekToFileOffset:localOffset];
         NSData *lh = [fh readDataOfLength:30];
-        if (lh.length != 30 || GXRead32(lh.bytes) != 0x04034b50) {
+        if (lh.length != 30 || GXRead32((const uint8_t *)lh.bytes) != 0x04034b50) {
             [fh closeFile]; if (message) *message = @"ZIP: неверная локальная запись."; return NO;
         }
         uint16_t localNameLen = GXRead16((const uint8_t *)lh.bytes+26);
