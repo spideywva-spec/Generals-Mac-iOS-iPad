@@ -568,12 +568,13 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     CAGradientLayer *heroGradient = [CAGradientLayer layer];
     heroGradient.frame = CGRectMake(0, 0, 1000, 420);
     heroGradient.colors = @[
-        (id)[UIColor colorWithRed:0.03 green:0.10 blue:0.18 alpha:1.0].CGColor,
-        (id)[UIColor colorWithRed:0.01 green:0.025 blue:0.055 alpha:1.0].CGColor
+        (id)[UIColor colorWithRed:0.03 green:0.10 blue:0.18 alpha:0.42].CGColor,
+        (id)[UIColor colorWithRed:0.01 green:0.025 blue:0.055 alpha:0.72].CGColor
     ];
     heroGradient.startPoint = CGPointMake(0.0, 0.0);
     heroGradient.endPoint = CGPointMake(1.0, 1.0);
     [hero.layer addSublayer:heroGradient];
+    heroGradient.frame = hero.bounds;
 
     NSURL *heroURL = [NSURL URLWithString:@"https://media.contentapi.ea.com/content/dam/gin/images/2017/01/command-and-conquer-generals-zero-hour-key-art.jpg"];
     if (heroURL != nil)
@@ -628,6 +629,9 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     [hero addSubview:heroHint];
 
     [NSLayoutConstraint activateConstraints:@[
+        // Fixed hero height: loading the remote artwork must never resize the launcher.
+        [hero.heightAnchor constraintEqualToConstant:330.0],
+
         [gameTitle.leadingAnchor constraintEqualToAnchor:hero.leadingAnchor constant:28.0],
         [gameTitle.topAnchor constraintEqualToAnchor:hero.topAnchor constant:24.0],
 
@@ -707,8 +711,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         [mainColumns.trailingAnchor constraintEqualToAnchor:mainSection.trailingAnchor],
         [mainColumns.topAnchor constraintEqualToAnchor:mainSection.topAnchor],
         [mainColumns.bottomAnchor constraintEqualToAnchor:mainSection.bottomAnchor],
-        [sidePanel.widthAnchor constraintGreaterThanOrEqualToConstant:250.0],
-        [hero.heightAnchor constraintGreaterThanOrEqualToConstant:310.0]
+        [sidePanel.widthAnchor constraintGreaterThanOrEqualToConstant:250.0]
     ]];
 
     [content addArrangedSubview:mainSection];
