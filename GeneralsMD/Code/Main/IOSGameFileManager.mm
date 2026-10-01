@@ -37,7 +37,7 @@ static NSString * const kGXGameFileURL = @"https://www.dropbox.com/scl/fi/11yzk5
     self.cancelRequested = NO;
 
     // Никогда не оставляем старый временный ZIP от предыдущей установки.
-    NSString *staleZIP = [NSTemporaryDirectory() stringByAppendingPathComponent:@"GeneralsGameFile.zip"];
+    NSString *staleZIP = [NSTemporaryDirectory() stringByAppendingPathComponent:@"generals by spideywv.zip"];
     [[NSFileManager defaultManager] removeItemAtPath:staleZIP error:nil];
 
     NSURL *url = [NSURL URLWithString:kGXGameFileURL];
@@ -58,7 +58,7 @@ static NSString * const kGXGameFileURL = @"https://www.dropbox.com/scl/fi/11yzk5
 
     // Удаляем временный ZIP и при ручной отмене. Если распаковка уже идёт,
     // открытый file handle закончит текущую операцию, а путь уже исчезнет.
-    NSString *tmp = [NSTemporaryDirectory() stringByAppendingPathComponent:@"GeneralsGameFile.zip"];
+    NSString *tmp = [NSTemporaryDirectory() stringByAppendingPathComponent:@"generals by spideywv.zip"];
     [[NSFileManager defaultManager] removeItemAtPath:tmp error:nil];
 
     if (self.completion) self.completion(NO, @"Загрузка файла игры отменена.");
@@ -73,7 +73,7 @@ static NSString * const kGXGameFileURL = @"https://www.dropbox.com/scl/fi/11yzk5
     [s invalidateAndCancel];
 
     // ZIP никогда не остаётся после завершения, ошибки или отмены.
-    NSString *tmp = [NSTemporaryDirectory() stringByAppendingPathComponent:@"GeneralsGameFile.zip"];
+    NSString *tmp = [NSTemporaryDirectory() stringByAppendingPathComponent:@"generals by spideywv.zip"];
     [[NSFileManager defaultManager] removeItemAtPath:tmp error:nil];
 
     if (self.completion) self.completion(success, message);
@@ -102,7 +102,7 @@ totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite {
 - (void)URLSession:(NSURLSession *)session
       downloadTask:(NSURLSessionDownloadTask *)downloadTask
 didFinishDownloadingToURL:(NSURL *)location {
-    NSString *tmp = [NSTemporaryDirectory() stringByAppendingPathComponent:@"GeneralsGameFile.zip"];
+    NSString *tmp = [NSTemporaryDirectory() stringByAppendingPathComponent:@"generals by spideywv.zip"];
     [[NSFileManager defaultManager] removeItemAtPath:tmp error:nil];
 
     NSError *copyError = nil;
