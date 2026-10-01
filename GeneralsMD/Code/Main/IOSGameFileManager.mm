@@ -445,7 +445,7 @@ static uint16_t GXRead16(const uint8_t *p) {
 
     // Canonical destination: Documents. It is the ONLY game root.
     // Merge every extracted file directly into it; never copy the archive's
-    // outer "Generals ZH" directory itself.
+    // outer "Generals ZH" directory itself. It is stripped into Documents.
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
     NSString *root = documents;
 
