@@ -259,7 +259,7 @@ static uint16_t GXRead16(const uint8_t *p) {
 
             // Strip every outer "Generals ZH/" wrapper. The canonical root is
             // already Documents/Generals ZH, so this MUST never create a second
-            // Documents/Generals ZH/Generals ZH directory.
+            // Documents/Generals ZH directory.
             NSString *wrapper = @"Generals ZH/";
             while (name.length >= wrapper.length &&
                    [name rangeOfString:wrapper
@@ -443,11 +443,11 @@ static uint16_t GXRead16(const uint8_t *p) {
         return NO;
     }
 
-    // Canonical destination: Documents/Generals ZH. It is the ONLY game root.
+    // Canonical destination: Documents. It is the ONLY game root.
     // Merge every extracted file directly into it; never copy the archive's
     // outer "Generals ZH" directory itself.
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-    NSString *root = [documents stringByAppendingPathComponent:@"Generals ZH"];
+    NSString *root = documents;
 
     NSError *rootError = nil;
     if (![fm createDirectoryAtPath:root withIntermediateDirectories:YES attributes:nil error:&rootError]) {
@@ -456,16 +456,7 @@ static uint16_t GXRead16(const uint8_t *p) {
         return NO;
     }
 
-    // Remove only the legacy nested wrapper from older builds.
-    // This code never creates Documents/Generals ZH/Generals ZH.
-    NSString *legacyNestedRoot = [root stringByAppendingPathComponent:@"Generals ZH"];
-    while ([fm fileExistsAtPath:legacyNestedRoot]) {
-        [fm removeItemAtPath:legacyNestedRoot error:nil];
-        NSString *next = [legacyNestedRoot stringByAppendingPathComponent:@"Generals ZH"];
-        if ([next isEqualToString:legacyNestedRoot])
-            break;
-        legacyNestedRoot = next;
-    }
+    // Never create or delete a Generals ZH wrapper. Documents is the canonical root.
 
     NSArray<NSString *> *stagedFiles = [fm subpathsAtPath:staging];
     for (NSString *relative in stagedFiles) {
@@ -514,7 +505,7 @@ static uint16_t GXRead16(const uint8_t *p) {
     // The ZIP installer must never move or recreate them inside Generals ZH.
 
     if (message)
-        *message = @"Файл игры распакован в Documents/Generals ZH. iOSIPadOverrides.ini и ZeroHourSettings.ini находятся рядом с папкой игры в Documents.";
+        *message = @"Файл игры распакован в Documents рядом с iOSIPadOverrides.ini и ZeroHourSettings.ini.";
     return YES;
 }
 
