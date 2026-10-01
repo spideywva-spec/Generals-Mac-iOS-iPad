@@ -42,7 +42,7 @@ static NSString * const kGXGameFileURL = @"https://www.dropbox.com/scl/fi/11yzk5
     cfg.timeoutIntervalForResource = 60.0 * 60.0 * 6.0;
     self.session = [NSURLSession sessionWithConfiguration:cfg delegate:self delegateQueue:nil];
 
-    if (self.status) self.status(@"Скачивание", @"Подключение к GameFile…");
+    if (self.status) self.status(@"Скачивание", @"Подключение к файлу игры…");
     [[self.session downloadTaskWithURL:url] resume];
 }
 
@@ -51,7 +51,7 @@ static NSString * const kGXGameFileURL = @"https://www.dropbox.com/scl/fi/11yzk5
     NSURLSession *s = self.session;
     self.session = nil;
     [s invalidateAndCancel];
-    if (self.completion) self.completion(NO, @"Загрузка GameFile отменена.");
+    if (self.completion) self.completion(NO, @"Загрузка файла игры отменена.");
     self.progress = nil;
     self.status = nil;
     self.completion = nil;
@@ -107,14 +107,14 @@ didFinishDownloadingToURL:(NSURL *)location {
         // The result is updated inside the main-queue verification block.
         __block BOOL verified = ok;
         dispatch_async(dispatch_get_main_queue(), ^{
-            if (self.status) self.status(@"Проверка", ok ? @"Проверка GameFile…" : @"Ошибка распаковки");
+            if (self.status) self.status(@"Проверка", ok ? @"Проверка файла игры…" : @"Ошибка распаковки");
             if (ok) {
                 BOOL valid = [self verifyGameFiles:&message];
                 verified = valid;
             }
             ok = verified;
             [[NSFileManager defaultManager] removeItemAtPath:tmp error:nil];
-            [self finish:ok message:message ?: (ok ? @"GAMEFILE готов." : @"GameFile не установлен.")];
+            [self finish:ok message:message ?: (ok ? @"Файл игры готов." : @"GameFile не установлен.")];
         });
     });
 }
@@ -173,7 +173,7 @@ static uint16_t GXRead16(const uint8_t *p) {
     for (uint16_t index = 0; index < count; ++index) {
         if (self.cancelRequested) {
             [fh closeFile];
-            if (message) *message = @"Загрузка GameFile отменена.";
+            if (message) *message = @"Загрузка файла игры отменена.";
             return NO;
         }
         if (pos + 46 > cd.length || GXRead32(p+pos) != 0x02014b50) {
@@ -196,9 +196,13 @@ static uint16_t GXRead16(const uint8_t *p) {
         name = [name stringByReplacingOccurrencesOfString:@"\\" withString:@"/"];
         while ([name hasPrefix:@"/"]) name = [name substringFromIndex:1];
 
-        // Архив GameFile может иметь собственную папку "Generals ZH/".
-        // Она не должна дублироваться внутри Documents/Generals ZH/.
-        if ([name hasPrefix:@"Generals ZH/"])
+        // Архив может содержать одну или несколько служебных обёрток
+        // "Generals ZH/". Их нельзя создавать повторно внутри
+        // Documents/Generals ZH/: файлы должны сразу попадать в этот корень.
+        while ([name hasPrefix:@"./"])
+            name = [name substringFromIndex:2];
+
+        while ([name hasPrefix:@"Generals ZH/"])
             name = [name substringFromIndex:[@"Generals ZH/" length]];
 
         // Prevent archive path traversal.
@@ -249,7 +253,7 @@ static uint16_t GXRead16(const uint8_t *p) {
         NSString *destination = [root stringByAppendingPathComponent:safe];
         NSString *parent = [destination stringByDeletingLastPathComponent];
         if (![fm createDirectoryAtPath:parent withIntermediateDirectories:YES attributes:nil error:nil]) {
-            [fh closeFile]; if (message) *message = @"Не удалось создать папку GameFile."; return NO;
+            [fh closeFile]; if (message) *message = @"Не удалось создать папку файла игры."; return NO;
         }
         if (![outData writeToFile:destination atomically:NO]) {
             [fh closeFile]; if (message) *message = [NSString stringWithFormat:@"Не удалось записать %@.", name]; return NO;
@@ -273,7 +277,7 @@ static uint16_t GXRead16(const uint8_t *p) {
 
     BOOL isDirectory = NO;
     if (![fm fileExistsAtPath:root isDirectory:&isDirectory] || !isDirectory) {
-        if (message) *message = @"GameFile: НЕ УСТАНОВЛЕН — папка Generals ZH отсутствует.";
+        if (message) *message = @"Файл игры: НЕ УСТАНОВЛЕН — папка Generals ZH отсутствует.";
         return NO;
     }
 
@@ -295,19 +299,19 @@ static uint16_t GXRead16(const uint8_t *p) {
 
     if (files != 44) {
         if (message) *message = [NSString stringWithFormat:
-            @"GameFile: НЕ ГОТОВ — объектов %lu/44, пустых: %lu.",
+            @"Файл игры: НЕ ГОТОВ — объектов %lu/44, пустых: %lu.",
             (unsigned long)files, (unsigned long)emptyFiles];
         return NO;
     }
 
     if (emptyFiles != 0) {
         if (message) *message = [NSString stringWithFormat:
-            @"GameFile: НЕ ГОТОВ — объектов 44/44, пустых: %lu.",
+            @"Файл игры: НЕ ГОТОВ — объектов 44/44, пустых: %lu.",
             (unsigned long)emptyFiles];
         return NO;
     }
 
-    if (message) *message = @"GameFile: ГОТОВ — 44/44 объектов, пустых: 0.";
+    if (message) *message = @"Файл игры: ГОТОВ — 44/44 объектов, пустых: 0.";
     return YES;
 }
 
