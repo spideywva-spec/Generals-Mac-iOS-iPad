@@ -2360,4 +2360,92 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
 @end
 
+const char *GeneralsXRunIOSProfileLauncher()
+{
+    const char *forcedProfile = getenv("GX_LAUNCH_PROFILE");
+    if (IsSupportedProfile(forcedProfile))
+    {
+        strlcpy(gSelectedProfile, forcedProfile, sizeof(gSelectedProfile));
+        fprintf(stderr, "INFO: iOS launcher forced profile: %s\\n", gSelectedProfile);
+        return gSelectedProfile;
+    }
+
+    NSString *autoProfile = BundledAutoLaunchProfile();
+    if (autoProfile != nil)
+    {
+        const char *utf8 = [autoProfile UTF8String];
+        strlcpy(gSelectedProfile, utf8, sizeof(gSelectedProfile));
+
+        if (![autoProfile isEqualToString:@"zerohour"])
+        {
+            fprintf(stderr, "INFO: iOS launcher auto-selected bundled profile: %s\\n",
+                    gSelectedProfile);
+            return gSelectedProfile;
+        }
+
+        fprintf(stderr,
+                "[ZEROHOUR-SETTINGS] dedicated ZeroHour launcher shown for settings access\\n");
+    }
+
+    gLauncherFinished.store(false, std::memory_order_release);
+    if (autoProfile == nil)
+        strlcpy(gSelectedProfile, "vanilla", sizeof(gSelectedProfile));
+
+    __block UIWindow *launcherWindow = nil;
+
+    void (^presentLauncher)(void) = ^{
+        UIWindowScene *scene = FindActiveWindowScene();
+        if (scene != nil)
+        {
+            launcherWindow = [[UIWindow alloc] initWithWindowScene:scene];
+            launcherWindow.frame = scene.coordinateSpace.bounds;
+        }
+        else
+        {
+            launcherWindow = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+        }
+
+        launcherWindow.windowLevel = UIWindowLevelNormal + 1.0;
+        launcherWindow.rootViewController = [[GXProfileLauncherViewController alloc] init];
+        [launcherWindow makeKeyAndVisible];
+
+        fprintf(stderr, "INFO: iOS native launcher presented\\n");
+    };
+
+    if ([NSThread isMainThread])
+        presentLauncher();
+    else
+        dispatch_sync(dispatch_get_main_queue(), presentLauncher);
+
+    if ([NSThread isMainThread])
+    {
+        while (!gLauncherFinished.load(std::memory_order_acquire))
+        {
+            @autoreleasepool
+            {
+                [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode
+                                      beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+            }
+        }
+    }
+    else
+    {
+        while (!gLauncherFinished.load(std::memory_order_acquire))
+            usleep(10000);
+    }
+
+    void (^dismissLauncher)(void) = ^{
+        launcherWindow.hidden = YES;
+        launcherWindow.rootViewController = nil;
+        launcherWindow = nil;
+    };
+
+    if ([NSThread isMainThread])
+        dismissLauncher();
+    else
+        dispatch_sync(dispatch_get_main_queue(), dismissLauncher);
+
+    return gSelectedProfile;
+}
+
 #endif
