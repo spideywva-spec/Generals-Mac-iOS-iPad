@@ -1891,9 +1891,10 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     subtitle.textColor = [UIColor colorWithWhite:0.62 alpha:1.0];
     [topBar addSubview:subtitle];
 
-    self.gameFileMinimizeButton = MakeButton(@"—", self, @selector(minimizeGameFileProgress));
+    self.gameFileMinimizeButton = MakeButton(@"⌄", self, @selector(minimizeGameFileProgress));
     self.gameFileCloseButton = MakeButton(@"×", self, @selector(closeGameFileProgress));
-    self.gameFileMinimizeButton.titleLabel.font = [UIFont systemFontOfSize:22.0 weight:UIFontWeightRegular];
+    self.gameFileMinimizeButton.titleLabel.font = [UIFont systemFontOfSize:24.0 weight:UIFontWeightSemibold];
+    self.gameFileMinimizeButton.accessibilityLabel = @"Свернуть установку";
     self.gameFileCloseButton.titleLabel.font = [UIFont systemFontOfSize:22.0 weight:UIFontWeightRegular];
     [self.gameFileMinimizeButton.widthAnchor constraintEqualToConstant:52.0].active = YES;
     [self.gameFileCloseButton.widthAnchor constraintEqualToConstant:52.0].active = YES;
