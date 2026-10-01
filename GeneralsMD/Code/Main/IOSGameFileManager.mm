@@ -265,8 +265,8 @@ static uint16_t GXRead16(const uint8_t *p) {
                 name = [name substringFromIndex:2];
 
             // Strip every outer "Generals ZH/" wrapper. The canonical root is
-            // already Documents/Generals ZH, so this MUST never create a second
-            // Documents/Generals ZH directory.
+            // already Documents (Generals ZH root), so this MUST never create a second
+            // Documents (Generals ZH root) directory.
             NSString *wrapper = @"Generals ZH/";
             while (name.length >= wrapper.length &&
                    [name rangeOfString:wrapper
@@ -450,11 +450,11 @@ static uint16_t GXRead16(const uint8_t *p) {
         return NO;
     }
 
-    // Canonical destination: Documents/Generals ZH. It is the ONLY game root.
+    // Canonical destination: Documents (Generals ZH root). It is the ONLY game root.
     // Merge every extracted file directly into it; never copy the archive's
     // outer "Generals ZH" directory itself. It is stripped into the canonical root.
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-    NSString *root = [documents stringByAppendingPathComponent:@"Generals ZH"];
+    NSString *root = documents;
 
     NSError *rootError = nil;
     if (![fm createDirectoryAtPath:root withIntermediateDirectories:YES attributes:nil error:&rootError]) {
@@ -463,7 +463,7 @@ static uint16_t GXRead16(const uint8_t *p) {
         return NO;
     }
 
-    // Never create or delete a Generals ZH wrapper. Documents/Generals ZH is the canonical root.
+    // Never create or delete a Generals ZH wrapper. Documents (Generals ZH root) is the canonical root.
 
     NSArray<NSString *> *stagedFiles = [fm subpathsAtPath:staging];
     for (NSString *relative in stagedFiles) {
@@ -506,22 +506,22 @@ static uint16_t GXRead16(const uint8_t *p) {
     [fm removeItemAtPath:staging error:nil];
 
     // Launcher-owned INI files stay beside the installed game files:
-    //   Documents/Generals ZH/iOSIPadOverrides.ini
-    //   Documents/Generals ZH/ZeroHourSettings.ini
+    //   Documents/iOSIPadOverrides.ini
+    //   Documents/ZeroHourSettings.ini
     // They are created by the native launcher on first launch/settings save.
     // The ZIP installer must never create another Generals ZH wrapper.
 
     if (message)
-        *message = @"Файл игры распакован в Documents/Generals ZH рядом с iOSIPadOverrides.ini и ZeroHourSettings.ini.";
+        *message = @"Файл игры распакован в Documents (Generals ZH root) рядом с iOSIPadOverrides.ini и ZeroHourSettings.ini.";
     return YES;
 }
 
 - (BOOL)validateInstalledGameFile:(NSString **)message {
     // Единая проверка файла игры: после установки, в статусе и в Диагностике.
-    // Canonical root is Documents/Generals ZH: INIZH.big, ZH_Generals/ and all
+    // Canonical root is Documents (Generals ZH root): INIZH.big, ZH_Generals/ and all
     // game files are siblings of the two launcher-owned INI files.
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-    NSString *root = [documents stringByAppendingPathComponent:@"Generals ZH"];
+    NSString *root = documents;
     NSFileManager *fm = [NSFileManager defaultManager];
 
     BOOL isDirectory = NO;
@@ -574,7 +574,7 @@ static uint16_t GXRead16(const uint8_t *p) {
 
     if (!iosOverridesExists || !zeroHourSettingsExists) {
         if (message) *message = [NSString stringWithFormat:
-            @"Файл игры: НЕ ГОТОВ — 44/44 объектов, пустых: 0; Generals ZH/iOSIPadOverrides.ini: %@; Generals ZH/ZeroHourSettings.ini: %@.",
+            @"Файл игры: НЕ ГОТОВ — 44/44 объектов, пустых: 0; Documents/iOSIPadOverrides.ini: %@; Documents/ZeroHourSettings.ini: %@.",
             iosOverridesExists ? @"есть" : @"нет",
             zeroHourSettingsExists ? @"есть" : @"нет"];
         return NO;
