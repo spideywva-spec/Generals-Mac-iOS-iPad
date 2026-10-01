@@ -860,6 +860,13 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         {
             [sidePanel.widthAnchor constraintEqualToConstant:0.0].active = NO;
         }
+        else
+        {
+            // Keep the status card compact; the hero is the dominant panel.
+            // This prevents UIStackView from stretching status to half-screen.
+            [sidePanel.widthAnchor constraintEqualToConstant:268.0].active = YES;
+            [hero.widthAnchor constraintGreaterThanOrEqualToConstant:420.0].active = YES;
+        }
     };
 
     update();
@@ -1255,10 +1262,6 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
     NSString *gameRoot = [documents stringByAppendingPathComponent:@"Generals ZH"];
-    NSFileManager *fileManager = [NSFileManager defaultManager];
-    BOOL isDirectory = NO;
-    if (![fileManager fileExistsAtPath:gameRoot isDirectory:&isDirectory] || !isDirectory)
-        [fileManager createDirectoryAtPath:gameRoot withIntermediateDirectories:YES attributes:nil error:nil];
 
     NSString *message = nil;
     BOOL ready = [[GXGameFileManager sharedManager] validateInstalledGameFile:&message];
