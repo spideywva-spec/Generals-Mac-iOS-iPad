@@ -121,7 +121,7 @@ didFinishDownloadingToURL:(NSURL *)location {
 
     // Extraction AND verification stay off the main thread. Enumerating the
     // installed game after a large ZIP previously caused an iPhone UI freeze.
-    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
         @autoreleasepool {
             self.extractionInProgress = YES;
             NSString *message = nil;
