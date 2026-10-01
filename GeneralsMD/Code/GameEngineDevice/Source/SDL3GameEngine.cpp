@@ -458,6 +458,48 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 break;
             }
 
+            // Для двухпальцевого tap ждём ОБА FINGER_UP. Нельзя переводить
+            // оставшийся палец в PENDING: именно это раньше запускало самопроизвольный
+            // RMB-pan вправо после обычного двухпальцевого cancel/deselect.
+            if (s_touch.twoFingerTapCandidate) {
+                if (firstReleased) {
+                    s_touch.finger1Active = false;
+                }
+                if (secondReleased) {
+                    s_touch.finger2Active = false;
+                }
+
+                if (!s_touch.finger1Active && !s_touch.finger2Active) {
+                    const float cx =
+                        (s_touch.twoFingerStart1X + s_touch.twoFingerStart2X) *
+                        0.5f * (float)winW;
+                    const float cy =
+                        (s_touch.twoFingerStart1Y + s_touch.twoFingerStart2Y) *
+                        0.5f * (float)winH;
+
+                    // Жёстко закрываем любое возможное старое состояние drag перед cancel-click.
+                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
+                                       cx, cy, SDL_BUTTON_RIGHT);
+                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
+                                       cx, cy, SDL_BUTTON_LEFT);
+                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, cx, cy);
+                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
+                                       cx, cy, SDL_BUTTON_RIGHT);
+                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
+                                       cx, cy, SDL_BUTTON_RIGHT);
+
+                    s_touch.phase = TouchState::IDLE;
+                    s_touch.finger1 = 0;
+                    s_touch.finger2 = 0;
+                    s_touch.finger1Active = false;
+                    s_touch.finger2Active = false;
+                    s_touch.twoFingerTapCandidate = false;
+                    s_touch.pinchDist = 0.0f;
+                    resetSyntheticPosition(cx, cy);
+                }
+                break;
+            }
+
             if (firstReleased && s_touch.finger2Active) {
                 const SDL_FingerID remainingFinger = s_touch.finger2;
                 const float remainingX = s_touch.f2x * (float)winW;
