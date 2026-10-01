@@ -103,7 +103,7 @@ unsigned long long DirectorySizeAtPath(NSString *path)
 
 unsigned long long InstalledGameFilesSizeAtDocuments()
 {
-    NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+    NSString *documents = GameRootPath();
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSDirectoryEnumerator<NSString *> *enumerator = [fileManager enumeratorAtPath:documents];
     if (enumerator == nil)
@@ -177,21 +177,29 @@ NSString *BundledAutoLaunchProfile()
 NSString *GameRootPath()
 {
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-    return documents;
+    return [documents stringByAppendingPathComponent:@"Generals ZH"];
+}
+
+BOOL EnsureGameRootDirectory()
+{
+    NSString *root = GameRootPath();
+    BOOL isDirectory = NO;
+    NSFileManager *fm = [NSFileManager defaultManager];
+    if ([fm fileExistsAtPath:root isDirectory:&isDirectory])
+        return isDirectory;
+    return [fm createDirectoryAtPath:root withIntermediateDirectories:YES attributes:nil error:nil];
 }
 
 NSString *IOSIPadOverridesPath()
 {
-    // Keep launcher-owned iOS settings beside the game directory, exactly where
-    // the native launcher originally created them: Documents/iOSIPadOverrides.ini.
-    return DocumentsFilePath(@"iOSIPadOverrides.ini");
+    // Keep the exact native-launcher location: beside all installed game files.
+    return [GameRootPath() stringByAppendingPathComponent:@"iOSIPadOverrides.ini"];
 }
 
 NSString *ZeroHourSettingsPath()
 {
-    // ZeroHourSettings.ini is a Documents-level launcher setting, beside the
-    // installed game files. Never create a Generals ZH wrapper directory.
-    return DocumentsFilePath(@"ZeroHourSettings.ini");
+    // Keep the exact native-launcher location: beside all installed game files.
+    return [GameRootPath() stringByAppendingPathComponent:@"ZeroHourSettings.ini"];
 }
 
 NSString *EngineOptionsPath()
@@ -293,6 +301,7 @@ NSDictionary<NSString *, NSString *> *DefaultZeroHourSettings()
 
 void EnsureDefaultZeroHourSettings()
 {
+    EnsureGameRootDirectory();
     NSString *path = ZeroHourSettingsPath();
     if ([[NSFileManager defaultManager] fileExistsAtPath:path])
         return;
@@ -333,6 +342,7 @@ NSString *DefaultIOSIPadOverrides()
 
 void EnsureDefaultIOSIPadOverrides()
 {
+    EnsureGameRootDirectory();
     NSString *path = IOSIPadOverridesPath();
     if ([[NSFileManager defaultManager] fileExistsAtPath:path])
         return;
@@ -1529,8 +1539,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.diagnosticsScanRunning = YES;
     self.diagnosticsText.text = [self diagnosticsTextWithGameFileSize:@"Вычисление…"];
 
-    NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-    NSString *gameRoot = documents;
+    NSString *gameRoot = GameRootPath();
     BOOL exists = [[NSFileManager defaultManager] fileExistsAtPath:gameRoot];
 
     __weak GXProfileLauncherViewController *weakSelf = self;
@@ -2198,137 +2207,3 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
                                atomically:YES
                                  encoding:NSUTF8StringEncoding
                                     error:&error];
-    BOOL zeroHourOK = cameraOK ? [self saveZeroHourSettingsAndOptions:&error] : NO;
-
-    if (cameraOK && zeroHourOK)
-    {
-        self.settingsStatus.text = @"Сохранитьd. Changes apply on the next game launch.";
-        self.settingsStatus.textColor = [UIColor systemGreenColor];
-        fprintf(stderr,
-                "[ZEROHOUR-SETTINGS] saved settings=%s options=%s camera=%s\n",
-                ZeroHourSettingsPath().fileSystemRepresentation,
-                EngineOptionsPath().fileSystemRepresentation,
-                IOSIPadOverridesPath().fileSystemRepresentation);
-    }
-    else
-    {
-        self.settingsStatus.text = @"Сохранить failed. See generals-stderr.log.";
-        self.settingsStatus.textColor = [UIColor systemRedColor];
-        fprintf(stderr, "ERROR: iOS launcher failed to save settings: %s\n",
-                error != nil ? [[error description] UTF8String] : "unknown");
-    }
-}
-
-- (void)resetНастройки
-{
-    [self resetНастройкиControls];
-    self.settingsStatus.text = @"Default values loaded. Tap Сохранить to apply.";
-    self.settingsStatus.textColor = [UIColor colorWithWhite:0.65 alpha:1.0];
-}
-
-@end
-
-const char *GeneralsXRunIOSProfileLauncher()
-{
-    // GeneralsX @feature dvorovrus 25/09/2026 Allow automation/debug builds to skip the UI.
-    const char *forcedProfile = getenv("GX_LAUNCH_PROFILE");
-    if (IsSupportedProfile(forcedProfile))
-    {
-        strlcpy(gSelectedProfile, forcedProfile, sizeof(gSelectedProfile));
-        fprintf(stderr, "INFO: iOS launcher forced profile: %s\n", gSelectedProfile);
-        return gSelectedProfile;
-    }
-
-    // Dedicated variants keep a single-game launcher so settings remain
-    // accessible. Quick Start restores direct boot when the user enables it.
-    NSString *autoProfile = BundledAutoLaunchProfile();
-    if (autoProfile != nil)
-    {
-        const char *utf8 = [autoProfile UTF8String];
-        strlcpy(gSelectedProfile, utf8, sizeof(gSelectedProfile));
-
-        if (![autoProfile isEqualToString:@"zerohour"])
-        {
-            fprintf(stderr, "INFO: iOS launcher auto-selected bundled profile: %s\n",
-                    gSelectedProfile);
-            return gSelectedProfile;
-        }
-
-        fprintf(stderr,
-                "[ZEROHOUR-SETTINGS] dedicated ZeroHour launcher shown for settings access\n");
-    }
-
-    gLauncherFinished.store(false, std::memory_order_release);
-    if (autoProfile == nil)
-        strlcpy(gSelectedProfile, "vanilla", sizeof(gSelectedProfile));
-
-    __block UIWindow *launcherWindow = nil;
-
-    void (^presentLauncher)(void) = ^{
-        UIWindowScene *scene = FindActiveWindowScene();
-        if (scene != nil)
-        {
-            launcherWindow = [[UIWindow alloc] initWithWindowScene:scene];
-            launcherWindow.frame = scene.coordinateSpace.bounds;
-        }
-        else
-        {
-            launcherWindow = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-        }
-
-        launcherWindow.windowLevel = UIWindowLevelNormal + 1.0;
-        launcherWindow.rootViewController = [[GXProfileLauncherViewController alloc] init];
-        [launcherWindow makeKeyAndVisible];
-
-        fprintf(stderr, "INFO: iOS native launcher presented\n");
-    };
-
-    if ([NSThread isMainThread])
-    {
-        presentLauncher();
-    }
-    else
-    {
-        dispatch_sync(dispatch_get_main_queue(), presentLauncher);
-    }
-
-    // SDL's iOS bootstrap is already inside UIApplicationMain. Keep the native
-    // main run loop alive until a profile is selected.
-    if ([NSThread isMainThread])
-    {
-        while (!gLauncherFinished.load(std::memory_order_acquire))
-        {
-            @autoreleasepool
-            {
-                [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode
-                                      beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
-            }
-        }
-    }
-    else
-    {
-        while (!gLauncherFinished.load(std::memory_order_acquire))
-        {
-            usleep(10000);
-        }
-    }
-
-    void (^dismissLauncher)(void) = ^{
-        launcherWindow.hidden = YES;
-        launcherWindow.rootViewController = nil;
-        launcherWindow = nil;
-    };
-
-    if ([NSThread isMainThread])
-    {
-        dismissLauncher();
-    }
-    else
-    {
-        dispatch_sync(dispatch_get_main_queue(), dismissLauncher);
-    }
-
-    return gSelectedProfile;
-}
-
-#endif
