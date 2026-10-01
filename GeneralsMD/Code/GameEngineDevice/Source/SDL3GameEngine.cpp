@@ -275,6 +275,13 @@ void beginPinch(SDL3Mouse *mouse, SDL_Window *window, int winW, int winH)
     s_touch.twoFingerStartDist = s_touch.pinchDist;
     s_touch.phase = TouchState::PINCH;
 
+    // Immediately flush the previous one-finger camera delta. SDL3Mouse keeps
+    // mouse motion deltas until they are consumed; without this zero-delta event
+    // the last RMB drag can be applied one more frame after the second finger
+    // arrives, which makes the camera jump (commonly to the right).
+    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION,
+                       s_touch.lastX, s_touch.lastY);
+
     // Do not synthesize a mouse move to the pinch center. The game can treat
     // that xrel/yrel jump as camera motion even though RMB was released.
     // Keep the current synthetic cursor position stable while the two-finger
@@ -463,6 +470,10 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             }
 
             if (!s_touch.finger1Active && !s_touch.finger2Active) {
+                // End of a real pinch: flush the last one-finger delta and do not
+                // promote either finger back into camera control.
+                sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION,
+                                   s_touch.syntheticX, s_touch.syntheticY);
                 s_touch.phase = TouchState::IDLE;
                 s_touch.finger1 = 0;
                 s_touch.finger2 = 0;
@@ -520,6 +531,10 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                                        cx, cy, SDL_BUTTON_RIGHT);
                     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
                                        cx, cy, SDL_BUTTON_RIGHT);
+                    // Clear any stale camera delta before returning to IDLE.
+                    // The next one-finger touch starts a completely fresh gesture.
+                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION,
+                                       s_touch.syntheticX, s_touch.syntheticY);
                     s_touch.phase = TouchState::IDLE;
                     s_touch.finger1 = 0;
                     s_touch.finger2 = 0;
@@ -558,6 +573,9 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                                        cx, cy, SDL_BUTTON_RIGHT);
                     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
                                        cx, cy, SDL_BUTTON_RIGHT);
+                    // Clear any stale camera delta before returning to IDLE.
+                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION,
+                                       s_touch.syntheticX, s_touch.syntheticY);
 
                     s_touch.phase = TouchState::IDLE;
                     s_touch.finger1 = 0;
