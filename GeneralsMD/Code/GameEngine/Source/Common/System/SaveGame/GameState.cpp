@@ -1172,6 +1172,37 @@ static void addGameToAvailableList( AsciiString filename, void *userData )
 // ------------------------------------------------------------------------------------------------
 /** Populate the listbox passed in with a list of the save games present on the hard drive */
 // ------------------------------------------------------------------------------------------------
+UnicodeString GameState::getNextDefaultSaveDescription() const
+{
+	const UnicodeString base(L"Новая игра");
+
+	auto isTaken = [this](const UnicodeString &candidate) -> Bool
+	{
+		for (AvailableGameInfo *info = m_availableGames; info != nullptr; info = info->next)
+		{
+			if (!info->saveGameInfo.description.isEmpty() &&
+				info->saveGameInfo.description.compareNoCase(candidate) == 0)
+				return TRUE;
+		}
+		return FALSE;
+	};
+
+	if (!isTaken(base))
+		return base;
+
+	for (Int index = 1; index <= 9999; ++index)
+	{
+		UnicodeString candidate;
+		candidate.format(L"Новая игра %d", index);
+		if (!isTaken(candidate))
+			return candidate;
+	}
+
+	return base;
+}
+
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 void GameState::populateSaveGameListbox( GameWindow *listbox, SaveLoadLayoutType layoutType )
 {
 	Int index;
@@ -1695,14 +1726,14 @@ void GameState::xfer( Xfer *xfer )
 	// if no label was found, we'll use the map name (just filename, no directory info)
 	if (exists == FALSE || saveGameInfo->mapLabel == AsciiString::TheEmptyString)
 	{
-		const char* p = TheGlobalData->m_mapName.reverseFind('\\');
-		if (p == nullptr)
-			saveGameInfo->mapLabel = TheGlobalData->m_mapName;
-		else
-		{
-			p++;  // skip the '\' we're on
-			saveGameInfo->mapLabel.set(p);
-		}
+		const char* mapPath = TheGlobalData->m_mapName.str();
+		const char* slash = strrchr(mapPath, '/');
+		const char* backslash = strrchr(mapPath, '\\');
+		const char* leaf = slash != nullptr && backslash != nullptr
+			? (slash > backslash ? slash + 1 : backslash + 1)
+			: (slash != nullptr ? slash + 1 : (backslash != nullptr ? backslash + 1 : mapPath));
+		saveGameInfo->mapLabel.set(leaf);
+
 	}
 
 	// xfer map label

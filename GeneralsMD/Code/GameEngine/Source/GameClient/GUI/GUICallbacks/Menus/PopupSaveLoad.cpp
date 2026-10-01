@@ -448,38 +448,10 @@ static void closeSaveMenu( GameWindow *window )
 // ------------------------------------------------------------------------------------------------
 static void setEditDescription( GameWindow *editControl )
 {
-	UnicodeString defaultDesc;
-	Campaign *campaign = TheCampaignManager->getCurrentCampaign();
-
-	//
-	// if we have a campaign we will use a default description that describes the
-	// location and map in the campaign nicely, otherwise we will default to just
-	// the map name (which is really only used in debug)
-	//
-	if( campaign )
-		defaultDesc.format( L"%s %d",
-												TheGameText->fetch( campaign->m_campaignNameLabel ).str(),
-												TheCampaignManager->getCurrentMissionNumber() + 1 );
-	else
-	{
-		const char *mapName = TheGlobalData->m_mapName.reverseFind( '\\' );
-
-		if( mapName )
-			defaultDesc.format( L"%S", mapName + 1 );
-		else
-			defaultDesc.format( L"%S", TheGlobalData->m_mapName.str() );
-
-		//Keep the extension out of the descriptive name.
-		if( (defaultDesc.getLength() >= 4)  &&  (defaultDesc.getCharAt(defaultDesc.getLength()-4) == '.') )
-		{
-			defaultDesc.truncateBy(4);
-		}
-
-	}
-
-	// set into edit control
+	// The save list is already populated here. Generate a clean unique name:
+	// "Новая игра", then "Новая игра 1", "Новая игра 2", ...
+	UnicodeString defaultDesc = TheGameState->getNextDefaultSaveDescription();
 	GadgetTextEntrySetText( editControl, defaultDesc );
-
 }
 
 //----------------------------------------------------------------------------------------------
@@ -819,6 +791,8 @@ WindowMsgHandledType SaveLoadMenuSystem( GameWindow *window, UnsignedInt msg,
 				// get description text
 				//GameWindow *entryDesc = TheWindowManager->winGetWindowFromId( saveDesc, NAMEKEY( "PopupSaveLoad.wnd:EntryDesc" ) );
 				UnicodeString desc = GadgetTextEntryGetText( editDesc );
+				if (desc.isEmpty())
+					desc = TheGameState->getNextDefaultSaveDescription();
 
 				// hide desc window
 				saveDesc->winHide( TRUE );

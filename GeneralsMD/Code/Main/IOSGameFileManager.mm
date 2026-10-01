@@ -512,17 +512,30 @@ static uint16_t GXRead16(const uint8_t *p) {
         }
     }
 
-    if (files != 44) {
-        if (message) *message = [NSString stringWithFormat:
-            @"Файл игры: НЕ ГОТОВ — объектов %lu/44, пустых: %lu.",
-            (unsigned long)files, (unsigned long)emptyFiles];
-        return NO;
+    // Do not require an exact file count. Zero Hour installations can contain
+    // hundreds of regular files; the old 44-file rule rejected complete archives.
+    // Validate the canonical critical content instead: non-empty INIZH.big and
+    // a populated ZH_Generals directory.
+    NSDictionary *archiveAttributes = [fm attributesOfItemAtPath:requiredArchive error:nil];
+    unsigned long long archiveSize = archiveAttributes != nil ? [archiveAttributes fileSize] : 0;
+
+    NSUInteger zhGeneralsFiles = 0;
+    for (NSString *relative in [fm subpathsAtPath:zhGenerals]) {
+        NSString *path = [zhGenerals stringByAppendingPathComponent:relative];
+        BOOL dir = NO;
+        if ([fm fileExistsAtPath:path isDirectory:&dir] && !dir) {
+            NSDictionary *attr = [fm attributesOfItemAtPath:path error:nil];
+            if (attr != nil && [attr fileSize] > 0)
+                ++zhGeneralsFiles;
+        }
     }
 
-    if (emptyFiles != 0) {
+    if (archiveSize == 0 || zhGeneralsFiles == 0 || files == 0) {
         if (message) *message = [NSString stringWithFormat:
-            @"Файл игры: НЕ ГОТОВ — объектов 44/44, пустых: %lu.",
-            (unsigned long)emptyFiles];
+            @"Файл игры: НЕ ГОТОВ — INIZH.big: %@; файлов в ZH_Generals: %lu; игровых файлов: %lu.",
+            archiveSize > 0 ? @"есть" : @"пустой",
+            (unsigned long)zhGeneralsFiles,
+            (unsigned long)files];
         return NO;
     }
 
@@ -540,7 +553,9 @@ static uint16_t GXRead16(const uint8_t *p) {
         return NO;
     }
 
-    if (message) *message = @"Файл игры: ГОТОВ — 44/44 объектов, пустых: 0; оба INI проверены в Generals ZH.";
+    if (message) *message = [NSString stringWithFormat:
+        @"Файл игры: ГОТОВ — %lu игровых файлов; INIZH.big и ZH_Generals проверены; оба INI проверены.",
+        (unsigned long)files];
     return YES;
 }
 
