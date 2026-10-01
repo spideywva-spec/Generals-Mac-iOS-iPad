@@ -568,9 +568,23 @@ static uint16_t GXRead16(const uint8_t *p) {
         return NO;
     }
 
-    // Launcher-owned INI files are deliberately outside the game root and are
-    // validated by the launcher/diagnostics using their Documents-level paths.
-    if (message) *message = @"Файл игры: ГОТОВ — 44/44 объектов, пустых: 0; iOSIPadOverrides.ini и ZeroHourSettings.ini проверяются в Documents.";
+    // Launcher-owned INI files are deliberately outside the game root.
+    // Verify them at their real Documents-level paths; never look inside
+    // Documents/Generals ZH for another copy.
+    NSString *documentsIOSOverrides = [documents stringByAppendingPathComponent:@"iOSIPadOverrides.ini"];
+    NSString *documentsZeroHourSettings = [documents stringByAppendingPathComponent:@"ZeroHourSettings.ini"];
+    BOOL iosOverridesExists = [fm fileExistsAtPath:documentsIOSOverrides];
+    BOOL zeroHourSettingsExists = [fm fileExistsAtPath:documentsZeroHourSettings];
+
+    if (!iosOverridesExists || !zeroHourSettingsExists) {
+        if (message) *message = [NSString stringWithFormat:
+            @"Файл игры: НЕ ГОТОВ — 44/44 объектов, пустых: 0; Documents/iOSIPadOverrides.ini: %@; Documents/ZeroHourSettings.ini: %@.",
+            iosOverridesExists ? @"есть" : @"нет",
+            zeroHourSettingsExists ? @"есть" : @"нет"];
+        return NO;
+    }
+
+    if (message) *message = @"Файл игры: ГОТОВ — 44/44 объектов, пустых: 0; оба INI проверены в Documents.";
     return YES;
 }
 
