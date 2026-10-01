@@ -345,12 +345,12 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
         break;
 
     case SDL_EVENT_FINGER_MOTION:
-        if (event.tfinger.fingerID == s_touch.finger1) {
+        if (s_touch.finger1Active && event.tfinger.fingerID == s_touch.finger1) {
             s_touch.f1x = event.tfinger.x;
             s_touch.f1y = event.tfinger.y;
             s_touch.lastX = px;
             s_touch.lastY = py;
-        } else if (event.tfinger.fingerID == s_touch.finger2) {
+        } else if (s_touch.finger2Active && event.tfinger.fingerID == s_touch.finger2) {
             s_touch.f2x = event.tfinger.x;
             s_touch.f2y = event.tfinger.y;
         } else {
@@ -405,10 +405,18 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
 
         if (s_touch.phase == TouchState::PINCH) {
             if (event.type == SDL_EVENT_FINGER_CANCELED) {
+                // Cancel any synthetic drag state before dropping the touch state.
+                sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
+                                   px, py, SDL_BUTTON_RIGHT);
+                sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
+                                   px, py, SDL_BUTTON_LEFT);
                 s_touch.phase = TouchState::IDLE;
                 s_touch.finger1 = 0;
                 s_touch.finger2 = 0;
+                s_touch.finger1Active = false;
+                s_touch.finger2Active = false;
                 s_touch.twoFingerTapCandidate = false;
+                resetSyntheticPosition(px, py);
                 break;
             }
 
