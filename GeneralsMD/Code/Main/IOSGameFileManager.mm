@@ -505,23 +505,23 @@ static uint16_t GXRead16(const uint8_t *p) {
 
     [fm removeItemAtPath:staging error:nil];
 
-    // Launcher-owned INI files intentionally stay at Documents level:
+    // Launcher-owned INI files stay beside the installed game files:
     //   Documents/Generals ZH/iOSIPadOverrides.ini
     //   Documents/Generals ZH/ZeroHourSettings.ini
     // They are created by the native launcher on first launch/settings save.
-    // The ZIP installer must never move or recreate them inside Generals ZH.
+    // The ZIP installer must never create another Generals ZH wrapper.
 
     if (message)
-        *message = @"Файл игры распакован в Documents рядом с iOSIPadOverrides.ini и ZeroHourSettings.ini.";
+        *message = @"Файл игры распакован в Documents/Generals ZH рядом с iOSIPadOverrides.ini и ZeroHourSettings.ini.";
     return YES;
 }
 
 - (BOOL)validateInstalledGameFile:(NSString **)message {
     // Единая проверка файла игры: после установки, в статусе и в Диагностике.
-    // Canonical root is Documents itself: INIZH.big, ZH_Generals/ and all other
+    // Canonical root is Documents/Generals ZH: INIZH.big, ZH_Generals/ and all
     // game files are siblings of the two launcher-owned INI files.
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-    NSString *root = documents;
+    NSString *root = [documents stringByAppendingPathComponent:@"Generals ZH"];
     NSFileManager *fm = [NSFileManager defaultManager];
 
     BOOL isDirectory = NO;
@@ -566,9 +566,9 @@ static uint16_t GXRead16(const uint8_t *p) {
         return NO;
     }
 
-    // Launcher-owned INI files are verified at their real Documents-level paths.
-    NSString *documentsIOSOverrides = [documents stringByAppendingPathComponent:@"iOSIPadOverrides.ini"];
-    NSString *documentsZeroHourSettings = [documents stringByAppendingPathComponent:@"ZeroHourSettings.ini"];
+    // Launcher-owned INI files are verified at their real canonical-root paths.
+    NSString *documentsIOSOverrides = [root stringByAppendingPathComponent:@"iOSIPadOverrides.ini"];
+    NSString *documentsZeroHourSettings = [root stringByAppendingPathComponent:@"ZeroHourSettings.ini"];
     BOOL iosOverridesExists = [fm fileExistsAtPath:documentsIOSOverrides];
     BOOL zeroHourSettingsExists = [fm fileExistsAtPath:documentsZeroHourSettings];
 
@@ -580,7 +580,7 @@ static uint16_t GXRead16(const uint8_t *p) {
         return NO;
     }
 
-    if (message) *message = @"Файл игры: ГОТОВ — 44/44 объектов, пустых: 0; оба INI проверены в Documents.";
+    if (message) *message = @"Файл игры: ГОТОВ — 44/44 объектов, пустых: 0; оба INI проверены в Generals ZH.";
     return YES;
 }
 
