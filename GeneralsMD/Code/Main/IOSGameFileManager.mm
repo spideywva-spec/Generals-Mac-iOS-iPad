@@ -507,42 +507,14 @@ static uint16_t GXRead16(const uint8_t *p) {
 
     [fm removeItemAtPath:staging error:nil];
 
-    // Seed launcher-owned INI files in the same canonical game root after the
-    // archive is installed. The launcher will preserve these on later updates.
-    NSString *iosOverrides = [root stringByAppendingPathComponent:@"iOSIPadOverrides.ini"];
-    if (![fm fileExistsAtPath:iosOverrides]) {
-        NSString *defaults =
-            @"GameData\n"
-             "  MaxCameraHeight = 550.0\n"
-             "  MinCameraHeight = 70.0\n"
-             "  CameraPitch = 37.0\n"
-             "  EnforceMaxCameraHeight = No\n"
-             "  KeyboardScrollSpeedFactor = 1.0\n"
-             "  TerrainDrawDistanceScale = 1.20\n"
-             "  UseFPSLimit = Yes\n"
-             "  FramesPerSecondLimit = 60\n"
-             "End\n";
-        [defaults writeToFile:iosOverrides atomically:YES encoding:NSUTF8StringEncoding error:nil];
-    }
-
-    NSString *zeroHourSettings = [root stringByAppendingPathComponent:@"ZeroHourSettings.ini"];
-    if (![fm fileExistsAtPath:zeroHourSettings]) {
-        NSArray *defaults = @[
-            @"ControlBar = ZeroHour", @"Cameos = Standard", @"Music = Standard",
-            @"UnitVoices = English", @"Hotkeys = Original", @"HotkeyLanguage = English",
-            @"Portraits = Standard", @"FogEffects = No", @"WaterEffects = Yes",
-            @"ExtraBuildingProps = Yes", @"UseShadowVolumes = No", @"UseShadowDecals = Yes",
-            @"UseCloudMap = No", @"UseLightMap = Yes", @"ShowSoftWaterEdge = Yes",
-            @"BuildingOcclusion = Yes", @"ShowTrees = Yes", @"ExtraAnimations = Yes",
-            @"DynamicLOD = No", @"HeatEffects = No", @"TextureReduction = 0",
-            @"MaxParticleCount = 2500", @"TextureFilter = Anisotropic", @"AnisotropyLevel = 8"
-        ];
-        NSString *settings = [[defaults componentsJoinedByString:@"\n"] stringByAppendingString:@"\n"];
-        [settings writeToFile:zeroHourSettings atomically:YES encoding:NSUTF8StringEncoding error:nil];
-    }
+    // Launcher-owned INI files intentionally stay at Documents level:
+    //   Documents/iOSIPadOverrides.ini
+    //   Documents/ZeroHourSettings.ini
+    // They are created by the native launcher on first launch/settings save.
+    // The ZIP installer must never move or recreate them inside Generals ZH.
 
     if (message)
-        *message = @"Файл игры распакован в Documents/Generals ZH. iOSIPadOverrides.ini и ZeroHourSettings.ini находятся рядом с файлами игры.";
+        *message = @"Файл игры распакован в Documents/Generals ZH. iOSIPadOverrides.ini и ZeroHourSettings.ini находятся рядом с папкой игры в Documents.";
     return YES;
 }
 
@@ -596,20 +568,9 @@ static uint16_t GXRead16(const uint8_t *p) {
         return NO;
     }
 
-    NSString *iosOverrides = [root stringByAppendingPathComponent:@"iOSIPadOverrides.ini"];
-    NSString *zeroHourSettings = [root stringByAppendingPathComponent:@"ZeroHourSettings.ini"];
-    BOOL iosOverridesExists = [fm fileExistsAtPath:iosOverrides];
-    BOOL zeroHourSettingsExists = [fm fileExistsAtPath:zeroHourSettings];
-
-    if (!iosOverridesExists || !zeroHourSettingsExists) {
-        if (message) *message = [NSString stringWithFormat:
-            @"Файл игры: НЕ ГОТОВ — 44/44 объектов, пустых: 0; iOSIPadOverrides.ini: %@; ZeroHourSettings.ini: %@.",
-            iosOverridesExists ? @"есть" : @"нет",
-            zeroHourSettingsExists ? @"есть" : @"нет"];
-        return NO;
-    }
-
-    if (message) *message = @"Файл игры: ГОТОВ — 44/44 объектов, пустых: 0; iOSIPadOverrides.ini: есть; ZeroHourSettings.ini: есть.";
+    // Launcher-owned INI files are deliberately outside the game root and are
+    // validated by the launcher/diagnostics using their Documents-level paths.
+    if (message) *message = @"Файл игры: ГОТОВ — 44/44 объектов, пустых: 0; iOSIPadOverrides.ini и ZeroHourSettings.ini проверяются в Documents.";
     return YES;
 }
 
