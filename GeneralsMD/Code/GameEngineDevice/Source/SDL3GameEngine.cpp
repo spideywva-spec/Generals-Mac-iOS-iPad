@@ -1004,6 +1004,34 @@ void SDL3GameEngine::pollSDL3Events(void)
 #endif
 }
 
+// GeneralsX @bugfix felipebraz 01/04/2026 Enable SDL text input only while an entry gadget owns focus.
+void SDL3GameEngine::updateTextInputState(void)
+{
+	if (!m_SDLWindow || !TheWindowManager) {
+		return;
+	}
+
+	GameWindow* focusedWindow = TheWindowManager->winGetFocus();
+	const Bool wantsTextInput =
+		focusedWindow != nullptr && BitIsSet(focusedWindow->winGetStyle(), GWS_ENTRY_FIELD);
+
+	if (wantsTextInput) {
+		if (!m_IsTextInputActive) {
+			if (SDL_StartTextInput(m_SDLWindow)) {
+				m_IsTextInputActive = true;
+			}
+		}
+		m_TextInputFocusWindow = focusedWindow;
+	} else {
+		if (m_IsTextInputActive) {
+			SDL_StopTextInput(m_SDLWindow);
+			m_IsTextInputActive = false;
+		}
+		m_TextInputFocusWindow = nullptr;
+	}
+}
+
+
 // GeneralsX @bugfix felipebraz 01/04/2026 Forward SDL UTF-8 text input through existing GWM_IME_CHAR path.
 void SDL3GameEngine::forwardTextInputEvent(const char* utf8Text)
 {
