@@ -1702,8 +1702,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.gameFileVideoLayer = [AVPlayerLayer playerLayerWithPlayer:self.gameFileVideoPlayer];
     self.gameFileVideoLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
     self.gameFileVideoLayer.opacity = 1.0;
-    self.gameFileVideoLayer.zPosition = -1.0;
-    self.gameFileVideoLayer.frame = self.gameFileView.bounds;
+    // The video is the first sublayer of the transparent installer view.\n    // Do not use a negative zPosition: that can place AVPlayerLayer behind\n    // the host view on some iOS Core Animation compositing paths.\n    self.gameFileVideoLayer.frame = self.gameFileView.bounds;
     [self.gameFileView.layer insertSublayer:self.gameFileVideoLayer atIndex:0];
 
     __weak GXProfileLauncherViewController *weakSelf = self;
@@ -1842,8 +1841,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     [super viewDidLayoutSubviews];
     if (self.gameFileVideoLayer != nil) {
         self.gameFileVideoLayer.frame = self.gameFileView.bounds;
-        self.gameFileVideoLayer.zPosition = -1.0;
-    }
+        // Keep the player as the first sublayer; UIKit controls render above it.\n    }
 }
 
 - (void)dealloc
@@ -1988,7 +1986,6 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
             : @"Файлы игры найдены и готовы к запуску. Если нужно, нажмите «Переустановить игру».";
     }
 
-    [self startGameFileBackgroundVideo];
 }
 
 - (void)minimizeGameFileProgress
@@ -2072,8 +2069,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.gameFileProgress.progress = 0.0;
     self.gameFilePercentLabel.text = @"0%";
     self.gameFileStage.text = @"Скачивание";
-    self.gameFileDetail.text = @"Подключение…";
-    [self startGameFileBackgroundVideo];
+    self.gameFileDetail.text = @"Подключение…";\n    [self stopGameFileBackgroundVideo];\n    [self startGameFileBackgroundVideo];
 
     __weak GXProfileLauncherViewController *weakSelf = self;
     [[GXGameFileManager sharedManager]
