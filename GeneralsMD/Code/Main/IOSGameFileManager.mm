@@ -510,16 +510,16 @@ static uint16_t GXRead16(const uint8_t *p) {
 }
 
 - (BOOL)validateInstalledGameFile:(NSString **)message {
-    // Единая проверка файла игры: используется после установки, в статусе лаунчера
-    // и в разделе Диагностика. Launcher-owned INI находятся рядом с папкой игры
-    // в Documents и никогда не считаются файлами внутри Generals ZH.
+    // Единая проверка файла игры: после установки, в статусе и в Диагностике.
+    // Canonical root is Documents itself: INIZH.big, ZH_Generals/ and all other
+    // game files are siblings of the two launcher-owned INI files.
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-    NSString *root = [documents stringByAppendingPathComponent:@"Generals ZH"];
+    NSString *root = documents;
     NSFileManager *fm = [NSFileManager defaultManager];
 
     BOOL isDirectory = NO;
     if (![fm fileExistsAtPath:root isDirectory:&isDirectory] || !isDirectory) {
-        if (message) *message = @"Файл игры: НЕ УСТАНОВЛЕН — папка Generals ZH отсутствует.";
+        if (message) *message = @"Файл игры: НЕ УСТАНОВЛЕН — Documents недоступен.";
         return NO;
     }
 
@@ -559,9 +559,7 @@ static uint16_t GXRead16(const uint8_t *p) {
         return NO;
     }
 
-    // Launcher-owned INI files are deliberately outside the game root.
-    // Verify them at their real Documents-level paths; never look inside
-    // Documents/Generals ZH for another copy.
+    // Launcher-owned INI files are verified at their real Documents-level paths.
     NSString *documentsIOSOverrides = [documents stringByAppendingPathComponent:@"iOSIPadOverrides.ini"];
     NSString *documentsZeroHourSettings = [documents stringByAppendingPathComponent:@"ZeroHourSettings.ini"];
     BOOL iosOverridesExists = [fm fileExistsAtPath:documentsIOSOverrides];
