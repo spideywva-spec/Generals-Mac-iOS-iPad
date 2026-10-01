@@ -150,7 +150,7 @@ NSString *BundledAutoLaunchProfile()
 NSString *GameRootPath()
 {
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-    return [documents stringByAppendingPathComponent:@"Generals ZH"];
+    return documents;
 }
 
 NSString *IOSIPadOverridesPath()
@@ -1184,7 +1184,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     NSString *buildVersion = [bundle objectForInfoDictionaryKey:@"CFBundleVersion"] ?: @"unknown";
 
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-    NSString *gameRoot = [documents stringByAppendingPathComponent:@"Generals ZH"];
+    NSString *gameRoot = documents;
     BOOL gameRootExists = [[NSFileManager defaultManager] fileExistsAtPath:gameRoot];
     NSString *gameFileStatus = nil;
     BOOL gameFileReady = [[GXGameFileManager sharedManager] validateInstalledGameFile:&gameFileStatus];
