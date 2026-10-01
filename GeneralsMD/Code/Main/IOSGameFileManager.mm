@@ -114,7 +114,7 @@ didFinishDownloadingToURL:(NSURL *)location {
             }
             ok = verified;
             [[NSFileManager defaultManager] removeItemAtPath:tmp error:nil];
-            [self finish:ok message:message ?: (ok ? @"Файл игры готов." : @"GameFile не установлен.")];
+            [self finish:ok message:message ?: (ok ? @"Файл игры готов." : @"Файл игры не установлен.")];
         });
     });
 }
@@ -269,7 +269,7 @@ static uint16_t GXRead16(const uint8_t *p) {
 }
 
 - (BOOL)validateInstalledGameFile:(NSString **)message {
-    // Единая проверка GameFile: используется после установки, в статусе лаунчера
+    // Единая проверка файла игры: используется после установки, в статусе лаунчера
     // и в разделе Диагностика. Ожидается ровно 44 обычных файла.
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
     NSString *root = [documents stringByAppendingPathComponent:@"Generals ZH"];
