@@ -552,12 +552,11 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 if (!s_touch.finger1Active && !s_touch.finger2Active) {
                     // Fallback for the same short two-finger tap state:
                     // generate exactly one RMB click, never a drag.
-                    const cx =
-                        (s_touch.twoFingerStart1X + s_touch.twoFingerStart2X) *
-                        0.5f * (float)winW;
-                    const cy =
-                        (s_touch.twoFingerStart1Y + s_touch.twoFingerStart2Y) *
-                        0.5f * (float)winH;
+                    // Cancel/deselect at the stable synthetic cursor.
+                    // Never jump to the two-finger center: that absolute mouse
+                    // jump can be interpreted as a camera turn on iOS.
+                    const float cx = s_touch.syntheticX;
+                    const float cy = s_touch.syntheticY;
                     releaseSyntheticButtons(mouse, window,
                                             s_touch.syntheticX, s_touch.syntheticY);
                     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
