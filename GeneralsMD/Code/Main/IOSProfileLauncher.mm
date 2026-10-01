@@ -2072,7 +2072,9 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.gameFileProgress.progress = 0.0;
     self.gameFilePercentLabel.text = @"0%";
     self.gameFileStage.text = @"Скачивание";
-    self.gameFileDetail.text = @"Подключение…";\n    [self stopGameFileBackgroundVideo];\n    [self startGameFileBackgroundVideo];
+    self.gameFileDetail.text = @"Подключение…";
+    [self stopGameFileBackgroundVideo];
+    [self startGameFileBackgroundVideo];
 
     __weak GXProfileLauncherViewController *weakSelf = self;
     [[GXGameFileManager sharedManager]
