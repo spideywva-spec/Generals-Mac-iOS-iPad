@@ -498,6 +498,8 @@ UIButton *MakeButton(NSString *title, id target, SEL action)
 @property(nonatomic, strong) AVPlayerLayer *gameFileVideoLayer;
 @property(nonatomic, strong) NSMutableArray<UIVisualEffectView *> *gameFileEdgeBlurViews;
 @property(nonatomic, strong) id gameFileVideoLoopObserver;
+
+- (void)resetНастройкиControls;
 @end
 
 void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback callback)
@@ -1841,7 +1843,8 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     [super viewDidLayoutSubviews];
     if (self.gameFileVideoLayer != nil) {
         self.gameFileVideoLayer.frame = self.gameFileView.bounds;
-        // Keep the player as the first sublayer; UIKit controls render above it.\n    }
+        // Keep the player as the first sublayer; UIKit controls render above it.
+    }
 }
 
 - (void)dealloc
@@ -2352,3 +2355,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.fpsSlider.alpha = enabled ? 1.0 : 0.35;
     self.fpsValue.alpha = enabled ? 1.0 : 0.35;
 }
+
+@end
+
+#endif
