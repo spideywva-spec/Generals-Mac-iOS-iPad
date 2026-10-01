@@ -71,6 +71,40 @@ jobs:
         with:
           vcpkgGitCommitId: '18ff00a7d2697e23f22e2a2293c3fa6468a50c06'
 
+      - name: Prepare FreeType GitHub mirror
+        shell: bash
+        run: |
+          set -euo pipefail
+          OVERLAY="$RUNNER_TEMP/vcpkg-overlay"
+          mkdir -p "$OVERLAY/freetype"
+          cp -R "$VCPKG_ROOT/ports/freetype/." "$OVERLAY/freetype/"
+          python3 - "$OVERLAY/freetype/portfile.cmake" <<'PY'
+          import pathlib
+          import re
+          import sys
+
+          path = pathlib.Path(sys.argv[1])
+          text = path.read_text()
+          match = re.search(r"vcpkg_from_gitlab\(\n(?P<body>.*?)\n\)", text, re.S)
+          if not match:
+              raise SystemExit("vcpkg_from_gitlab block not found in FreeType portfile")
+
+          body = match.group("body")
+          patches = body[body.index("    PATCHES"):]
+          replacement = """vcpkg_from_git(
+              URL https://github.com/freetype/freetype.git
+              OUT_SOURCE_PATH SOURCE_PATH
+              REF 42608f77f20749dd6ddc9e0536788eaad70ea4b5
+              FETCH_REF VER-2-13-3
+              HEAD_REF master
+          %s
+          )""" % patches
+
+          path.write_text(text[:match.start()] + replacement + text[match.end():])
+          PY
+          echo "VCPKG_OVERLAY_PORTS=$OVERLAY" >> "$GITHUB_ENV"
+          echo "FreeType source switched from GitLab archive to the official GitHub mirror."
+
       - name: Install build tools
         run: |
           brew update
@@ -109,6 +143,7 @@ jobs:
         env:
           VULKAN_SDK: ${{ env.VULKAN_SDK }}
           VCPKG_ROOT: ${{ env.VCPKG_ROOT }}
+          VCPKG_OVERLAY_PORTS: ${{ env.VCPKG_OVERLAY_PORTS }}
           VCPKG_DEFAULT_TRIPLET: arm64-ios
           CC: clang
           CXX: clang++
