@@ -1681,19 +1681,19 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
             strongSelf.gameFileProgress.progress = (float)MAX(0.0, MIN(1.0, progress));
             strongSelf.gameFileStage.text = [NSString stringWithFormat:@"Скачивание  •  %.0f%%", progress * 100.0];
             NSString *sizeText = total > 0
-                ? [NSString stringWithFormat:@"%@" , [strongSelf gxFormatBytes:received]]
+                ? [NSString stringWithFormat:@"%@ из %@", [strongSelf gxFormatBytes:received], [strongSelf gxFormatBytes:total]]
                 : [NSString stringWithFormat:@"%@", [strongSelf gxFormatBytes:received]];
             NSString *speedText = speed > 0 ? [NSString stringWithFormat:@"Скорость: %@/s", [strongSelf gxFormatBytes:(int64_t)speed]] : @"Скорость: —";
             NSString *timeText = [NSString stringWithFormat:@"Осталось: %@", [strongSelf gxFormatTime:remaining]];
             strongSelf.gameFileDetail.text = [NSString stringWithFormat:@"%@\n%@\n%@", sizeText, speedText, timeText];
         } status:^(NSString *stage, NSString *detail) {
             GXProfileLauncherViewController *strongSelf = weakSelf;
-            if (!self) return;
-            self.gameFileStage.text = stage;
+            if (strongSelf == nil) return;
+            strongSelf.gameFileStage.text = stage;
             strongSelf.gameFileDetail.text = detail;
         } completion:^(BOOL success, NSString *message) {
             GXProfileLauncherViewController *strongSelf = weakSelf;
-            if (!self) return;
+            if (strongSelf == nil) return;
             strongSelf.gameFileProgress.progress = success ? 1.0 : strongSelf.gameFileProgress.progress;
             strongSelf.gameFileStage.text = success ? @"✓ GAMEFILE ГОТОВ" : @"✕ ОШИБКА";
             strongSelf.gameFileDetail.text = message ?: @"";
