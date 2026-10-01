@@ -139,7 +139,7 @@ static bool SDLCALL iosLifecycleWatcher(void *userdata, SDL_Event *event)
 namespace {
 
 struct TouchState {
-    enum Phase { IDLE, PENDING, CAMERA_PAN, SELECTING, PINCH };
+    enum Phase { IDLE, PENDING, CAMERA_PAN, SELECTING, PINCH, TWO_FINGER_CANCEL };
 
     Phase phase = IDLE;
     SDL_FingerID finger1 = 0;
@@ -336,15 +336,41 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
         } else if (s_touch.phase == TouchState::PENDING ||
                    s_touch.phase == TouchState::CAMERA_PAN ||
                    s_touch.phase == TouchState::SELECTING) {
+            // Two fingers = ПКМ/cancel only. Do NOT start pinch/zoom and do NOT
+            // allow the remaining finger to inherit the one-finger camera drag.
+            // This makes the gesture deterministic and prevents a stuck camera.
+            if (s_touch.phase == TouchState::CAMERA_PAN) {
+                sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
+                                   s_touch.lastX, s_touch.lastY, SDL_BUTTON_RIGHT);
+            } else if (s_touch.phase == TouchState::SELECTING) {
+                sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
+                                   s_touch.lastX, s_touch.lastY, SDL_BUTTON_LEFT);
+            }
+
             s_touch.finger2 = event.tfinger.fingerID;
             s_touch.finger2Active = true;
             s_touch.f2x = event.tfinger.x;
             s_touch.f2y = event.tfinger.y;
-            beginPinch(mouse, window, winW, winH);
+            s_touch.phase = TouchState::TWO_FINGER_CANCEL;
+
+            const float cx = (px + s_touch.lastX) * 0.5f;
+            const float cy = (py + s_touch.lastY) * 0.5f;
+            sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, cx, cy);
+            sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
+                               cx, cy, SDL_BUTTON_RIGHT);
+            sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
+                               cx, cy, SDL_BUTTON_RIGHT);
+
+            // Both fingers are now owned by the cancel gesture. A new
+            // one-finger touch is required before camera control can resume.
         }
         break;
 
     case SDL_EVENT_FINGER_MOTION:
+        if (s_touch.phase == TouchState::TWO_FINGER_CANCEL) {
+            // Ignore all movement while the two-finger cancel gesture owns the touch.
+            break;
+        }
         if (s_touch.finger1Active && event.tfinger.fingerID == s_touch.finger1) {
             s_touch.f1x = event.tfinger.x;
             s_touch.f1y = event.tfinger.y;
@@ -400,6 +426,26 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
     case SDL_EVENT_FINGER_CANCELED:
         if (event.tfinger.fingerID != s_touch.finger1 &&
             event.tfinger.fingerID != s_touch.finger2) {
+            break;
+        }
+
+        if (s_touch.phase == TouchState::TWO_FINGER_CANCEL) {
+            // Never promote the other finger to PENDING/CAMERA_PAN.
+            if (event.tfinger.fingerID == s_touch.finger1) {
+                s_touch.finger1Active = false;
+            }
+            if (event.tfinger.fingerID == s_touch.finger2) {
+                s_touch.finger2Active = false;
+            }
+
+            if (!s_touch.finger1Active && !s_touch.finger2Active) {
+                s_touch.phase = TouchState::IDLE;
+                s_touch.finger1 = 0;
+                s_touch.finger2 = 0;
+                s_touch.twoFingerTapCandidate = false;
+                s_touch.pinchDist = 0.0f;
+                resetSyntheticPosition(px, py);
+            }
             break;
         }
 
