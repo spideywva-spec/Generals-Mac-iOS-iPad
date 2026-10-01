@@ -510,14 +510,16 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                     const float cy =
                         (s_touch.twoFingerStart1Y + s_touch.twoFingerStart2Y) *
                         0.5f * (float)winH;
-                    // A two-finger tap is a touch-level cancel only. Do NOT
-                    // synthesize a right-click here: Generals can interpret that
-                    // as a world/camera command and the old path caused the camera
-                    // to jump sideways after a simple two-finger tap.
-                    // Pinch zoom remains fully enabled because moving the fingers
-                    // clears twoFingerTapCandidate and stays in PINCH.
+                    // A short two-finger tap is the game's RMB cancel/deselect.
+                    // It is a CLICK only: no drag, no camera pan. Pinch zoom remains
+                    // enabled because any meaningful finger movement clears the tap
+                    // candidate and stays in PINCH.
                     releaseSyntheticButtons(mouse, window,
                                             s_touch.syntheticX, s_touch.syntheticY);
+                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
+                                       cx, cy, SDL_BUTTON_RIGHT);
+                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
+                                       cx, cy, SDL_BUTTON_RIGHT);
                     s_touch.phase = TouchState::IDLE;
                     s_touch.finger1 = 0;
                     s_touch.finger2 = 0;
@@ -542,11 +544,20 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 }
 
                 if (!s_touch.finger1Active && !s_touch.finger2Active) {
-                    // Cancel the gesture without generating a mouse
-                    // button click. This prevents the two-finger tap from
-                    // turning into a camera/world command.
+                    // Fallback for the same short two-finger tap state:
+                    // generate exactly one RMB click, never a drag.
+                    const cx =
+                        (s_touch.twoFingerStart1X + s_touch.twoFingerStart2X) *
+                        0.5f * (float)winW;
+                    const cy =
+                        (s_touch.twoFingerStart1Y + s_touch.twoFingerStart2Y) *
+                        0.5f * (float)winH;
                     releaseSyntheticButtons(mouse, window,
                                             s_touch.syntheticX, s_touch.syntheticY);
+                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
+                                       cx, cy, SDL_BUTTON_RIGHT);
+                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
+                                       cx, cy, SDL_BUTTON_RIGHT);
 
                     s_touch.phase = TouchState::IDLE;
                     s_touch.finger1 = 0;
