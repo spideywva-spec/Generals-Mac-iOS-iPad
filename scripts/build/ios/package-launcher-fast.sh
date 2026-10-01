@@ -65,6 +65,7 @@ xcrun --sdk iphoneos clang++ \
   -framework UIKit \
   -framework QuartzCore \
   -lobjc \
+  -lz \
   "${LAUNCHER_SRC}" \
   "${GAME_FILE_MANAGER_SRC}" \
   -o "${LAUNCHER_LIB}"
