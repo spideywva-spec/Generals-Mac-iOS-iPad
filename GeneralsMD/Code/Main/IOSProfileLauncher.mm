@@ -1245,7 +1245,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         ? [UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0]
         : [UIColor colorWithRed:1.0 green:0.55 blue:0.25 alpha:1.0];
 
-    NSString *display = [NSString stringWithFormat:@"СТАТУС GAMEFILE\n%@", subtitle];
+    NSString *display = [NSString stringWithFormat:@"СТАТУС ФАЙЛА ИГРЫ\n%@", subtitle];
     NSMutableAttributedString *attributed = [[NSMutableAttributedString alloc] initWithString:display];
     NSString *titleText = @"СТАТУС ФАЙЛА ИГРЫ";
     [attributed addAttribute:NSFontAttributeName
