@@ -437,6 +437,7 @@ UIButton *MakeButton(NSString *title, id target, SEL action)
 @property(nonatomic, strong) UILabel *gameFileStage;
 @property(nonatomic, strong) UILabel *gameFileDetail;
 @property(nonatomic, strong) UIButton *shareDiagnosticsButton;
+@property(nonatomic, strong) UIButton *gameFileStatusButton;
 @property(nonatomic, assign) BOOL diagnosticsScanRunning;
 @end
 
@@ -668,12 +669,12 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     sideStack.axis = UILayoutConstraintAxisVertical;
     sideStack.spacing = 12.0;
 
-    UIButton *gameFile = [self makeLauncherCard:@"СТАТУС GAMEFILE"
-                                        subtitle:@"Установлен  •  44 объекта проверены"
+    self.gameFileStatusButton = [self makeLauncherCard:@"СТАТУС GAMEFILE"
+                                        subtitle:@"Проверка…"
                                            icon:@"checkmark.circle.fill"
                                           action:@selector(downloadGameFile)
                                       accentColor:[UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0]];
-    [sideStack addArrangedSubview:gameFile];
+    [sideStack addArrangedSubview:self.gameFileStatusButton];
     [sidePanel addSubview:sideStack];
 
     [NSLayoutConstraint activateConstraints:@[
@@ -792,6 +793,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     }
 
     [self adaptModernLauncherLayout:mainColumns hero:hero sidePanel:sidePanel actions:actions];
+    [self refreshGameFileStatusCard];
 }
 
 - (UIButton *)makeLauncherCard:(NSString *)title
@@ -1174,6 +1176,10 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     NSString *gameDataPath = [resourcePath stringByAppendingPathComponent:@"GameData"];
 
     BOOL gameDataExists = [[NSFileManager defaultManager] fileExistsAtPath:gameDataPath];
+    NSString *gameFileStatus = nil;
+    BOOL gameFileReady = [[GXGameFileManager sharedManager] validateInstalledGameFile:&gameFileStatus];
+    if (gameFileStatus == nil)
+        gameFileStatus = gameFileReady ? @"GameFile: ГОТОВ" : @"GameFile: НЕ ГОТОВ";
     BOOL enhancedУстановлено = ProfileDirectoryExists(@"enhanced");
     BOOL zeroHourУстановлено = ProfileDirectoryExists(@"zerohour");
 
@@ -1219,6 +1225,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
          "КОНТЕНТ\n"
          "GameData: %@\n"
          "Размер GameData: %@\n"
+         "%@\n"
          "Enhanced: %@\n"
          "ZeroHour: %@\n\n"
          "ФАЙЛЫ\n"
@@ -1239,12 +1246,46 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         ShortBuildIdentifier(GX_BASE_SHELL_RUN),
         gameDataExists ? @"Установлено" : @"Отсутствует",
         gameDataSize,
+        gameFileStatus,
         enhancedУстановлено ? @"Установлено" : @"Не установлено",
         zeroHourУстановлено ? @"Установлено" : @"Не установлено",
         settingsExists ? @"Есть" : @"Отсутствует",
         zeroHourНастройкиExists ? @"Есть" : @"Отсутствует",
         currentLogText,
         sessionLogsText];
+}
+
+- (void)refreshGameFileStatusCard
+{
+    if (self.gameFileStatusButton == nil)
+        return;
+
+    NSString *message = nil;
+    BOOL ready = [[GXGameFileManager sharedManager] validateInstalledGameFile:&message];
+
+    NSString *subtitle = ready
+        ? @"ГОТОВ  •  44/44 объектов  •  0 пустых"
+        : @"НЕ ГОТОВ  •  нажмите для установки/проверки";
+
+    UIColor *accent = ready
+        ? [UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0]
+        : [UIColor colorWithRed:1.0 green:0.55 blue:0.25 alpha:1.0];
+
+    NSString *display = [NSString stringWithFormat:@"СТАТУС GAMEFILE\n%@", subtitle];
+    NSMutableAttributedString *attributed = [[NSMutableAttributedString alloc] initWithString:display];
+    [attributed addAttribute:NSFontAttributeName
+                       value:[UIFont systemFontOfSize:15.0 weight:UIFontWeightBold]
+                       range:NSMakeRange(0, 14)];
+    [attributed addAttribute:NSForegroundColorAttributeName
+                       value:UIColor.whiteColor
+                       range:NSMakeRange(0, 14)];
+    [attributed addAttribute:NSFontAttributeName
+                       value:[UIFont systemFontOfSize:11.0 weight:UIFontWeightRegular]
+                       range:NSMakeRange(15, subtitle.length)];
+    [attributed addAttribute:NSForegroundColorAttributeName
+                       value:accent
+                       range:NSMakeRange(15, subtitle.length)];
+    [self.gameFileStatusButton setAttributedTitle:attributed forState:UIControlStateNormal];
 }
 
 - (void)buildDiagnostics
@@ -1424,6 +1465,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.modalBackdrop.hidden = NO;
     self.diagnosticsView.hidden = NO;
     [self refreshDiagnostics];
+    [self refreshGameFileStatusCard];
 }
 
 - (void)hideDiagnostics
