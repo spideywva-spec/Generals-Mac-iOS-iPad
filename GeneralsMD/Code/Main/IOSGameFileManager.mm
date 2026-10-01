@@ -187,6 +187,7 @@ static uint16_t GXRead16(const uint8_t *p) {
     NSUInteger pos = 0;
 
     for (uint16_t index = 0; index < count; ++index) {
+        @autoreleasepool {
         if (self.cancelRequested) {
             [fh closeFile];
             if (message) *message = @"Загрузка файла игры отменена.";
@@ -291,6 +292,7 @@ static uint16_t GXRead16(const uint8_t *p) {
         dispatch_async(dispatch_get_main_queue(), ^{
             if (self.status) self.status(@"Распаковка", [NSString stringWithFormat:@"Распакован: %@", name.lastPathComponent]);
         });
+        }
     }
 
     [fh closeFile];
