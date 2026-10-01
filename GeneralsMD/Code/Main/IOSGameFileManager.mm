@@ -36,6 +36,10 @@ static NSString * const kGXGameFileURL = @"https://www.dropbox.com/scl/fi/11yzk5
     self.startedAt = [NSDate date].timeIntervalSince1970;
     self.cancelRequested = NO;
 
+    // Никогда не оставляем старый временный ZIP от предыдущей установки.
+    NSString *staleZIP = [NSTemporaryDirectory() stringByAppendingPathComponent:@"GeneralsGameFile.zip"];
+    [[NSFileManager defaultManager] removeItemAtPath:staleZIP error:nil];
+
     NSURL *url = [NSURL URLWithString:kGXGameFileURL];
     NSURLSessionConfiguration *cfg = [NSURLSessionConfiguration defaultSessionConfiguration];
     cfg.timeoutIntervalForRequest = 60.0;
@@ -202,8 +206,19 @@ static uint16_t GXRead16(const uint8_t *p) {
         while ([name hasPrefix:@"./"])
             name = [name substringFromIndex:2];
 
-        while ([name hasPrefix:@"Generals ZH/"])
-            name = [name substringFromIndex:[@"Generals ZH/" length]];
+        // Убираем ЛЮБОЕ количество внешних обёрток "Generals ZH/".
+        // Например:
+        //   Generals ZH/Generals ZH/INIZH.big
+        // превращается в:
+        //   Documents/Generals ZH/INIZH.big
+        // Никакой второй "Generals ZH" внутри корня игры не создаём.
+        NSString *gameWrapper = @"Generals ZH/";
+        while ([name length] >= gameWrapper.length &&
+               [name rangeOfString:gameWrapper
+                            options:NSCaseInsensitiveSearch
+                              range:NSMakeRange(0, gameWrapper.length)].location == 0) {
+            name = [name substringFromIndex:gameWrapper.length];
+        }
 
         // Prevent archive path traversal.
         NSString *safe = [name stringByStandardizingPath];
