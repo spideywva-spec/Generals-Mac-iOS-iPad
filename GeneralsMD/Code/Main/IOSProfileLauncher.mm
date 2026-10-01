@@ -436,6 +436,10 @@ UIButton *MakeButton(NSString *title, id target, SEL action)
 @property(nonatomic, strong) UIProgressView *gameFileProgress;
 @property(nonatomic, strong) UILabel *gameFileStage;
 @property(nonatomic, strong) UILabel *gameFileDetail;
+@property(nonatomic, strong) UIButton *gameFileCancelButton;
+@property(nonatomic, strong) UIButton *gameFileMinimizeButton;
+@property(nonatomic, strong) UIButton *gameFileCloseButton;
+@property(nonatomic, strong) UILabel *gameFilePercentLabel;
 @property(nonatomic, strong) UIButton *shareDiagnosticsButton;
 @property(nonatomic, strong) UIButton *gameFileStatusButton;
 @property(nonatomic, assign) BOOL diagnosticsScanRunning;
@@ -1589,59 +1593,135 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
 - (void)showGameFileProgress
 {
-    self.menuStack.hidden = NO;
+    self.menuStack.hidden = YES;
     self.settingsView.hidden = YES;
     self.diagnosticsView.hidden = YES;
     self.profileView.hidden = YES;
-    self.modalBackdrop.hidden = NO;
+    self.modalBackdrop.hidden = YES;
 
+    [self.gameFileView removeFromSuperview];
+
+    // GameFile — отдельное полноэкранное окно, а не часть modalBackdrop.
     self.gameFileView = [[UIView alloc] init];
     self.gameFileView.translatesAutoresizingMaskIntoConstraints = NO;
-    self.gameFileView.backgroundColor = [UIColor colorWithWhite:0.025 alpha:0.94];
-    self.gameFileView.layer.cornerRadius = 24.0;
-    self.gameFileView.layer.borderWidth = 1.0;
-    self.gameFileView.layer.borderColor = [UIColor colorWithRed:0.25 green:0.60 blue:1.0 alpha:0.55].CGColor;
-    self.gameFileView.layer.shadowColor = UIColor.blackColor.CGColor;
-    self.gameFileView.layer.shadowOpacity = 0.6;
-    self.gameFileView.layer.shadowRadius = 28.0;
-    self.gameFileView.layer.shadowOffset = CGSizeMake(0, 12);
-    [self.modalBackdrop addSubview:self.gameFileView];
+    self.gameFileView.backgroundColor = [UIColor colorWithRed:0.008 green:0.018 blue:0.035 alpha:0.985];
+    [self.view addSubview:self.gameFileView];
 
-    UILabel *title = MakeLabel(@"GAMEFILE", 27.0, UIFontWeightBold);
-    self.gameFileStage = MakeLabel(@"Скачивание", 16.0, UIFontWeightSemibold);
-    self.gameFileDetail = MakeLabel(@"Подключение…", 13.0, UIFontWeightRegular);
-    self.gameFileDetail.numberOfLines = 0;
+    [NSLayoutConstraint activateConstraints:@[
+        [self.gameFileView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+        [self.gameFileView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
+        [self.gameFileView.topAnchor constraintEqualToAnchor:self.view.topAnchor],
+        [self.gameFileView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor]
+    ]];
+
+    UIView *topBar = [[UIView alloc] init];
+    topBar.translatesAutoresizingMaskIntoConstraints = NO;
+    topBar.backgroundColor = [UIColor colorWithWhite:0.04 alpha:0.92];
+    topBar.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.08].CGColor;
+    topBar.layer.borderWidth = 1.0;
+    [self.gameFileView addSubview:topBar];
+
+    UILabel *title = MakeLabel(@"GAMEFILE", 26.0, UIFontWeightBold);
+    title.textAlignment = NSTextAlignmentLeft;
+    [topBar addSubview:title];
+
+    UILabel *subtitle = MakeLabel(@"Установка файлов игры", 13.0, UIFontWeightRegular);
+    subtitle.textAlignment = NSTextAlignmentLeft;
+    subtitle.textColor = [UIColor colorWithWhite:0.62 alpha:1.0];
+    [topBar addSubview:subtitle];
+
+    self.gameFileMinimizeButton = MakeButton(@"—", self, @selector(minimizeGameFileProgress));
+    self.gameFileCloseButton = MakeButton(@"×", self, @selector(closeGameFileProgress));
+    self.gameFileMinimizeButton.titleLabel.font = [UIFont systemFontOfSize:22.0 weight:UIFontWeightRegular];
+    self.gameFileCloseButton.titleLabel.font = [UIFont systemFontOfSize:22.0 weight:UIFontWeightRegular];
+    [self.gameFileMinimizeButton.widthAnchor constraintEqualToConstant:52.0].active = YES;
+    [self.gameFileCloseButton.widthAnchor constraintEqualToConstant:52.0].active = YES;
+    [topBar addSubview:title];
+    [topBar addSubview:subtitle];
+    [topBar addSubview:self.gameFileMinimizeButton];
+    [topBar addSubview:self.gameFileCloseButton];
+
+    self.gameFileStage = MakeLabel(@"Скачивание", 20.0, UIFontWeightSemibold);
+    self.gameFileStage.textAlignment = NSTextAlignmentLeft;
+    [self.gameFileView addSubview:self.gameFileStage];
+
+    self.gameFilePercentLabel = MakeLabel(@"0%", 18.0, UIFontWeightBold);
+    self.gameFilePercentLabel.textAlignment = NSTextAlignmentRight;
+    self.gameFilePercentLabel.textColor = [UIColor colorWithRed:0.38 green:0.72 blue:1.0 alpha:1.0];
+    [self.gameFileView addSubview:self.gameFilePercentLabel];
+
     self.gameFileProgress = [[UIProgressView alloc] initWithProgressViewStyle:UIProgressViewStyleDefault];
     self.gameFileProgress.translatesAutoresizingMaskIntoConstraints = NO;
     self.gameFileProgress.progress = 0.0;
     self.gameFileProgress.trackTintColor = [UIColor colorWithWhite:1.0 alpha:0.10];
     self.gameFileProgress.progressTintColor = [UIColor colorWithRed:0.25 green:0.65 blue:1.0 alpha:1.0];
-
-    [self.gameFileView addSubview:title];
-    [self.gameFileView addSubview:self.gameFileStage];
     [self.gameFileView addSubview:self.gameFileProgress];
+
+    self.gameFileDetail = MakeLabel(@"Подключение…", 15.0, UIFontWeightRegular);
+    self.gameFileDetail.textAlignment = NSTextAlignmentLeft;
+    self.gameFileDetail.textColor = [UIColor colorWithWhite:0.76 alpha:1.0];
+    self.gameFileDetail.numberOfLines = 0;
     [self.gameFileView addSubview:self.gameFileDetail];
 
+    self.gameFileCancelButton = MakeButton(@"Отменить загрузку", self, @selector(cancelGameFileDownload));
+    self.gameFileCancelButton.backgroundColor = [UIColor colorWithRed:0.40 green:0.08 blue:0.08 alpha:0.78];
+    [self.gameFileView addSubview:self.gameFileCancelButton];
+
     [NSLayoutConstraint activateConstraints:@[
-        [self.gameFileView.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [self.gameFileView.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor],
-        [self.gameFileView.leadingAnchor constraintGreaterThanOrEqualToAnchor:self.view.safeAreaLayoutGuide.leadingAnchor constant:24.0],
-        [self.gameFileView.trailingAnchor constraintLessThanOrEqualToAnchor:self.view.safeAreaLayoutGuide.trailingAnchor constant:-24.0],
-        [self.gameFileView.widthAnchor constraintLessThanOrEqualToConstant:430.0],
-        [title.topAnchor constraintEqualToAnchor:self.gameFileView.topAnchor constant:26.0],
-        [title.leadingAnchor constraintEqualToAnchor:self.gameFileView.leadingAnchor constant:26.0],
-        [title.trailingAnchor constraintEqualToAnchor:self.gameFileView.trailingAnchor constant:-26.0],
-        [self.gameFileStage.topAnchor constraintEqualToAnchor:title.bottomAnchor constant:14.0],
-        [self.gameFileStage.leadingAnchor constraintEqualToAnchor:title.leadingAnchor],
-        [self.gameFileStage.trailingAnchor constraintEqualToAnchor:title.trailingAnchor],
+        [topBar.topAnchor constraintEqualToAnchor:self.gameFileView.topAnchor],
+        [topBar.leadingAnchor constraintEqualToAnchor:self.gameFileView.leadingAnchor],
+        [topBar.trailingAnchor constraintEqualToAnchor:self.gameFileView.trailingAnchor],
+        [topBar.heightAnchor constraintEqualToConstant:92.0],
+
+        [title.leadingAnchor constraintEqualToAnchor:topBar.leadingAnchor constant:28.0],
+        [title.topAnchor constraintEqualToAnchor:topBar.topAnchor constant:18.0],
+        [subtitle.leadingAnchor constraintEqualToAnchor:title.leadingAnchor],
+        [subtitle.topAnchor constraintEqualToAnchor:title.bottomAnchor constant:2.0],
+
+        [self.gameFileCloseButton.trailingAnchor constraintEqualToAnchor:topBar.trailingAnchor constant:-18.0],
+        [self.gameFileCloseButton.centerYAnchor constraintEqualToAnchor:topBar.centerYAnchor],
+        [self.gameFileMinimizeButton.trailingAnchor constraintEqualToAnchor:self.gameFileCloseButton.leadingAnchor constant:-8.0],
+        [self.gameFileMinimizeButton.centerYAnchor constraintEqualToAnchor:topBar.centerYAnchor],
+
+        [self.gameFileStage.leadingAnchor constraintEqualToAnchor:self.gameFileView.leadingAnchor constant:48.0],
+        [self.gameFileStage.topAnchor constraintEqualToAnchor:topBar.bottomAnchor constant:54.0],
+        [self.gameFileStage.trailingAnchor constraintEqualToAnchor:self.gameFilePercentLabel.leadingAnchor constant:-18.0],
+
+        [self.gameFilePercentLabel.trailingAnchor constraintEqualToAnchor:self.gameFileView.trailingAnchor constant:-48.0],
+        [self.gameFilePercentLabel.centerYAnchor constraintEqualToAnchor:self.gameFileStage.centerYAnchor],
+
+        [self.gameFileProgress.leadingAnchor constraintEqualToAnchor:self.gameFileView.leadingAnchor constant:48.0],
+        [self.gameFileProgress.trailingAnchor constraintEqualToAnchor:self.gameFileView.trailingAnchor constant:-48.0],
         [self.gameFileProgress.topAnchor constraintEqualToAnchor:self.gameFileStage.bottomAnchor constant:18.0],
-        [self.gameFileProgress.leadingAnchor constraintEqualToAnchor:title.leadingAnchor],
-        [self.gameFileProgress.trailingAnchor constraintEqualToAnchor:title.trailingAnchor],
-        [self.gameFileDetail.topAnchor constraintEqualToAnchor:self.gameFileProgress.bottomAnchor constant:14.0],
-        [self.gameFileDetail.leadingAnchor constraintEqualToAnchor:title.leadingAnchor],
-        [self.gameFileDetail.trailingAnchor constraintEqualToAnchor:title.trailingAnchor],
-        [self.gameFileDetail.bottomAnchor constraintEqualToAnchor:self.gameFileView.bottomAnchor constant:-26.0]
+
+        [self.gameFileDetail.leadingAnchor constraintEqualToAnchor:self.gameFileProgress.leadingAnchor],
+        [self.gameFileDetail.trailingAnchor constraintEqualToAnchor:self.gameFileProgress.trailingAnchor],
+        [self.gameFileDetail.topAnchor constraintEqualToAnchor:self.gameFileProgress.bottomAnchor constant:22.0],
+
+        [self.gameFileCancelButton.leadingAnchor constraintEqualToAnchor:self.gameFileProgress.leadingAnchor],
+        [self.gameFileCancelButton.bottomAnchor constraintEqualToAnchor:self.gameFileView.safeAreaLayoutGuide.bottomAnchor constant:-28.0],
+        [self.gameFileCancelButton.widthAnchor constraintEqualToConstant:230.0]
     ]];
+}
+
+- (void)minimizeGameFileProgress
+{
+    self.gameFileView.hidden = YES;
+    self.menuStack.hidden = NO;
+}
+
+- (void)closeGameFileProgress
+{
+    self.gameFileView.hidden = YES;
+    self.menuStack.hidden = NO;
+}
+
+- (void)cancelGameFileDownload
+{
+    [[GXGameFileManager sharedManager] cancelDownload];
+    self.gameFileStage.text = @"Отмена…";
+    self.gameFileDetail.text = @"Отмена загрузки и распаковки GameFile…";
+    self.gameFileCancelButton.enabled = NO;
 }
 
 - (void)hideGameFileProgress
@@ -1651,7 +1731,12 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.gameFileProgress = nil;
     self.gameFileStage = nil;
     self.gameFileDetail = nil;
+    self.gameFileCancelButton = nil;
+    self.gameFileMinimizeButton = nil;
+    self.gameFileCloseButton = nil;
+    self.gameFilePercentLabel = nil;
     self.modalBackdrop.hidden = YES;
+    self.menuStack.hidden = NO;
 }
 
 - (NSString *)gxFormatBytes:(int64_t)bytes
@@ -1678,26 +1763,33 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         downloadAndInstallGameFileWithProgress:^(double progress, int64_t received, int64_t total, double speed, NSTimeInterval remaining) {
             GXProfileLauncherViewController *strongSelf = weakSelf;
             if (strongSelf == nil) return;
+            if (strongSelf.gameFileView.hidden) return;
             strongSelf.gameFileProgress.progress = (float)MAX(0.0, MIN(1.0, progress));
+            strongSelf.gameFilePercentLabel.text = [NSString stringWithFormat:@"%.0f%%", progress * 100.0];
             strongSelf.gameFileStage.text = [NSString stringWithFormat:@"Скачивание  •  %.0f%%", progress * 100.0];
             NSString *sizeText = total > 0
                 ? [NSString stringWithFormat:@"%@ из %@", [strongSelf gxFormatBytes:received], [strongSelf gxFormatBytes:total]]
-                : [NSString stringWithFormat:@"%@", [strongSelf gxFormatBytes:received]];
-            NSString *speedText = speed > 0 ? [NSString stringWithFormat:@"Скорость: %@/s", [strongSelf gxFormatBytes:(int64_t)speed]] : @"Скорость: —";
+                : [strongSelf gxFormatBytes:received];
+            NSString *speedText = speed > 0 ? [NSString stringWithFormat:@"Скорость: %@/с", [strongSelf gxFormatBytes:(int64_t)speed]] : @"Скорость: —";
             NSString *timeText = [NSString stringWithFormat:@"Осталось: %@", [strongSelf gxFormatTime:remaining]];
             strongSelf.gameFileDetail.text = [NSString stringWithFormat:@"%@\n%@\n%@", sizeText, speedText, timeText];
         } status:^(NSString *stage, NSString *detail) {
             GXProfileLauncherViewController *strongSelf = weakSelf;
             if (strongSelf == nil) return;
+            if (strongSelf.gameFileView.hidden) return;
             strongSelf.gameFileStage.text = stage;
             strongSelf.gameFileDetail.text = detail;
         } completion:^(BOOL success, NSString *message) {
             GXProfileLauncherViewController *strongSelf = weakSelf;
             if (strongSelf == nil) return;
-            strongSelf.gameFileProgress.progress = success ? 1.0 : strongSelf.gameFileProgress.progress;
-            strongSelf.gameFileStage.text = success ? @"✓ GAMEFILE ГОТОВ" : @"✕ ОШИБКА";
-            strongSelf.gameFileDetail.text = message ?: @"";
-            if (success) strongSelf.gameFileProgress.progressTintColor = [UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0];
+            if (strongSelf.gameFileView != nil) {
+                strongSelf.gameFileProgress.progress = success ? 1.0 : strongSelf.gameFileProgress.progress;
+                strongSelf.gameFilePercentLabel.text = success ? @"100%" : @"";
+                strongSelf.gameFileStage.text = success ? @"✓ GAMEFILE ГОТОВ" : @"✕ ЗАВЕРШЕНО";
+                strongSelf.gameFileDetail.text = message ?: @"";
+                if (success) strongSelf.gameFileProgress.progressTintColor = [UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0];
+                strongSelf.gameFileCancelButton.enabled = NO;
+            }
             [strongSelf refreshGameFileStatusCard];
             [strongSelf refreshDiagnostics];
 
@@ -1707,7 +1799,6 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
             });
         }];
 }
-
 - (NSString *)valueForKey:(NSString *)key inContents:(NSString *)contents
 {
     NSString *prefix = [key stringByAppendingString:@"="];
