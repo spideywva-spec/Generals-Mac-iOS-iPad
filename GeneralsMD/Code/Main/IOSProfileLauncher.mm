@@ -1702,6 +1702,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.gameFileVideoLayer = [AVPlayerLayer playerLayerWithPlayer:self.gameFileVideoPlayer];
     self.gameFileVideoLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
     self.gameFileVideoLayer.opacity = 1.0;
+    self.gameFileVideoLayer.zPosition = -1.0;
     self.gameFileVideoLayer.frame = self.gameFileView.bounds;
     [self.gameFileView.layer insertSublayer:self.gameFileVideoLayer atIndex:0];
 
@@ -1839,8 +1840,10 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 - (void)viewDidLayoutSubviews
 {
     [super viewDidLayoutSubviews];
-    if (self.gameFileVideoLayer != nil)
+    if (self.gameFileVideoLayer != nil) {
         self.gameFileVideoLayer.frame = self.gameFileView.bounds;
+        self.gameFileVideoLayer.zPosition = -1.0;
+    }
 }
 
 - (void)dealloc
@@ -1861,7 +1864,8 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     // GameFile — отдельное полноэкранное окно, а не часть modalBackdrop.
     self.gameFileView = [[UIView alloc] init];
     self.gameFileView.translatesAutoresizingMaskIntoConstraints = NO;
-    self.gameFileView.backgroundColor = UIColor.blackColor;
+    // Transparent overlay: the intro video must remain visible behind the loading UI.
+    self.gameFileView.backgroundColor = UIColor.clearColor;
     [self.view addSubview:self.gameFileView];
 
     [NSLayoutConstraint activateConstraints:@[
@@ -1873,7 +1877,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
     UIView *topBar = [[UIView alloc] init];
     topBar.translatesAutoresizingMaskIntoConstraints = NO;
-    topBar.backgroundColor = [UIColor colorWithWhite:0.04 alpha:0.92];
+    topBar.backgroundColor = [UIColor colorWithWhite:0.02 alpha:0.48];
     topBar.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.08].CGColor;
     topBar.layer.borderWidth = 1.0;
     [self.gameFileView addSubview:topBar];
@@ -1897,6 +1901,9 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     [topBar addSubview:self.gameFileCloseButton];
 
     self.gameFileStage = MakeLabel(@"Скачивание", 20.0, UIFontWeightSemibold);
+    self.gameFileStage.layer.shadowColor = UIColor.blackColor.CGColor;
+    self.gameFileStage.layer.shadowOpacity = 0.9;
+    self.gameFileStage.layer.shadowRadius = 5.0;
     self.gameFileStage.textAlignment = NSTextAlignmentLeft;
     [self.gameFileView addSubview:self.gameFileStage];
 
@@ -1913,6 +1920,9 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     [self.gameFileView addSubview:self.gameFileProgress];
 
     self.gameFileDetail = MakeLabel(@"Подключение…", 15.0, UIFontWeightRegular);
+    self.gameFileDetail.layer.shadowColor = UIColor.blackColor.CGColor;
+    self.gameFileDetail.layer.shadowOpacity = 0.9;
+    self.gameFileDetail.layer.shadowRadius = 4.0;
     self.gameFileDetail.textAlignment = NSTextAlignmentLeft;
     self.gameFileDetail.textColor = [UIColor colorWithWhite:0.76 alpha:1.0];
     self.gameFileDetail.numberOfLines = 0;
