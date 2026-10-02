@@ -129,13 +129,14 @@ static bool SDLCALL iosLifecycleWatcher(void *userdata, SDL_Event *event)
 // synthesized here, through the same SDL3Mouse::addSDLEvent path real mice use.
 //
 // iOS touch controls:
-//   1 finger short tap    -> synthetic LMB click (select)
-//   1 finger movement     -> synthetic RMB drag (camera pan)
-//   1 finger hold 0.3 sec -> LMB selection-rectangle / build-rotation mode
-//   2 finger short tap    -> synthetic RMB click (cancel/deselect)
-//   2 finger distance     -> continuous velocity-sensitive zoom
-//   2 finger angle        -> continuous middle-mouse camera rotation
-//   Distance + angle      -> zoom and rotation simultaneously
+ //   1 finger short tap    -> synthetic LMB click (select)
+ //   1 finger movement     -> camera pan
+ //   1 finger hold 0.2 sec -> selection rectangle / build gesture
+ //   2 finger short tap    -> synthetic RMB click (cancel/deselect)
+ //   2 finger distance     -> continuous zoom
+ //   2 finger angle        -> camera rotation
+ //   IMPORTANT: two-finger movement is NOT a camera-pan gesture.
+ //   Distance + angle      -> zoom and rotation simultaneously
 // ---------------------------------------------------------------------------
 namespace {
 
