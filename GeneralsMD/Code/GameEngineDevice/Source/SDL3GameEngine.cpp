@@ -302,7 +302,8 @@ void beginPinch(SDL3Mouse *mouse, SDL_Window *window, int winW, int winH)
 
     // Do not synthesize ANY mouse motion when the second finger arrives.
     // A zero-delta SDL mouse-motion event is still an absolute touch-to-mouse
-    // conversion on some iOS paths and can rotate the camera to the right.    // The pinch owns both fingers from this point; only wheel events are sent.
+    // conversion on some iOS paths and can rotate the camera to the right.
+    // The pinch owns both fingers from this point; only wheel events are sent.
 
     // Do not synthesize a mouse move to the pinch center. The game can treat
     // that xrel/yrel jump as camera motion even though RMB was released.
@@ -619,6 +620,7 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 if (secondReleased) {
                     s_touch.finger2Active = false;
                 }
+
                 if (!s_touch.finger1Active && !s_touch.finger2Active) {
                     // Fallback for the same short two-finger tap state:
                     // generate exactly one RMB click, never a drag.
@@ -918,7 +920,8 @@ Bool SDL3GameEngine::isActive(void)
 }
 
 /**
- * Set OS focus status */
+ * Set OS focus status
+ */
 void SDL3GameEngine::setIsActive(Bool isActive)
 {
 	m_IsActive = isActive;
