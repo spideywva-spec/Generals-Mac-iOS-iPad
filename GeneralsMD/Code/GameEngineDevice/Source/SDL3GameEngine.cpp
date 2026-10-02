@@ -822,12 +822,20 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
         }
 
         if (s_touch.phase == TouchState::BUILD_PLACEMENT) {
-            // FIRST TOUCH RELEASE: save the exact placement point.
-            // Do NOT build and do NOT start rotation. The building remains here
-            // until the player either taps again to build or holds 0.2s to rotate.
+            // FIRST TOUCH RELEASE:
+            //   1. Save the exact building position.
+            //   2. End the first-touch gesture completely.
+            //   3. DO NOT build.
+            //
+            // The critical part is returning to IDLE while keeping
+            // buildPositionReady=true. The next finger-down must then be
+            // recognized as the dedicated SECOND TOUCH:
+            //   - release before 0.2s -> build immediately
+            //   - hold for 0.2s       -> rotate in place, then build on release
             s_touch.buildPlacedX = s_touch.lastX;
             s_touch.buildPlacedY = s_touch.lastY;
             s_touch.buildPositionReady = true;
+            s_touch.phase = TouchState::IDLE;
         } else if (s_touch.phase == TouchState::BUILD_ROTATE_PENDING) {
             // SECOND TOUCH RELEASE before 0.2s = build immediately.
             // Holding this same touch for 0.2s is the explicit rotation gesture.
