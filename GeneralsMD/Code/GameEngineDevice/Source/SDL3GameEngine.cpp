@@ -37,6 +37,7 @@
 #include "GameClient/GameWindow.h"
 #include "GameClient/GameWindowManager.h"
 #include "GameClient/Gadget.h"
+#include "GameClient/InGameUI.h"
 #include "W3DDevice/GameLogic/W3DGameLogic.h"
 #include "W3DDevice/GameClient/W3DGameClient.h"
 #include "W3DDevice/Common/W3DModuleFactory.h"
@@ -139,7 +140,7 @@ static bool SDLCALL iosLifecycleWatcher(void *userdata, SDL_Event *event)
 namespace {
 
 struct TouchState {
-    enum Phase { IDLE, PENDING, CAMERA_PAN, SELECTING, PINCH, TWO_FINGER_CANCEL };
+    enum Phase { IDLE, PENDING, CAMERA_PAN, SELECTING, BUILD_PLACEMENT, PINCH, TWO_FINGER_CANCEL };
 
     Phase phase = IDLE;
     SDL_FingerID finger1 = 0;
@@ -179,6 +180,23 @@ struct TouchState {
 };
 
 TouchState s_touch;
+
+bool isBuildPlacementActive()
+{
+    return TheInGameUI != nullptr && TheInGameUI->getPendingPlaceType() != nullptr;
+}
+
+void beginBuildPlacement(SDL3Mouse *mouse, SDL_Window *window)
+{
+    // Generals already implements building movement + free-angle rotation as
+    // left-button drag while MOUSEMODE_BUILD_PLACE is active. Feed the iOS
+    // finger directly into that native path: no RMB means the camera cannot pan.
+    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION,
+                       s_touch.downX, s_touch.downY);
+    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
+                       s_touch.downX, s_touch.downY, SDL_BUTTON_LEFT);
+    s_touch.phase = TouchState::BUILD_PLACEMENT;
+}
 
 // A short hold quickly commits to PC-style selection-box mode. A movement
 // before this point remains the one-finger camera drag.
@@ -388,6 +406,19 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
         if (s_touch.phase == TouchState::IDLE) {
             resetToSingleFingerPending(event.tfinger.fingerID, px, py);
             sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, px, py);
+
+            // While a structure is being placed, one finger owns the mouse
+            // exactly like a held left mouse button on PC. This moves the
+            // building with the finger and lets Generals' native placement
+            // code calculate a continuous free rotation. No camera button is
+            // held in this mode, so camera movement is completely blocked.
+            if (isBuildPlacementActive()) {
+                beginBuildPlacement(mouse, window);
+            }
+        } else if (s_touch.phase == TouchState::BUILD_PLACEMENT) {
+            // A second finger must never turn building placement into a camera
+            // gesture. Keep the placement gesture single-finger only.
+            break;
         } else if (s_touch.phase == TouchState::PENDING ||
                    s_touch.phase == TouchState::CAMERA_PAN ||
                    s_touch.phase == TouchState::SELECTING) {
@@ -409,6 +440,22 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             // Ignore all movement while the two-finger cancel gesture owns the touch.
             break;
         }
+
+        if (s_touch.phase == TouchState::BUILD_PLACEMENT) {
+            if (event.tfinger.fingerID == s_touch.finger1) {
+                s_touch.f1x = event.tfinger.x;
+                s_touch.f1y = event.tfinger.y;
+                s_touch.lastX = px;
+                s_touch.lastY = py;
+
+                // Keep the absolute touch position synchronized with the game
+                // cursor. The native build-placement code turns this held
+                // LMB drag into smooth building movement and rotation.
+                sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, px, py);
+            }
+            break;
+        }
+
         if (s_touch.phase == TouchState::PINCH) {
             // PINCH owns both fingers completely. Do not update lastX/lastY:
             // those coordinates belong to one-finger camera control and must
@@ -695,6 +742,12 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 releaseSyntheticButtons(mouse, window, s_touch.lastX, s_touch.lastY);
                 break;
 
+            case TouchState::BUILD_PLACEMENT:
+                // Releasing the held LMB completes the native Generals
+                // placement/rotation gesture at the current finger position.
+                releaseSyntheticButtons(mouse, window, s_touch.lastX, s_touch.lastY);
+                break;
+
             default:
                 break;
         }
@@ -712,6 +765,7 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
 void updateTouchLongPress(SDL3Mouse *mouse, SDL_Window *window)
 {
     if (s_touch.phase == TouchState::PENDING &&
+        !isBuildPlacementActive() &&
         (SDL_GetTicks() - s_touch.downTicks) >= LONG_PRESS_MS) {
         beginSelection(mouse, window);
     }
