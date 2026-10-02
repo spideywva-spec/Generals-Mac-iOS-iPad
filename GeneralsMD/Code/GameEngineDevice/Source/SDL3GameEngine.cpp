@@ -297,8 +297,7 @@ void beginBuildPlacement(SDL3Mouse *mouse, SDL_Window *window)
     s_touch.buildHoldTicks = SDL_GetTicks();
     s_touch.buildLastMoveX = s_touch.downX;
     s_touch.buildLastMoveY = s_touch.downY;
-    s_touch.buildRotationStartX = s_touch.downX;
-    s_touch.buildRotationStartY = s_touch.downY;
+    s_touch.buildRotationStartX = s_touch.downX;    s_touch.buildRotationStartY = s_touch.downY;
     s_touch.buildPlacedX = s_touch.downX;
     s_touch.buildPlacedY = s_touch.downY;
     s_touch.phase = TouchState::BUILD_PLACEMENT;
@@ -597,8 +596,7 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             const float angle = SDL_atan2f(dy, dx);
             const float pi = 3.14159265358979323846f;
 
-            float fromStart = angle - s_touch.twoFingerStartAngle;
-            if (fromStart > pi)
+            float fromStart = angle - s_touch.twoFingerStartAngle;            if (fromStart > pi)
                 fromStart -= 2.0f * pi;
             else if (fromStart < -pi)
                 fromStart += 2.0f * pi;
@@ -673,16 +671,19 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             event.tfinger.fingerID != s_touch.finger2)
             break;
 
-        if (s_touch.phase == TouchState::BUILD_PLACEMENT ||
-            s_touch.phase == TouchState::BUILD_ROTATE) {
-            // Release before/after the hold commits the building at its
-            // current position. A short release (<0.1s) therefore builds
-            // immediately without requiring a second press. If the finger was
-            // held for 0.1s+, the last rotation angle is used on release.
+        if (s_touch.phase == TouchState::BUILD_ROTATE) {
+            // SECOND TOUCH was held for 0.2s and rotation mode is active.
+            // Release commits the building at the ORIGINAL saved position.
+            // The release coordinates are never used as a new placement point.
             sendSyntheticMouse(mouse, window,
-                               SDL_EVENT_MOUSE_BUTTON_DOWN, px, py, SDL_BUTTON_LEFT);
+                               SDL_EVENT_MOUSE_BUTTON_DOWN,
+                               s_touch.buildPlacedX, s_touch.buildPlacedY,
+                               SDL_BUTTON_LEFT);
             sendSyntheticMouse(mouse, window,
-                               SDL_EVENT_MOUSE_BUTTON_UP, px, py, SDL_BUTTON_LEFT);
+                               SDL_EVENT_MOUSE_BUTTON_UP,
+                               s_touch.buildPlacedX, s_touch.buildPlacedY,
+                               SDL_BUTTON_LEFT);
+            s_touch.buildPositionReady = false;
             s_touch.phase = TouchState::IDLE;
             s_touch.finger1 = 0;
             s_touch.finger2 = 0;
@@ -750,8 +751,11 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
         }
 
         if (s_touch.phase == TouchState::BUILD_PLACEMENT) {
-            // FIRST TOUCH RELEASE: keep the building at this location.
-            // Do NOT click/commit. The next touch is required for rotation.
+            // FIRST TOUCH RELEASE: save the exact placement point.
+            // Do NOT build and do NOT start rotation. The building remains here
+            // until the player either taps again to build or holds 0.2s to rotate.
+            s_touch.buildPlacedX = s_touch.lastX;
+            s_touch.buildPlacedY = s_touch.lastY;
             s_touch.buildPositionReady = true;
         } else if (s_touch.phase == TouchState::BUILD_ROTATE_PENDING) {
             // SECOND TOUCH RELEASE before 0.2s = build immediately.
@@ -764,12 +768,11 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                                SDL_BUTTON_LEFT);
             s_touch.buildPositionReady = false;
         } else if (s_touch.phase == TouchState::BUILD_ROTATE) {
-            // SECOND TOUCH RELEASE: commit the building at the frozen position
-            // and final rotation.
+            // SECOND TOUCH RELEASE: commit at the frozen first-touch position.
             sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
-                               px, py, SDL_BUTTON_LEFT);
+                               s_touch.buildPlacedX, s_touch.buildPlacedY, SDL_BUTTON_LEFT);
             sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
-                               px, py, SDL_BUTTON_LEFT);
+                               s_touch.buildPlacedX, s_touch.buildPlacedY, SDL_BUTTON_LEFT);
             s_touch.buildPositionReady = false;
         } else if (s_touch.phase == TouchState::SELECTING) {
             releaseSyntheticButtons(mouse, window, px, py);
@@ -897,8 +900,7 @@ SDL3GameEngine::~SDL3GameEngine()
 {
 	if (m_SDLWindow && m_IsTextInputActive) {
 		SDL_StopTextInput(m_SDLWindow);
-		m_IsTextInputActive = false;
-		m_TextInputFocusWindow = nullptr;
+		m_IsTextInputActive = false;		m_TextInputFocusWindow = nullptr;
 	}
 
 	if (m_IsInitialized) {
@@ -1198,7 +1200,6 @@ void SDL3GameEngine::updateTextInputState(void)
 		m_TextInputFocusWindow = nullptr;
 	}
 }
-
 
 // GeneralsX @bugfix felipebraz 01/04/2026 Forward SDL UTF-8 text input through existing GWM_IME_CHAR path.
 void SDL3GameEngine::forwardTextInputEvent(const char* utf8Text)
