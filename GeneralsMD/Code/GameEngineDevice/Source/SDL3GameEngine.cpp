@@ -164,6 +164,8 @@ struct TouchState {
     float lastY = 0.0f;
     Uint64 downTicks = 0;
     Uint64 buildHoldTicks = 0;
+    float buildLastMoveX = 0.0f;
+    float buildLastMoveY = 0.0f;
     float buildRotationStartX = 0.0f;
     float buildRotationStartY = 0.0f;
 
@@ -283,6 +285,8 @@ void beginBuildPlacement(SDL3Mouse *mouse, SDL_Window *window)
     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION,
                        s_touch.downX, s_touch.downY);
     s_touch.buildHoldTicks = SDL_GetTicks();
+    s_touch.buildLastMoveX = s_touch.downX;
+    s_touch.buildLastMoveY = s_touch.downY;
     s_touch.buildRotationStartX = s_touch.downX;
     s_touch.buildRotationStartY = s_touch.downY;
     s_touch.phase = TouchState::BUILD_PLACEMENT;
@@ -475,13 +479,25 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 s_touch.f1y = event.tfinger.y;
 
                 if (s_touch.phase == TouchState::BUILD_PLACEMENT) {
-                    // Until the 0.1s hold threshold, the finger is a pure
-                    // placement cursor: move the building, never the camera.
+                    // The first gesture is ALWAYS building movement. Moving the
+                    // finger for a long time must never start rotation by itself.
+                    // The 0.1s timer is restarted whenever the finger actually
+                    // moves, so rotation only appears after the player stops on
+                    // the desired build location and deliberately holds there.
                     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, px, py);
 
-                    if (heldMs >= LONG_PRESS_MS) {
-                        // The building is already at the desired position.
-                        // Freeze that position and enter rotation-only mode.
+                    const float moveX = px - s_touch.buildLastMoveX;
+                    const float moveY = py - s_touch.buildLastMoveY;
+                    const float moveDistance = SDL_sqrtf(moveX * moveX + moveY * moveY);
+
+                    if (moveDistance > 2.0f) {
+                        s_touch.buildLastMoveX = px;
+                        s_touch.buildLastMoveY = py;
+                        s_touch.buildHoldTicks = SDL_GetTicks();
+                    } else if ((SDL_GetTicks() - s_touch.buildHoldTicks) >= LONG_PRESS_MS) {
+                        // The player has stopped with the building at the desired
+                        // location for 0.1s. Keep that position fixed and switch
+                        // to the one-finger rotation gesture.
                         s_touch.phase = TouchState::BUILD_ROTATE;
                         s_touch.buildRotationStartX = px;
                         s_touch.buildRotationStartY = py;
@@ -493,9 +509,8 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                         TheInGameUI->setPlacementEnd(&anchor);
                     }
                 } else {
-                    // After 0.1s the finger is rotation-only. Do NOT send a
-                    // mouse-motion event here: that would move the building
-                    // again and could re-enter the native drag-to-rotate path.
+                    // Rotation mode: the building stays at the chosen position.
+                    // Only the placement angle changes; the camera is untouched.
                     ICoord2D end;
                     end.x = static_cast<Int>(px);
                     end.y = static_cast<Int>(py);
