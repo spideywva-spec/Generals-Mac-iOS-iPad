@@ -153,7 +153,6 @@ public:
     }
 
     State GetState() const { return m_state; }
-
     void SetWindow(SDL_Window* window) { m_window = window; }
 
     void ProcessInput(const SDL_Event& event)
@@ -184,23 +183,26 @@ public:
 
         const Uint64 now = SDL_GetTicks();
 
+        // Selection is deliberately separated from camera pan:
+        // hold for 0.1 s first, then drag -> selection. Before that, dx/dy
+        // always drive the camera directly.
         if (m_state == STATE_CAMERA_PAN &&
             m_selectionArmed &&
             (now - m_downTicks) >= SELECTION_HOLD_MS) {
-            // A finger that was deliberately held for 0.1 s and then dragged
-            // becomes the selection gesture. Camera remains locked after this.
             const float travel = SDL_sqrtf(
                 (m_lastX - m_downX) * (m_lastX - m_downX) +
                 (m_lastY - m_downY) * (m_lastY - m_downY));
-
             if (travel >= SELECTION_DISTANCE_PX)
                 beginSelection();
         }
+
+        // BUILD MODE B: the SAME finger must stop and remain still for 0.2 s.
+        // No second finger is involved in activating building rotation.
         if (m_state == STATE_BUILDING &&
-            m_buildConfirmationPending &&
             m_autoBuildAfterRotation &&
             !m_buildRotating &&
-            (now - m_holdStartTicks) >= BUILD_ROTATION_HOLD_MS) {
+            (now - m_holdStartTicks) >= BUILD_ROTATION_HOLD_MS &&
+            m_buildStationary) {
             beginBuildingRotation(m_lastX, m_lastY);
         }
     }
@@ -211,6 +213,7 @@ private:
     static constexpr float TAP_MAX_DISTANCE_PX = 10.0f;
     static constexpr float SELECTION_DISTANCE_PX = 12.0f;
     static constexpr float BUILD_CONFIRM_DISTANCE_PX = 48.0f;
+    static constexpr float BUILD_STATIONARY_PX = 3.0f;
     static constexpr float CAMERA_PAN_WORLD_PER_PIXEL = 0.020f;
     static constexpr float PINCH_ZOOM_WORLD_PER_PIXEL = 0.05f;
     static constexpr float ROTATION_DEAD_ZONE_RAD = 0.6981317008f;
@@ -237,6 +240,7 @@ private:
     bool m_autoBuildAfterRotation = false;
     bool m_buildConfirmationPending = false;
     bool m_buildRotating = false;
+    bool m_buildStationary = false;
     Uint64 m_holdStartTicks = 0;
     float m_buildX = 0.0f;
     float m_buildY = 0.0f;
@@ -295,7 +299,8 @@ private:
             return;
 
         SDL_Event ev;
-        SDL_zero(ev);        ev.type = type;
+        SDL_zero(ev);
+        ev.type = type;
 
         if (type == SDL_EVENT_MOUSE_MOTION) {
             ev.motion.windowID = SDL_GetWindowID(m_window);
@@ -342,10 +347,11 @@ private:
 
     void applyCameraPan(float dxPixels, float dyPixels)
     {
-        // HARD CAMERA LOCK: only STATE_CAMERA_PAN can reach this function.
         if (m_state != STATE_CAMERA_PAN || !TheTacticalView)
             return;
 
+        // Direct dx/dy: larger/faster finger movement produces proportionally
+        // larger camera movement. No artificial minimum distance is imposed.
         Coord2D delta;
         delta.x = -dxPixels * CAMERA_PAN_WORLD_PER_PIXEL;
         delta.y = -dyPixels * CAMERA_PAN_WORLD_PER_PIXEL;
@@ -357,6 +363,7 @@ private:
         if (m_state != STATE_MULTI_TOUCH || !TheTacticalView)
             return;
 
+        // Positive pinch distance = fingers separating = zoom in.
         TheTacticalView->userZoom(-distanceDelta * PINCH_ZOOM_WORLD_PER_PIXEL);
     }
 
@@ -371,14 +378,11 @@ private:
 
     void beginSelection()
     {
-        if (m_state != STATE_CAMERA_PAN || !m_primaryActive)
+        if (m_state != STATE_CAMERA_PAN || !m_primaryActive || !mouse())
             return;
 
-        if (!mouse())
-            return;
-
-        // Existing Generals drag-selection path is used for the rectangle.
-        // There is deliberately no camera operation while STATE_SELECTION.
+        // Existing Generals drag-selection path. Camera is hard-locked because
+        // STATE_SELECTION never calls applyCameraPan().
         sendMouse(SDL_EVENT_MOUSE_MOTION, m_downX, m_downY);
         sendMouse(SDL_EVENT_MOUSE_BUTTON_DOWN, m_downX, m_downY, SDL_BUTTON_LEFT);
         m_selectionMouseDown = true;
@@ -391,24 +395,25 @@ private:
         m_state = STATE_BUILDING;
         m_buildConfirmationPending = false;
         m_buildRotating = false;
+        m_buildStationary = true;
         m_holdStartTicks = SDL_GetTicks();
         m_buildX = x;
         m_buildY = y;
-        m_lastX = x;        m_lastY = y;
+        m_lastX = x;
+        m_lastY = y;
 
-        // Building preview follows the finger; camera is never touched.
         sendMouse(SDL_EVENT_MOUSE_MOTION, x, y);
     }
 
     void beginBuildingRotation(float x, float y)
     {
         if (m_state != STATE_BUILDING ||
-            !m_buildConfirmationPending ||
             !m_autoBuildAfterRotation ||
             !TheInGameUI)
             return;
 
         m_buildRotating = true;
+        m_buildStationary = false;
         m_buildLastAngle = SDL_atan2f(y - m_buildY, x - m_buildX);
         m_buildRotation =
             static_cast<float>(TheInGameUI->getPlacementAngle());
@@ -444,7 +449,6 @@ private:
         end.y = static_cast<Int>(
             m_buildY + SDL_sinf(m_buildRotation) * m_buildRotationRadius);
 
-        // Continuous 360-degree rotation; no 45/90-degree snapping.
         TheInGameUI->setPlacementStart(&start);
         TheInGameUI->setPlacementEnd(&end);
     }
@@ -458,12 +462,13 @@ private:
         sendMouse(SDL_EVENT_MOUSE_BUTTON_UP, m_buildX, m_buildY, SDL_BUTTON_LEFT);
         m_buildConfirmationPending = false;
         m_buildRotating = false;
+        m_buildStationary = false;
     }
 
     void enterMultiTouch(const SDL_Event& event)
     {
-        // Second finger wins immediately. Release any synthetic selection
-        // button and freeze all single-finger operations.
+        // The second finger immediately takes priority. It does NOT cancel a
+        // building preview; it only freezes all single-finger gesture effects.
         releaseSelectionMouse();
 
         m_secondaryFinger = event.tfinger.fingerID;
@@ -493,7 +498,8 @@ private:
         } else if (event.tfinger.fingerID == m_secondaryFinger) {
             m_f2x = event.tfinger.x;
             m_f2y = event.tfinger.y;
-        } else {            return;
+        } else {
+            return;
         }
 
         const float w = static_cast<float>(windowW());
@@ -502,7 +508,7 @@ private:
         const float dy = (m_f1y - m_f2y) * h;
         const float distance = SDL_sqrtf(dx * dx + dy * dy);
 
-        // Zoom is continuous and independent of rotation.
+        // Zoom is continuous from the first multi-touch motion.
         const float distanceDelta = distance - m_lastPinchDistance;
         if (SDL_fabsf(distanceDelta) > 0.0001f)
             applyZoom(distanceDelta);
@@ -510,17 +516,15 @@ private:
         const float pairAngle = SDL_atan2f(dy, dx);
         const float angleDelta = normalizeAngle(pairAngle - m_lastPairAngle);
 
-        // Accumulate the signed angular delta until 40 degrees is crossed.
+        // Rotation is locked until the accumulated pair rotation reaches 40°.
         if (!m_multiRotationActive) {
             m_accumulatedRotation += angleDelta;
             if (SDL_fabsf(m_accumulatedRotation) >= ROTATION_DEAD_ZONE_RAD) {
                 m_multiRotationActive = true;
-                // Do not apply the activation dead-zone itself: no initial jump.
+                // The first 40° only unlocks rotation; it is not applied.
                 m_lastPairAngle = pairAngle;
             }
         } else {
-            // Once active, every delta is applied, including full 360-degree
-            // continuous turns across the -pi/+pi boundary.
             if (SDL_fabsf(angleDelta) > 0.000001f)
                 applyCameraRotation(angleDelta);
             m_lastPairAngle = pairAngle;
@@ -549,19 +553,8 @@ private:
             m_selectionMouseDown = false;
 
             if (buildingActive()) {
-                // Variant A: a second tap on the fixed preview confirms it.
-                if (m_buildConfirmationPending) {
-                    const float dx = x - m_buildX;
-                    const float dy = y - m_buildY;
-                    if (SDL_sqrtf(dx * dx + dy * dy) <= BUILD_CONFIRM_DISTANCE_PX) {
-                        m_state = STATE_BUILDING;
-                        m_holdStartTicks = SDL_GetTicks();
-                        m_buildRotating = false;
-                        return;
-                    }
-                }
-
-                // First placement gesture.
+                // Mode A: a later tap confirms the fixed preview.
+                // Mode B: this SAME finger can activate rotation after 0.2 s.
                 beginBuilding(x, y);
                 return;
             }
@@ -570,10 +563,9 @@ private:
             return;
         }
 
-        // Never assume fingerID == 1. SDL3 finger IDs are Uint64 identifiers.
         if (!m_secondaryActive && event.tfinger.fingerID != m_primaryFinger) {
-            m_f1x = m_downX / static_cast<float>(windowW());
-            m_f1y = m_downY / static_cast<float>(windowH());
+            m_f1x = m_lastX / static_cast<float>(windowW());
+            m_f1y = m_lastY / static_cast<float>(windowH());
             enterMultiTouch(event);
         }
     }
@@ -591,29 +583,32 @@ private:
         if (event.tfinger.fingerID != m_primaryFinger || !m_primaryActive)
             return;
 
-        m_f1x = event.tfinger.x;
-        m_f1y = event.tfinger.y;
-        const float dxPixels = event.tfinger.dx * static_cast<float>(windowW());
-        const float dyPixels = event.tfinger.dy * static_cast<float>(windowH());
-        const float travel = SDL_sqrtf(
-            (x - m_downX) * (x - m_downX) +
-            (y - m_downY) * (y - m_downY));
+        const float dxPixels = x - m_lastX;
+        const float dyPixels = y - m_lastY;
+        const float totalDx = x - m_downX;
+        const float totalDy = y - m_downY;
+        const float travel = SDL_sqrtf(totalDx * totalDx + totalDy * totalDy);
 
         if (m_state == STATE_BUILDING) {
-            if (m_buildConfirmationPending &&
-                m_autoBuildAfterRotation &&
-                !m_buildRotating &&
-                (SDL_GetTicks() - m_holdStartTicks) >= BUILD_ROTATION_HOLD_MS) {
-                beginBuildingRotation(x, y);
-            }
-
-            if (m_buildRotating)
+            if (m_buildRotating) {
                 updateBuildingRotation(x, y);
-            else {
-                // HARD LOCK: placement preview only; no camera call.
+            } else {
+                // Any meaningful movement cancels the 0.2 s stationary timer.
+                // The same finger continues moving the building preview.
+                if (SDL_sqrtf(dxPixels * dxPixels + dyPixels * dyPixels) >
+                    BUILD_STATIONARY_PX) {
+                    m_buildStationary = false;
+                    m_holdStartTicks = SDL_GetTicks();
+                }
                 sendMouse(SDL_EVENT_MOUSE_MOTION, x, y);
                 m_buildX = x;
                 m_buildY = y;
+
+                // Start a fresh 0.2 s hold only after the finger has stopped.
+                if (!m_buildStationary) {
+                    m_buildStationary = true;
+                    m_holdStartTicks = SDL_GetTicks();
+                }
             }
 
             m_lastX = x;
@@ -622,7 +617,7 @@ private:
         }
 
         if (m_state == STATE_SELECTION) {
-            // HARD LOCK: selection rectangle only.
+            // Selection rectangle follows the finger; camera stays locked.
             sendMouse(SDL_EVENT_MOUSE_MOTION, x, y);
             m_lastX = x;
             m_lastY = y;
@@ -632,24 +627,18 @@ private:
         if (m_state == STATE_CAMERA_PAN) {
             const Uint64 held = SDL_GetTicks() - m_downTicks;
 
-            // Deliberate hold + drag = selection. Fast drag = camera pan.
+            // Once the finger has been held for 0.1 s, a deliberate drag is
+            // selection. Before 0.1 s, every dx/dy moves the camera directly.
             if (held >= SELECTION_HOLD_MS && travel >= SELECTION_DISTANCE_PX) {
                 beginSelection();
                 sendMouse(SDL_EVENT_MOUSE_MOTION, x, y);
-                m_lastX = x;
-                m_lastY = y;
-                return;
-            }
-
-            if (travel >= SELECTION_DISTANCE_PX) {
-                m_selectionArmed = false;
-                // Finger dx/dy directly determines movement magnitude, so
-                // faster swipes produce larger camera motion.
+            } else {
                 applyCameraPan(dxPixels, dyPixels);
             }
 
             m_lastX = x;
             m_lastY = y;
+            return;
         }
     }
 
@@ -687,20 +676,22 @@ private:
             m_buildX = m_lastX;
             m_buildY = m_lastY;
 
-            if (m_buildConfirmationPending) {
-                if (m_autoBuildAfterRotation && m_buildRotating) {
-                    // Variant B: release after rotation builds immediately.
-                    confirmBuilding();
-                } else if (!m_autoBuildAfterRotation) {                    // Variant A: second tap confirms only if it was actually a tap.
+            if (m_autoBuildAfterRotation && m_buildRotating) {
+                // Mode B: same finger rotated, release -> build immediately.
+                confirmBuilding();
+            } else if (!m_autoBuildAfterRotation) {
+                // Mode A: first release fixes preview; a later tap confirms.
+                if (m_buildConfirmationPending) {
                     const float travel = SDL_sqrtf(
                         (x - m_downX) * (x - m_downX) +
                         (y - m_downY) * (y - m_downY));
                     if (travel <= TAP_MAX_DISTANCE_PX)
                         confirmBuilding();
+                } else {
+                    m_buildConfirmationPending = true;
                 }
-                // Variant B release before 0.2 s only leaves the preview fixed.
             } else {
-                // First placement release: fix preview, never auto-build.
+                // Mode B: released before the 0.2 s hold, so preview stays fixed.
                 m_buildConfirmationPending = true;
             }
 
@@ -709,7 +700,6 @@ private:
             return;
         }
 
-        // Fast single tap: immediate existing Generals click/raycast path.
         const float travel = SDL_sqrtf(
             (x - m_downX) * (x - m_downX) +
             (y - m_downY) * (y - m_downY));
@@ -725,6 +715,7 @@ private:
         m_state = STATE_CAMERA_PAN;
         m_selectionArmed = false;
     }
+};
 };
 
 static MobileInputManager s_mobileInput;
