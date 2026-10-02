@@ -217,18 +217,25 @@ TouchState s_touch;
 // artificial mouse-wheel ticks. This keeps speed proportional to the actual
 // finger movement.
 const Uint64 LONG_PRESS_MS = 200;
-const float TAP_DEAD_ZONE_PX = 8.0f;
+// Keep the dead zone tiny so a one-finger map drag starts almost immediately.
+const float TAP_DEAD_ZONE_PX = 2.0f;
 const float TWO_FINGER_TAP_MAX_MOVE_PX = 10.0f;
 const float TWO_FINGER_TAP_MAX_DISTANCE_CHANGE_PX = 10.0f;
 const float TWO_FINGER_ROTATION_START_DEGREES = 20.0f;
 
 // W3DView::scrollBy multiplies its input by 250 world units. 0.004 therefore
 // makes one physical finger pixel roughly one world unit of camera travel.
-const float CAMERA_PAN_WORLD_PER_PIXEL = 0.004f;
+// Camera pan is intentionally stronger and follows the finger in the same
+// direction as a map surface: drag right -> map moves right.
+// W3D userScrollBy moves the camera target, hence the negative sign in
+// applyCameraPan().
+const float CAMERA_PAN_WORLD_PER_PIXEL = 0.020f;
 
 // Spread = zoom in, pinch = zoom out. The value is deliberately continuous:
 // no wheel quantisation, no accumulator threshold and no repeated gesture.
-const float PINCH_ZOOM_WORLD_PER_PIXEL = 1.00f;
+// userZoom() operates in camera/world units, so a raw pixel delta of 1.0
+// was far too large on a single iOS touch event and caused visible jumps.
+const float PINCH_ZOOM_WORLD_PER_PIXEL = 0.05f;
 
 // One radian of finger rotation produces one radian of camera yaw.
 // A complete finger turn therefore produces a complete 360-degree camera turn,
@@ -390,8 +397,8 @@ void applyCameraPan(float dxPixels, float dyPixels)
     // There are no mouse-wheel ticks, fixed steps, acceleration jumps, or
     // synthetic mouse coordinates involved in camera movement.
     Coord2D delta;
-    delta.x = dxPixels * CAMERA_PAN_WORLD_PER_PIXEL;
-    delta.y = dyPixels * CAMERA_PAN_WORLD_PER_PIXEL;
+    delta.x = -dxPixels * CAMERA_PAN_WORLD_PER_PIXEL;
+    delta.y = -dyPixels * CAMERA_PAN_WORLD_PER_PIXEL;
     TheTacticalView->userScrollBy(&delta);
 
     // Keep these fields zeroed for compatibility with older state handling.
@@ -666,7 +673,7 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             // actual finger-distance delta. This keeps zoom smooth and
             // proportional to finger speed.
             const float distanceDelta = dist - s_touch.pinchDist;
-            if (SDL_fabsf(distanceDelta) > 0.15f) {
+            if (SDL_fabsf(distanceDelta) > 0.01f) {
                 applyPinchZoom(distanceDelta);
                 s_touch.twoFingerTapCandidate = false;
             }
@@ -751,13 +758,11 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 (py - s_touch.downY) * (py - s_touch.downY));
 
             if (travel >= TAP_DEAD_ZONE_PX) {
-                // Preserve the exact movement outside the tap dead-zone.
-                // This prevents the first camera event from jumping by the
-                // entire dead-zone distance.
-                const float excess = travel - TAP_DEAD_ZONE_PX;
-                const float scale = (travel > 0.0f) ? (excess / travel) : 0.0f;
+                // Start camera tracking immediately once the tiny dead-zone
+                // is crossed. Consume the real SDL per-event delta; do not
+                // scale it by the distance from the original touch point.
                 beginCameraPan();
-                applyCameraPan(dx * scale, dy * scale);
+                applyCameraPan(dx, dy);
             }
         } else if (s_touch.phase == TouchState::CAMERA_PAN) {
             // Direct 1:1 finger tracking. Every real finger delta is consumed
