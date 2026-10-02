@@ -220,7 +220,7 @@ const Uint64 LONG_PRESS_MS = 200;
 const float TAP_DEAD_ZONE_PX = 8.0f;
 const float TWO_FINGER_TAP_MAX_MOVE_PX = 10.0f;
 const float TWO_FINGER_TAP_MAX_DISTANCE_CHANGE_PX = 10.0f;
-const float TWO_FINGER_ROTATION_START_DEGREES = 8.0f;
+const float TWO_FINGER_ROTATION_START_DEGREES = 40.0f;
 
 // W3DView::scrollBy multiplies its input by 250 world units. 0.004 therefore
 // makes one physical finger pixel roughly one world unit of camera travel.
@@ -228,7 +228,7 @@ const float CAMERA_PAN_WORLD_PER_PIXEL = 0.004f;
 
 // Spread = zoom in, pinch = zoom out. The value is deliberately continuous:
 // no wheel quantisation, no accumulator threshold and no repeated gesture.
-const float PINCH_ZOOM_WORLD_PER_PIXEL = 0.50f;
+const float PINCH_ZOOM_WORLD_PER_PIXEL = 1.00f;
 
 // One radian of finger rotation produces one radian of camera yaw.
 // A complete finger turn therefore produces a complete 360-degree camera turn,
@@ -316,6 +316,7 @@ void beginBuildPlacement(SDL3Mouse *mouse, SDL_Window *window)
     s_touch.buildRotationStartX = s_touch.downX;    s_touch.buildRotationStartY = s_touch.downY;
     s_touch.buildPlacedX = s_touch.downX;
     s_touch.buildPlacedY = s_touch.downY;
+    s_touch.buildPositionReady = false;
     s_touch.phase = TouchState::BUILD_PLACEMENT;
 }
 
@@ -680,11 +681,18 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             const float rotationThreshold =
                 TWO_FINGER_ROTATION_START_DEGREES * (pi / 180.0f);
 
+            const float distanceFromStart =
+                SDL_fabsf(dist - s_touch.twoFingerStartDist);
+            const bool rotationGesture =
+                distanceFromStart <= 20.0f;
+
             if (!s_touch.twoFingerRotationActive &&
+                rotationGesture &&
                 SDL_fabsf(fromStart) >= rotationThreshold) {
                 // Cross the real-rotation threshold without applying the
                 // accumulated angle. The next movement starts from here,
-                // preventing an initial jump.
+                // preventing an initial jump. During a pinch/zoom, changing
+                // the pair angle alone must never start camera rotation.
                 s_touch.twoFingerRotationActive = true;
                 s_touch.twoFingerLastAngle = angle;
             } else if (s_touch.twoFingerRotationActive) {
@@ -709,8 +717,11 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
         s_touch.f1x = event.tfinger.x;
         s_touch.f1y = event.tfinger.y;
 
-        const float dx = px - s_touch.lastX;
-        const float dy = py - s_touch.lastY;
+        // SDL provides the exact per-event finger delta in normalized
+        // coordinates. Convert it to physical window pixels before applying
+        // camera movement so speed/direction follow the finger directly.
+        const float dx = event.tfinger.dx * (float)winW;
+        const float dy = event.tfinger.dy * (float)winH;
 
         s_touch.lastX = px;
         s_touch.lastY = py;
@@ -720,6 +731,13 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
         // instead of ever allowing the camera to steal the building gesture.
         if (s_touch.phase == TouchState::PENDING && isBuildPlacementActive()) {
             beginBuildPlacement(mouse, window);
+            // The finger may already have moved since the initial touch.
+            // Preserve that exact current position as the building anchor.
+            sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, px, py);
+            s_touch.lastX = px;
+            s_touch.lastY = py;
+            s_touch.buildPlacedX = px;
+            s_touch.buildPlacedY = py;
             break;
         }
 
