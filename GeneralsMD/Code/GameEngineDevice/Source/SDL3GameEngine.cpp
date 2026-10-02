@@ -553,8 +553,25 @@ private:
             m_selectionMouseDown = false;
 
             if (buildingActive()) {
-                // Mode A: a later tap confirms the fixed preview.
-                // Mode B: this SAME finger can activate rotation after 0.2 s.
+                // Mode A: if the preview is already fixed, a new tap on that
+                // preview confirms it. Do not reset the pending flag.
+                if (m_buildConfirmationPending && !m_autoBuildAfterRotation) {
+                    const dx = x - m_buildX;
+                    const dy = y - m_buildY;
+                    if (SDL_sqrtf(dx * dx + dy * dy) <= BUILD_CONFIRM_DISTANCE_PX) {
+                        m_state = STATE_BUILDING;
+                        m_holdStartTicks = SDL_GetTicks();
+                        m_buildRotating = false;
+                        m_buildStationary = false;
+                        confirmBuilding();
+                        m_primaryActive = false;
+                        m_state = STATE_CAMERA_PAN;
+                        return;
+                    }
+                }
+
+                // Mode B: this SAME finger can activate free rotation after
+                // it stops for 0.2 s. No second finger is used here.
                 beginBuilding(x, y);
                 return;
             }
