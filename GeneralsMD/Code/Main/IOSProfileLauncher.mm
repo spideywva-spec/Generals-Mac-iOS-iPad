@@ -2117,6 +2117,100 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
             });
         }];
 }
+- (void)saveНастройки
+{
+    // Save both settings files atomically. Keep all file I/O on the UI action,
+    // but never terminate the launcher if a write fails.
+    EnsureGameRootDirectory();
+
+    NSString *iosOverrides =
+        [NSString stringWithFormat:
+            @"GameData\\n"
+             "  MaxCameraHeight = %.1f\\n"
+             "  MinCameraHeight = %.1f\\n"
+             "  CameraPitch = %.1f\\n"
+             "  EnforceMaxCameraHeight = %@\\n"
+             "  KeyboardScrollSpeedFactor = %.2f\\n"
+             "  TerrainDrawDistanceScale = %.2f\\n"
+             "  UseFPSLimit = %@\\n"
+             "  FramesPerSecondLimit = %.0f\\n"
+             "End\\n",
+            self.maxCameraSlider.value,
+            self.minCameraSlider.value,
+            self.cameraPitchSlider.value,
+            self.enforceMaxSwitch.on ? @"Yes" : @"No",
+            self.scrollSpeedSlider.value,
+            self.drawDistanceSlider.value,
+            self.fpsLimitSwitch.on ? @"Yes" : @"No",
+            self.fpsSlider.value];
+
+    NSError *iosError = nil;
+    BOOL iosOK = [iosOverrides writeToFile:IOSIPadOverridesPath()
+                                   atomically:YES
+                                     encoding:NSUTF8StringEncoding
+                                        error:&iosError];
+
+    NSString *controlBar = @[@"ZeroHour", @"Pro", @"Standard"][MAX(0, MIN(2, self.zeroHourControlBarSegment.selectedSegmentIndex))];
+    NSString *cameos = @[@"Standard", @"HD"][MAX(0, MIN(1, self.zeroHourCameosSegment.selectedSegmentIndex))];
+    NSString *music = @[@"Standard", @"Enhanced", @"The Score"][MAX(0, MIN(2, self.zeroHourMusicSegment.selectedSegmentIndex))];
+    NSString *voices = @[@"English", @"Native"][MAX(0, MIN(1, self.zeroHourVoicesSegment.selectedSegmentIndex))];
+    NSString *hotkeys = @[@"Original", @"Leikeze"][MAX(0, MIN(1, self.zeroHourHotkeysSegment.selectedSegmentIndex))];
+    NSString *hotkeyLanguage = @[@"English", @"Russian"][MAX(0, MIN(1, self.zeroHourHotkeyLanguageSegment.selectedSegmentIndex))];
+    NSString *portraits = @[@"Standard", @"Funny"][MAX(0, MIN(1, self.zeroHourPortraitsSegment.selectedSegmentIndex))];
+
+    NSInteger textureReduction = MAX(0, MIN(2, self.textureQualitySegment.selectedSegmentIndex));
+    NSInteger particleCount = self.particleQualitySegment.selectedSegmentIndex <= 0
+        ? 1200
+        : (self.particleQualitySegment.selectedSegmentIndex >= 2 ? 4000 : 2500);
+    NSString *textureFilter = @[@"Bilinear", @"Trilinear", @"Anisotropic"][MAX(0, MIN(2, self.textureFilterSegment.selectedSegmentIndex))];
+
+    NSDictionary<NSString *, NSString *> *zeroHourValues = @{
+        @"AnisotropyLevel": @"8",
+        @"BuildingOcclusion": self.buildingOcclusionSwitch.on ? @"Yes" : @"No",
+        @"Cameos": cameos,
+        @"ControlBar": controlBar,
+        @"DynamicLOD": self.dynamicLODSwitch.on ? @"Yes" : @"No",
+        @"ExtraAnimations": self.extraAnimationsSwitch.on ? @"Yes" : @"No",
+        @"ExtraBuildingProps": self.zeroHourExtraBuildingPropsSwitch.on ? @"Yes" : @"No",
+        @"FogEffects": self.zeroHourFogSwitch.on ? @"Yes" : @"No",
+        @"HeatEffects": self.heatEffectsSwitch.on ? @"Yes" : @"No",
+        @"HotkeyLanguage": hotkeyLanguage,
+        @"Hotkeys": hotkeys,
+        @"MaxParticleCount": [NSString stringWithFormat:@"%ld", (long)particleCount],
+        @"Music": music,
+        @"Portraits": portraits,
+        @"ShowSoftWaterEdge": self.softWaterSwitch.on ? @"Yes" : @"No",
+        @"ShowTrees": self.showPropsSwitch.on ? @"Yes" : @"No",
+        @"TextureFilter": textureFilter,
+        @"TextureReduction": [NSString stringWithFormat:@"%ld", (long)textureReduction],
+        @"UnitVoices": voices,
+        @"UseCloudMap": self.cloudShadowsSwitch.on ? @"Yes" : @"No",
+        @"UseLightMap": self.groundLightingSwitch.on ? @"Yes" : @"No",
+        @"UseShadowDecals": self.shadow2DSwitch.on ? @"Yes" : @"No",
+        @"UseShadowVolumes": self.shadow3DSwitch.on ? @"Yes" : @"No",
+        @"WaterEffects": self.zeroHourWaterSwitch.on ? @"Yes" : @"No"
+    };
+
+    NSError *zeroHourError = nil;
+    BOOL zeroHourOK = WriteKeyValueFile(ZeroHourSettingsPath(), zeroHourValues, &zeroHourError);
+
+    if (iosOK && zeroHourOK)
+    {
+        self.settingsStatus.text = @"✓ Настройки сохранены. Изменения применятся при следующем запуске игры.";
+        self.settingsStatus.textColor = [UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0];
+        fprintf(stderr, "INFO: iOS launcher settings saved successfully\\n");
+    }
+    else
+    {
+        NSError *error = iosError != nil ? iosError : zeroHourError;
+        self.settingsStatus.text = [NSString stringWithFormat:@"✕ Не удалось сохранить настройки: %@",
+                                    error.localizedDescription ?: @"неизвестная ошибка"];
+        self.settingsStatus.textColor = [UIColor colorWithRed:1.0 green:0.42 blue:0.32 alpha:1.0];
+        fprintf(stderr, "ERROR: iOS launcher settings save failed: %s\\n",
+                error != nil ? error.localizedDescription.UTF8String : "unknown error");
+    }
+}
+
 - (NSString *)valueForKey:(NSString *)key inContents:(NSString *)contents
 {
     NSString *prefix = [key stringByAppendingString:@"="];
