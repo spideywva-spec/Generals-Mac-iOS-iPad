@@ -204,8 +204,12 @@ struct TouchState {
     bool syntheticLeftHeld = false;
 
     // First touch places the building and RELEASES without building.
-    // A second touch is required to enter rotation mode.
+    // A later single-finger touch near the saved position is the build/rotation gesture.
     bool buildPositionReady = false;
+
+    // True while a two-finger gesture started during one-finger building.
+    // The second finger never controls building placement or rotation.
+    bool twoFingerStartedDuringBuild = false;
 };
 
 TouchState s_touch;
@@ -231,6 +235,9 @@ const float PINCH_ZOOM_WORLD_PER_PIXEL = 0.50f;
 // A complete finger turn therefore produces a complete 360-degree camera turn,
 // while a small turn produces only the corresponding small camera turn.
 const float TWO_FINGER_ROTATION_SENSITIVITY = 1.0f;
+
+// The repeat touch for building must be close to the saved placement point.
+const float BUILD_RETOUCH_MAX_DISTANCE_PX = 48.0f;
 
 void sendSyntheticMouse(SDL3Mouse *mouse, SDL_Window *window, Uint32 type,
                         float x, float y, Uint8 button = 0)
@@ -499,22 +506,32 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
     switch (event.type) {
     case SDL_EVENT_FINGER_DOWN:
         if (s_touch.phase == TouchState::IDLE) {
-            // If the player already placed the building and released the first
-            // touch, the next touch is a dedicated rotation gesture.
+            // BUILDING IS ONE-FINGER ONLY:
+            // A later SINGLE finger near the saved point is the second step:
+            //   quick release -> build
+            //   hold >= 0.2s -> enter rotation, then release -> build
+            // A simultaneous second finger is handled by the two-finger branch
+            // below and never rotates/builds.
             if (s_touch.buildPositionReady && isBuildPlacementActive()) {
-                s_touch.finger1 = event.tfinger.fingerID;
-                s_touch.finger1Active = true;
-                s_touch.finger2Active = false;
-                s_touch.downX = px;
-                s_touch.downY = py;
-                s_touch.lastX = px;
-                s_touch.lastY = py;
-                s_touch.f1x = event.tfinger.x;
-                s_touch.f1y = event.tfinger.y;
-                s_touch.buildHoldTicks = SDL_GetTicks();
-                s_touch.buildRotationStartX = px;
-                s_touch.buildRotationStartY = py;
-                s_touch.phase = TouchState::BUILD_ROTATE_PENDING;
+                const float dx = px - s_touch.buildPlacedX;
+                const float dy = py - s_touch.buildPlacedY;
+                const float distance = SDL_sqrtf(dx * dx + dy * dy);
+
+                if (distance <= BUILD_RETOUCH_MAX_DISTANCE_PX) {
+                    s_touch.finger1 = event.tfinger.fingerID;
+                    s_touch.finger1Active = true;
+                    s_touch.finger2Active = false;
+                    s_touch.downX = px;
+                    s_touch.downY = py;
+                    s_touch.lastX = px;
+                    s_touch.lastY = py;
+                    s_touch.f1x = event.tfinger.x;
+                    s_touch.f1y = event.tfinger.y;
+                    s_touch.buildHoldTicks = SDL_GetTicks();
+                    s_touch.buildRotationStartX = px;
+                    s_touch.buildRotationStartY = py;
+                    s_touch.phase = TouchState::BUILD_ROTATE_PENDING;
+                }
                 break;
             }
 
@@ -528,25 +545,14 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
         } else if (s_touch.phase == TouchState::BUILD_PLACEMENT ||
                    s_touch.phase == TouchState::BUILD_ROTATE_PENDING ||
                    s_touch.phase == TouchState::BUILD_ROTATE) {
-            // Cancel native placement before releasing the held LMB. A right
-            // click is Generals' normal cancel path while the build cursor is
-            // active; releasing LMB first would commit the structure.
-            sendSyntheticMouse(mouse, window,
-                               SDL_EVENT_MOUSE_BUTTON_DOWN,
-                               s_touch.lastX, s_touch.lastY,
-                               SDL_BUTTON_RIGHT);
-            sendSyntheticMouse(mouse, window,
-                               SDL_EVENT_MOUSE_BUTTON_UP,
-                               s_touch.lastX, s_touch.lastY,
-                               SDL_BUTTON_RIGHT);
-            releaseSyntheticButtons(mouse, window, s_touch.lastX, s_touch.lastY);
-
+            // SIMULTANEOUS second finger = normal two-finger gesture.
+            // It never controls building placement or rotation.
             s_touch.finger2 = event.tfinger.fingerID;
             s_touch.finger2Active = true;
             s_touch.f2x = event.tfinger.x;
             s_touch.f2y = event.tfinger.y;
-            s_touch.twoFingerTapCandidate = true;
-            s_touch.phase = TouchState::TWO_FINGER_CANCEL;
+            s_touch.twoFingerStartedDuringBuild = true;
+            beginPinch();
 
         } else if (s_touch.phase == TouchState::PENDING ||
                    s_touch.phase == TouchState::CAMERA_PAN ||
@@ -780,6 +786,8 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                     sendSyntheticMouse(mouse, window,
                                        SDL_EVENT_MOUSE_BUTTON_UP, x, y,
                                        SDL_BUTTON_RIGHT);
+                    // Two-finger tap is explicit cancel/right-click.
+                    s_touch.buildPositionReady = false;
                 }
 
                 s_touch.phase = TouchState::IDLE;
@@ -817,6 +825,7 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 s_touch.pinchDist = 0.0f;
                 s_touch.twoFingerTapCandidate = false;
                 s_touch.twoFingerRotationActive = false;
+                s_touch.twoFingerStartedDuringBuild = false;
             }
             break;
         }
