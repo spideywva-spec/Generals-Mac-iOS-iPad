@@ -754,9 +754,15 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             // Do NOT click/commit. The next touch is required for rotation.
             s_touch.buildPositionReady = true;
         } else if (s_touch.phase == TouchState::BUILD_ROTATE_PENDING) {
-            // Released before the 0.2s hold: keep the building positioned and
-            // wait for another deliberate second touch.
-            s_touch.buildPositionReady = true;
+            // SECOND TOUCH RELEASE before 0.2s = build immediately.
+            // Holding this same touch for 0.2s is the explicit rotation gesture.
+            sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
+                               s_touch.buildPlacedX, s_touch.buildPlacedY,
+                               SDL_BUTTON_LEFT);
+            sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
+                               s_touch.buildPlacedX, s_touch.buildPlacedY,
+                               SDL_BUTTON_LEFT);
+            s_touch.buildPositionReady = false;
         } else if (s_touch.phase == TouchState::BUILD_ROTATE) {
             // SECOND TOUCH RELEASE: commit the building at the frozen position
             // and final rotation.
