@@ -671,9 +671,9 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 s_touch.twoFingerTapCandidate = false;
             }
 
-            // Do NOT rotate the camera merely because a pinch is changing.
-            // Small finger asymmetry during zoom can change the pair angle by
-            // a few degrees and must not cause a 360-degree jump.
+            // Zoom and rotation are independent. A pure pinch keeps the pair
+            // angle stable; any real angular movement of the two-finger line
+            // is handled by the rotation threshold below.
             const float angle = SDL_atan2f(dy, dx);
             const float pi = 3.14159265358979323846f;
 
@@ -694,10 +694,9 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             // other.
             if (!s_touch.twoFingerRotationActive &&
                 SDL_fabsf(fromStart) >= rotationThreshold) {
-                // Cross the real-rotation threshold without applying the
-                // accumulated angle. The next movement starts from here,
-                // preventing an initial jump. During a pinch/zoom, changing
-                // the pair angle alone must never start camera rotation.
+                // Cross the threshold without applying the accumulated angle.
+                // The next angular movement starts from here, preventing any
+                // initial 180/360-degree jump.
                 s_touch.twoFingerRotationActive = true;
                 s_touch.twoFingerLastAngle = angle;
             } else if (s_touch.twoFingerRotationActive) {
