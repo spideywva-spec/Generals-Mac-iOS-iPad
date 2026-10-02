@@ -131,7 +131,7 @@ static bool SDLCALL iosLifecycleWatcher(void *userdata, SDL_Event *event)
 // iOS touch controls:
 //   1 finger short tap    -> synthetic LMB click (select)
 //   1 finger movement     -> synthetic RMB drag (camera pan)
-//   1 finger hold 0.1 sec -> LMB selection-rectangle mode
+//   1 finger hold 0.3 sec -> LMB selection-rectangle / build-rotation mode
 //   2 finger short tap    -> synthetic RMB click (cancel/deselect)
 //   2 finger distance     -> continuous velocity-sensitive zoom
 //   2 finger angle        -> continuous middle-mouse camera rotation
@@ -176,6 +176,8 @@ struct TouchState {
 
     float pinchDist = 0.0f;
     float twoFingerLastAngle = 0.0f;
+    float twoFingerStartAngle = 0.0f;
+    bool twoFingerRotationActive = false;
 
     float twoFingerStart1X = 0.0f;
     float twoFingerStart1Y = 0.0f;
@@ -194,10 +196,11 @@ TouchState s_touch;
 // Gesture tuning is expressed in physical screen pixels / radians, not
 // artificial mouse-wheel ticks. This keeps speed proportional to the actual
 // finger movement.
-const Uint64 LONG_PRESS_MS = 100;
+const Uint64 LONG_PRESS_MS = 300;
 const float TAP_DEAD_ZONE_PX = 8.0f;
 const float TWO_FINGER_TAP_MAX_MOVE_PX = 10.0f;
 const float TWO_FINGER_TAP_MAX_DISTANCE_CHANGE_PX = 10.0f;
+const float TWO_FINGER_ROTATION_START_DEGREES = 8.0f;
 
 // W3DView::scrollBy multiplies its input by 250 world units. 0.004 therefore
 // makes one physical finger pixel roughly one world unit of camera travel.
@@ -306,6 +309,24 @@ void beginCameraPan()
     s_touch.phase = TouchState::CAMERA_PAN;
 }
 
+void beginBuildRotation(float x, float y)
+{
+    if (s_touch.phase != TouchState::BUILD_PLACEMENT || !TheInGameUI)
+        return;
+
+    // The building is already at the player's chosen location. Freeze that
+    // location and switch the same finger to rotation only.
+    s_touch.phase = TouchState::BUILD_ROTATE;
+    s_touch.buildRotationStartX = x;
+    s_touch.buildRotationStartY = y;
+
+    ICoord2D anchor;
+    anchor.x = static_cast<Int>(x);
+    anchor.y = static_cast<Int>(y);
+    TheInGameUI->setPlacementStart(&anchor);
+    TheInGameUI->setPlacementEnd(&anchor);
+}
+
 void applyCameraPan(float dxPixels, float dyPixels)
 {
     if (!TheTacticalView)
@@ -370,6 +391,8 @@ void beginPinch()
     s_touch.twoFingerStartDist = s_touch.pinchDist;
 
     s_touch.twoFingerLastAngle = SDL_atan2f(dy, dx);
+    s_touch.twoFingerStartAngle = s_touch.twoFingerLastAngle;
+    s_touch.twoFingerRotationActive = false;
 
     s_touch.twoFingerStart1X = s_touch.f1x;
     s_touch.twoFingerStart1Y = s_touch.f1y;
@@ -495,18 +518,9 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                         s_touch.buildLastMoveY = py;
                         s_touch.buildHoldTicks = SDL_GetTicks();
                     } else if ((SDL_GetTicks() - s_touch.buildHoldTicks) >= LONG_PRESS_MS) {
-                        // The player has stopped with the building at the desired
-                        // location for 0.1s. Keep that position fixed and switch
-                        // to the one-finger rotation gesture.
-                        s_touch.phase = TouchState::BUILD_ROTATE;
-                        s_touch.buildRotationStartX = px;
-                        s_touch.buildRotationStartY = py;
-
-                        ICoord2D anchor;
-                        anchor.x = static_cast<Int>(px);
-                        anchor.y = static_cast<Int>(py);
-                        TheInGameUI->setPlacementStart(&anchor);
-                        TheInGameUI->setPlacementEnd(&anchor);
+                        // 0.3s of stillness at the chosen location enters
+                        // building rotation. The location is frozen first.
+                        beginBuildRotation(px, py);
                     }
                 } else {
                     // Rotation mode: the building stays at the chosen position.
@@ -539,27 +553,49 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             const float dy = (s_touch.f1y - s_touch.f2y) * winH;
             const float dist = SDL_sqrtf(dx * dx + dy * dy);
 
-            // Two-finger rotation is enabled only during a real pinch/spread.
-            // A tiny two-finger twist/tap therefore cannot rotate the camera.
+            // Zoom is always independent of rotation and follows the
+            // actual finger-distance delta. This keeps zoom smooth and
+            // proportional to finger speed.
             const float distanceDelta = dist - s_touch.pinchDist;
-            const bool zooming = SDL_fabsf(distanceDelta) > 1.5f;
-
-            if (zooming) {
+            if (SDL_fabsf(distanceDelta) > 0.15f) {
                 applyPinchZoom(distanceDelta);
                 s_touch.twoFingerTapCandidate = false;
+            }
 
-                const float angle = SDL_atan2f(dy, dx);
+            // Do NOT rotate the camera merely because a pinch is changing.
+            // Small finger asymmetry during zoom can change the pair angle by
+            // a few degrees and must not cause a 360-degree jump.
+            const float angle = SDL_atan2f(dy, dx);
+            const float pi = 3.14159265358979323846f;
+
+            float fromStart = angle - s_touch.twoFingerStartAngle;
+            if (fromStart > pi)
+                fromStart -= 2.0f * pi;
+            else if (fromStart < -pi)
+                fromStart += 2.0f * pi;
+
+            const float rotationThreshold =
+                TWO_FINGER_ROTATION_START_DEGREES * (pi / 180.0f);
+
+            if (!s_touch.twoFingerRotationActive &&
+                SDL_fabsf(fromStart) >= rotationThreshold) {
+                // Cross the real-rotation threshold without applying the
+                // accumulated angle. The next movement starts from here,
+                // preventing an initial jump.
+                s_touch.twoFingerRotationActive = true;
+                s_touch.twoFingerLastAngle = angle;
+            } else if (s_touch.twoFingerRotationActive) {
                 float angleDelta = angle - s_touch.twoFingerLastAngle;
-                const float pi = 3.14159265358979323846f;
                 if (angleDelta > pi)
                     angleDelta -= 2.0f * pi;
                 else if (angleDelta < -pi)
                     angleDelta += 2.0f * pi;
 
-                if (SDL_fabsf(angleDelta) > 0.0005f)
+                if (SDL_fabsf(angleDelta) > 0.0001f)
                     applyTwoFingerRotation(angleDelta);
                 s_touch.twoFingerLastAngle = angle;
             }
+
             s_touch.pinchDist = dist;
             break;
         }
@@ -679,6 +715,7 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 s_touch.finger2Active = false;
                 s_touch.pinchDist = 0.0f;
                 s_touch.twoFingerTapCandidate = false;
+                s_touch.twoFingerRotationActive = false;
             }
             break;
         }
@@ -709,10 +746,21 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
 
 void updateTouchLongPress(SDL3Mouse *mouse, SDL_Window *window)
 {
+    const Uint64 now = SDL_GetTicks();
+
+    // Long-press selection and build rotation use the same 0.3s deliberate
+    // hold. This function runs every frame, so a stationary finger is enough;
+    // no extra FINGER_MOTION event is required.
     if (s_touch.phase == TouchState::PENDING &&
         !isBuildPlacementActive() &&
-        (SDL_GetTicks() - s_touch.downTicks) >= LONG_PRESS_MS) {
+        (now - s_touch.downTicks) >= LONG_PRESS_MS) {
         beginSelection(mouse, window);
+        return;
+    }
+
+    if (s_touch.phase == TouchState::BUILD_PLACEMENT &&
+        (now - s_touch.buildHoldTicks) >= LONG_PRESS_MS) {
+        beginBuildRotation(s_touch.lastX, s_touch.lastY);
     }
 }
 
