@@ -421,12 +421,24 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 beginBuildPlacement(mouse, window);
 
         } else if (s_touch.phase == TouchState::BUILD_PLACEMENT) {
-            // Two fingers during placement are a cancel gesture, never a camera.
+            // Cancel native placement before releasing the held LMB. A right
+            // click is Generals' normal cancel path while the build cursor is
+            // active; releasing LMB first would commit the structure.
+            sendSyntheticMouse(mouse, window,
+                               SDL_EVENT_MOUSE_BUTTON_DOWN,
+                               s_touch.lastX, s_touch.lastY,
+                               SDL_BUTTON_RIGHT);
+            sendSyntheticMouse(mouse, window,
+                               SDL_EVENT_MOUSE_BUTTON_UP,
+                               s_touch.lastX, s_touch.lastY,
+                               SDL_BUTTON_RIGHT);
             releaseSyntheticButtons(mouse, window, s_touch.lastX, s_touch.lastY);
+
             s_touch.finger2 = event.tfinger.fingerID;
             s_touch.finger2Active = true;
             s_touch.f2x = event.tfinger.x;
             s_touch.f2y = event.tfinger.y;
+            s_touch.twoFingerTapCandidate = true;
             s_touch.phase = TouchState::TWO_FINGER_CANCEL;
 
         } else if (s_touch.phase == TouchState::PENDING ||
