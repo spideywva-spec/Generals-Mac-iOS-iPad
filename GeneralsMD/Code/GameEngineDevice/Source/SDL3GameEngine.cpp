@@ -214,7 +214,7 @@ private:
     static constexpr float CAMERA_PAN_WORLD_PER_PIXEL = 0.020f;
     static constexpr float PINCH_ZOOM_WORLD_PER_PIXEL = 0.05f;
     static constexpr float ROTATION_DEAD_ZONE_RAD = 0.6981317008f;
-    static constexpr float PI = 3.14159265358979323846f;
+    static constexpr float MOBILE_PI = 3.14159265358979323846f;
 
     State m_state = STATE_CAMERA_PAN;
     SDL_Window* m_window = nullptr;
@@ -335,8 +335,8 @@ private:
 
     static float normalizeAngle(float angle)
     {
-        while (angle > PI) angle -= 2.0f * PI;
-        while (angle < -PI) angle += 2.0f * PI;
+        while (angle > MOBILE_PI) angle -= 2.0f * MOBILE_PI;
+        while (angle < -MOBILE_PI) angle += 2.0f * MOBILE_PI;
         return angle;
     }
 
