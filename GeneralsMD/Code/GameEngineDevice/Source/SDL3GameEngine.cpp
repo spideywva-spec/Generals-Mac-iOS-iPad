@@ -214,6 +214,7 @@ private:
     static constexpr float TAP_MAX_DISTANCE_PX = 10.0f;
     static constexpr float SELECTION_DISTANCE_PX = 12.0f;
     static constexpr float TWO_FINGER_CANCEL_DISTANCE_PX = 12.0f;
+    static constexpr float BUILD_CONFIRM_DISTANCE_PX = 48.0f;
     static constexpr float BUILD_STATIONARY_DISTANCE_PX = 3.0f;
 
     static constexpr float CAMERA_PAN_WORLD_PER_PIXEL = 0.020f;
@@ -242,6 +243,7 @@ private:
 
     bool m_useHoldToRotate = false;
     bool m_buildConfirmationPending = false;
+    bool m_buildConfirmTapActive = false;
     bool m_buildRotating = false;
     Uint64 m_buildHoldStartTicks = 0;
     float m_buildX = 0.0f;
@@ -496,6 +498,7 @@ private:
         SendMouse(SDL_EVENT_MOUSE_BUTTON_UP, m_buildX, m_buildY, SDL_BUTTON_LEFT);
 
         m_buildConfirmationPending = false;
+        m_buildConfirmTapActive = false;
         m_buildRotating = false;
         m_buildHoldStartTicks = 0;
     }
@@ -703,10 +706,8 @@ private:
                     if (SDL_sqrtf(dx * dx + dy * dy) <= BUILD_CONFIRM_DISTANCE_PX)
                     {
                         m_state = STATE_BUILDING;
-                        ConfirmBuilding();
-
-                        m_primaryActive = false;
-                        m_state = STATE_CAMERA_PAN;
+                        m_buildConfirmTapActive = true;
+                        m_downTicks = SDL_GetTicks();
                         return;
                     }
                 }
@@ -796,7 +797,12 @@ private:
             // Deliberate movement beyond the drag threshold becomes a native
             // selection-box gesture. A quick movement before the threshold
             // remains a direct camera pan.
-            if (travel >= SELECTION_DISTANCE_PX)
+            const Uint64 heldMs = SDL_GetTicks() - m_downTicks;
+
+            // A fast swipe remains camera navigation. Once the finger has been
+            // held for the short 100ms tap window, crossing the drag threshold
+            // becomes the selection-box gesture. This avoids any 0.5s delay.
+            if (heldMs >= TAP_MAX_DURATION_MS && travel >= SELECTION_DISTANCE_PX)
             {
                 BeginSelection();
                 if (m_state == STATE_SELECTION)
@@ -846,8 +852,21 @@ private:
 
         if (m_state == STATE_BUILDING)
         {
-            m_buildX = x;
-            m_buildY = y;
+            if (m_buildConfirmTapActive)
+            {
+                const Uint64 heldMs = SDL_GetTicks() - m_downTicks;
+                const float dx = x - m_buildX;
+                const float dy = y - m_buildY;
+                const float travel = SDL_sqrtf(dx * dx + dy * dy);
+
+                if (heldMs <= TAP_MAX_DURATION_MS && travel <= TAP_MAX_DISTANCE_PX)
+                    ConfirmBuilding();
+
+                m_buildConfirmTapActive = false;
+                m_primaryActive = false;
+                m_state = STATE_CAMERA_PAN;
+                return;
+            }
 
             if (m_useHoldToRotate && m_buildRotating)
             {
