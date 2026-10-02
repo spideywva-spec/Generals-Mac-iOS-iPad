@@ -174,6 +174,7 @@ struct TouchState {
 
     float twoFingerAngle = 0.0f;
     float twoFingerLastAngle = 0.0f;
+    float twoFingerRotationAccum = 0.0f;
     bool twoFingerRotationActive = false;
 };
 
@@ -184,6 +185,9 @@ TouchState s_touch;
 const Uint64 LONG_PRESS_MS = 100;
 const float PINCH_ZOOM_SENSITIVITY = 0.025f;
 const float TWO_FINGER_ROTATION_SENSITIVITY = 180.0f;
+const float TWO_FINGER_ROTATION_START_RAD = 0.06f; // ~3.4 degrees
+const float TWO_FINGER_ROTATION_NOISE_RAD = 0.008f; // ~0.46 degrees/event
+const float TWO_FINGER_ZOOM_DEADZONE_PX = 0.75f;
 const float TAP_DEAD_ZONE_PX = 8.0f;
 const float TWO_FINGER_TAP_MAX_MOVE_PX = 12.0f;
 const float TWO_FINGER_TAP_MAX_DISTANCE_CHANGE_PX = 12.0f;
@@ -292,13 +296,13 @@ void beginPinch(SDL3Mouse *mouse, SDL_Window *window, int winW, int winH)
     const float angle = SDL_atan2f(dy, dx);
     s_touch.twoFingerAngle = angle;
     s_touch.twoFingerLastAngle = angle;
+    s_touch.twoFingerRotationAccum = 0.0f;
     s_touch.twoFingerRotationActive = false;
     s_touch.phase = TouchState::PINCH;
 
     // Do not synthesize ANY mouse motion when the second finger arrives.
     // A zero-delta SDL mouse-motion event is still an absolute touch-to-mouse
-    // conversion on some iOS paths and can rotate the camera to the right.
-    // The pinch owns both fingers from this point; only wheel events are sent.
+    // conversion on some iOS paths and can rotate the camera to the right.    // The pinch owns both fingers from this point; only wheel events are sent.
 
     // Do not synthesize a mouse move to the pinch center. The game can treat
     // that xrel/yrel jump as camera motion even though RMB was released.
@@ -431,7 +435,10 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             // fixed +/-1 steps.
             if (s_touch.pinchDist > 1.0f) {
                 const float distanceDelta = dist - s_touch.pinchDist;
-                float wheelY = distanceDelta * PINCH_ZOOM_SENSITIVITY;
+                float wheelY = 0.0f;
+                if (SDL_fabsf(distanceDelta) >= TWO_FINGER_ZOOM_DEADZONE_PX) {
+                    wheelY = distanceDelta * PINCH_ZOOM_SENSITIVITY;
+                }
                 if (wheelY > 4.0f) wheelY = 4.0f;
                 if (wheelY < -4.0f) wheelY = -4.0f;
 
@@ -453,15 +460,30 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             if (angleDelta > pi) angleDelta -= 2.0f * pi;
             if (angleDelta < -pi) angleDelta += 2.0f * pi;
 
-            if (SDL_fabsf(angleDelta) > 0.0005f) {
-                s_touch.twoFingerTapCandidate = false;
+            // Ignore finger-tracking noise while pinching. Rotation arms only
+            // after a real accumulated turn, so pure pinch stays zoom-only.
+            if (SDL_fabsf(angleDelta) >= TWO_FINGER_ROTATION_NOISE_RAD) {
+                s_touch.twoFingerRotationAccum += angleDelta;
+            }
 
-                if (!s_touch.twoFingerRotationActive) {
-                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
-                                       s_touch.syntheticX, s_touch.syntheticY,
-                                       SDL_BUTTON_MIDDLE);
-                    s_touch.twoFingerRotationActive = true;
-                }
+            if (!s_touch.twoFingerRotationActive &&
+                SDL_fabsf(s_touch.twoFingerRotationAccum) >= TWO_FINGER_ROTATION_START_RAD) {
+                s_touch.twoFingerTapCandidate = false;
+                s_touch.twoFingerRotationActive = true;
+
+                sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
+                                   s_touch.syntheticX, s_touch.syntheticY,
+                                   SDL_BUTTON_MIDDLE);
+
+                // Consume the accumulated turn so the first rotation frame
+                // does not jump by the whole activation threshold.
+                angleDelta = s_touch.twoFingerRotationAccum;
+                s_touch.twoFingerRotationAccum = 0.0f;
+            }
+
+            if (s_touch.twoFingerRotationActive &&
+                SDL_fabsf(angleDelta) >= TWO_FINGER_ROTATION_NOISE_RAD) {
+                s_touch.twoFingerTapCandidate = false;
 
                 const float rotationPixels =
                     angleDelta * TWO_FINGER_ROTATION_SENSITIVITY;
@@ -597,7 +619,6 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 if (secondReleased) {
                     s_touch.finger2Active = false;
                 }
-
                 if (!s_touch.finger1Active && !s_touch.finger2Active) {
                     // Fallback for the same short two-finger tap state:
                     // generate exactly one RMB click, never a drag.
@@ -897,8 +918,7 @@ Bool SDL3GameEngine::isActive(void)
 }
 
 /**
- * Set OS focus status
- */
+ * Set OS focus status */
 void SDL3GameEngine::setIsActive(Bool isActive)
 {
 	m_IsActive = isActive;
@@ -1198,7 +1218,6 @@ LocalFileSystem *SDL3GameEngine::createLocalFileSystem(void)
 	fprintf(stderr, "INFO: SDL3GameEngine::createLocalFileSystem() -> StdLocalFileSystem\n");
 	return NEW StdLocalFileSystem;
 }
-
 ArchiveFileSystem *SDL3GameEngine::createArchiveFileSystem(void)
 {
 	fprintf(stderr, "INFO: SDL3GameEngine::createArchiveFileSystem() -> StdBIGFileSystem\n");
