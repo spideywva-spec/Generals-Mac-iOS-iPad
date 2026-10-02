@@ -151,6 +151,9 @@ struct TouchState {
     float downX = 0.0f, downY = 0.0f;
     float lastX = 0.0f, lastY = 0.0f;
     float pinchDist = 0.0f;
+    // Preserve fractional pinch movement between touch events so small,
+    // real finger motion is never lost when the game consumes wheel input.
+    float pinchZoomAccumulator = 0.0f;
     Uint64 downTicks = 0;
 
     float f1x = 0.0f, f1y = 0.0f;
@@ -184,11 +187,11 @@ TouchState s_touch;
 // A short hold quickly commits to PC-style selection-box mode. A movement
 // before this point remains the one-finger camera drag.
 const Uint64 LONG_PRESS_MS = 100;
-const float PINCH_ZOOM_SENSITIVITY = 0.025f;
+const float PINCH_ZOOM_SENSITIVITY = 0.010f;
 const float TWO_FINGER_ROTATION_SENSITIVITY = 180.0f;
 const float TWO_FINGER_ROTATION_START_RAD = 0.06f; // ~3.4 degrees
 const float TWO_FINGER_ROTATION_NOISE_RAD = 0.008f; // ~0.46 degrees/event
-const float TWO_FINGER_ZOOM_DEADZONE_PX = 0.75f;
+const float TWO_FINGER_ZOOM_DEADZONE_PX = 0.0f;
 const float TAP_DEAD_ZONE_PX = 8.0f;
 const float TWO_FINGER_TAP_MAX_MOVE_PX = 12.0f;
 const float TWO_FINGER_TAP_MAX_DISTANCE_CHANGE_PX = 12.0f;
@@ -310,6 +313,7 @@ void beginPinch(SDL3Mouse *mouse, SDL_Window *window, int winW, int winH)
     s_touch.twoFingerStart2Y = s_touch.f2y;
     s_touch.twoFingerMaxMove = 0.0f;
     s_touch.twoFingerStartDist = s_touch.pinchDist;
+    s_touch.pinchZoomAccumulator = 0.0f;
 
     const float angle = SDL_atan2f(dy, dx);
     s_touch.twoFingerAngle = angle;
@@ -478,23 +482,28 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             const float cx = (s_touch.f1x + s_touch.f2x) * 0.5f * (float)winW;
             const float cy = (s_touch.f1y + s_touch.f2y) * 0.5f * (float)winH;
 
-            // Continuous, velocity-sensitive zoom. The wheel amount is
-            // proportional to the actual distance change instead of emitting
-            // fixed +/-1 steps.
+            // Real pinch zoom: every physical pixel of finger separation
+            // contributes to one persistent accumulator. Nothing is rounded
+            // away between touch events, so slow movement remains smooth while
+            // fast movement naturally produces faster zoom.
             if (s_touch.pinchDist > 1.0f) {
                 const float distanceDelta = dist - s_touch.pinchDist;
-                float wheelY = 0.0f;
-                if (SDL_fabsf(distanceDelta) >= TWO_FINGER_ZOOM_DEADZONE_PX) {
-                    wheelY = distanceDelta * PINCH_ZOOM_SENSITIVITY;
+                if (SDL_fabsf(distanceDelta) > TWO_FINGER_ZOOM_DEADZONE_PX) {
+                    s_touch.pinchZoomAccumulator +=
+                        distanceDelta * PINCH_ZOOM_SENSITIVITY;
                 }
-                if (wheelY > 4.0f) wheelY = 4.0f;
-                if (wheelY < -4.0f) wheelY = -4.0f;
 
+                // Feed the game only the amount accumulated so far. Keep the
+                // fractional remainder for the next touch event instead of
+                // forcing the user to repeat the same pinch movement.
+                const float wheelY = s_touch.pinchZoomAccumulator;
                 if (SDL_fabsf(wheelY) > 0.01f) {
                     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_WHEEL,
                                        cx, cy, 0, wheelY);
+                    s_touch.pinchZoomAccumulator = 0.0f;
                     s_touch.twoFingerTapCandidate = false;
                 }
+
                 s_touch.pinchDist = dist;
             }
 
