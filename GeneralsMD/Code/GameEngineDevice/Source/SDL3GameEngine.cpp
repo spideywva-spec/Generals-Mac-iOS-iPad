@@ -181,23 +181,6 @@ struct TouchState {
 
 TouchState s_touch;
 
-bool isBuildPlacementActive()
-{
-    return TheInGameUI != nullptr && TheInGameUI->getPendingPlaceType() != nullptr;
-}
-
-void beginBuildPlacement(SDL3Mouse *mouse, SDL_Window *window)
-{
-    // Generals already implements building movement + free-angle rotation as
-    // left-button drag while MOUSEMODE_BUILD_PLACE is active. Feed the iOS
-    // finger directly into that native path: no RMB means the camera cannot pan.
-    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION,
-                       s_touch.downX, s_touch.downY);
-    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
-                       s_touch.downX, s_touch.downY, SDL_BUTTON_LEFT);
-    s_touch.phase = TouchState::BUILD_PLACEMENT;
-}
-
 // A short hold quickly commits to PC-style selection-box mode. A movement
 // before this point remains the one-finger camera drag.
 const Uint64 LONG_PRESS_MS = 100;
@@ -269,6 +252,23 @@ void sendSyntheticMouse(SDL3Mouse *mouse, SDL_Window *window, Uint32 type,
         s_touch.syntheticLeftHeld = false;
     else if (type == SDL_EVENT_MOUSE_BUTTON_UP && button == SDL_BUTTON_MIDDLE)
         s_touch.syntheticMiddleHeld = false;
+}
+
+bool isBuildPlacementActive()
+{
+    return TheInGameUI != nullptr && TheInGameUI->getPendingPlaceType() != nullptr;
+}
+
+void beginBuildPlacement(SDL3Mouse *mouse, SDL_Window *window)
+{
+    // Generals already implements building movement + free-angle rotation as
+    // left-button drag while MOUSEMODE_BUILD_PLACE is active. Feed the iOS
+    // finger directly into that native path: no RMB means the camera cannot pan.
+    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION,
+                       s_touch.downX, s_touch.downY);
+    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
+                       s_touch.downX, s_touch.downY, SDL_BUTTON_LEFT);
+    s_touch.phase = TouchState::BUILD_PLACEMENT;
 }
 
 void releaseSyntheticButtons(SDL3Mouse *mouse, SDL_Window *window, float x, float y)
