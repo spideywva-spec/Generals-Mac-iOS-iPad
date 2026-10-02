@@ -170,12 +170,20 @@ struct TouchState {
     // the camera RMB latched after a two-finger gesture.
     bool syntheticRightHeld = false;
     bool syntheticLeftHeld = false;
+    bool syntheticMiddleHeld = false;
+
+    float twoFingerAngle = 0.0f;
+    float twoFingerLastAngle = 0.0f;
+    bool twoFingerRotationActive = false;
 };
 
 TouchState s_touch;
 
-const Uint64 LONG_PRESS_MS = 500;
-const float PINCH_STEP_RATIO = 0.06f;
+// A short hold quickly commits to PC-style selection-box mode. A movement
+// before this point remains the one-finger camera drag.
+const Uint64 LONG_PRESS_MS = 100;
+const float PINCH_ZOOM_SENSITIVITY = 0.025f;
+const float TWO_FINGER_ROTATION_SENSITIVITY = 180.0f;
 const float TAP_DEAD_ZONE_PX = 8.0f;
 const float TWO_FINGER_TAP_MAX_MOVE_PX = 12.0f;
 const float TWO_FINGER_TAP_MAX_DISTANCE_CHANGE_PX = 12.0f;
@@ -231,10 +239,14 @@ void sendSyntheticMouse(SDL3Mouse *mouse, SDL_Window *window, Uint32 type,
         s_touch.syntheticRightHeld = true;
     else if (type == SDL_EVENT_MOUSE_BUTTON_DOWN && button == SDL_BUTTON_LEFT)
         s_touch.syntheticLeftHeld = true;
+    else if (type == SDL_EVENT_MOUSE_BUTTON_DOWN && button == SDL_BUTTON_MIDDLE)
+        s_touch.syntheticMiddleHeld = true;
     else if (type == SDL_EVENT_MOUSE_BUTTON_UP && button == SDL_BUTTON_RIGHT)
         s_touch.syntheticRightHeld = false;
     else if (type == SDL_EVENT_MOUSE_BUTTON_UP && button == SDL_BUTTON_LEFT)
         s_touch.syntheticLeftHeld = false;
+    else if (type == SDL_EVENT_MOUSE_BUTTON_UP && button == SDL_BUTTON_MIDDLE)
+        s_touch.syntheticMiddleHeld = false;
 }
 
 void releaseSyntheticButtons(SDL3Mouse *mouse, SDL_Window *window, float x, float y)
@@ -243,9 +255,12 @@ void releaseSyntheticButtons(SDL3Mouse *mouse, SDL_Window *window, float x, floa
         sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP, x, y, SDL_BUTTON_RIGHT);
     if (s_touch.syntheticLeftHeld)
         sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP, x, y, SDL_BUTTON_LEFT);
+    if (s_touch.syntheticMiddleHeld)
+        sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP, x, y, SDL_BUTTON_MIDDLE);
 
     s_touch.syntheticRightHeld = false;
     s_touch.syntheticLeftHeld = false;
+    s_touch.syntheticMiddleHeld = false;
 }
 
 void resetSyntheticPosition(float x, float y)
@@ -273,6 +288,11 @@ void beginPinch(SDL3Mouse *mouse, SDL_Window *window, int winW, int winH)
     s_touch.twoFingerStart2Y = s_touch.f2y;
     s_touch.twoFingerMaxMove = 0.0f;
     s_touch.twoFingerStartDist = s_touch.pinchDist;
+
+    const float angle = SDL_atan2f(dy, dx);
+    s_touch.twoFingerAngle = angle;
+    s_touch.twoFingerLastAngle = angle;
+    s_touch.twoFingerRotationActive = false;
     s_touch.phase = TouchState::PINCH;
 
     // Do not synthesize ANY mouse motion when the second finger arrives.
@@ -406,20 +426,51 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             const float cx = (s_touch.f1x + s_touch.f2x) * 0.5f * (float)winW;
             const float cy = (s_touch.f1y + s_touch.f2y) * 0.5f * (float)winH;
 
+            // Continuous, velocity-sensitive zoom. The wheel amount is
+            // proportional to the actual distance change instead of emitting
+            // fixed +/-1 steps.
             if (s_touch.pinchDist > 1.0f) {
-                const float ratio = dist / s_touch.pinchDist;
-                if (ratio > 1.0f + PINCH_STEP_RATIO) {
+                const float distanceDelta = dist - s_touch.pinchDist;
+                float wheelY = distanceDelta * PINCH_ZOOM_SENSITIVITY;
+                if (wheelY > 4.0f) wheelY = 4.0f;
+                if (wheelY < -4.0f) wheelY = -4.0f;
+
+                if (SDL_fabsf(wheelY) > 0.01f) {
                     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_WHEEL,
-                                       cx, cy, 0, 1.0f);
-                    s_touch.pinchDist = dist;
-                    s_touch.twoFingerTapCandidate = false;
-                } else if (ratio < 1.0f - PINCH_STEP_RATIO) {
-                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_WHEEL,
-                                       cx, cy, 0, -1.0f);
-                    s_touch.pinchDist = dist;
+                                       cx, cy, 0, wheelY);
                     s_touch.twoFingerTapCandidate = false;
                 }
+                s_touch.pinchDist = dist;
             }
+
+            // Continuous two-finger camera rotation uses Generals' native
+            // middle-mouse rotation path. Angle change is converted to a
+            // proportional mouse delta, so slow rotation is slow and fast
+            // rotation is fast. Rotation is independent of zoom.
+            const float angle = SDL_atan2f(dy, dx);
+            float angleDelta = angle - s_touch.twoFingerLastAngle;
+            const float pi = 3.14159265358979323846f;
+            if (angleDelta > pi) angleDelta -= 2.0f * pi;
+            if (angleDelta < -pi) angleDelta += 2.0f * pi;
+
+            if (SDL_fabsf(angleDelta) > 0.0005f) {
+                s_touch.twoFingerTapCandidate = false;
+
+                if (!s_touch.twoFingerRotationActive) {
+                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
+                                       s_touch.syntheticX, s_touch.syntheticY,
+                                       SDL_BUTTON_MIDDLE);
+                    s_touch.twoFingerRotationActive = true;
+                }
+
+                const float rotationPixels =
+                    angleDelta * TWO_FINGER_ROTATION_SENSITIVITY;
+                sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION,
+                                   s_touch.syntheticX + rotationPixels,
+                                   s_touch.syntheticY);
+            }
+
+            s_touch.twoFingerLastAngle = angle;
             break;
         }
 
@@ -477,6 +528,7 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 s_touch.finger2 = 0;
                 s_touch.twoFingerTapCandidate = false;
                 s_touch.pinchDist = 0.0f;
+                s_touch.twoFingerRotationActive = false;
                 releaseSyntheticButtons(mouse, window, px, py);
                 resetSyntheticPosition(px, py);
             }
@@ -497,8 +549,7 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 s_touch.finger2Active = false;
                 s_touch.twoFingerTapCandidate = false;
                 resetSyntheticPosition(px, py);
-                break;
-            }
+                break;            }
 
             const bool firstReleased =
                 s_touch.finger1Active && event.tfinger.fingerID == s_touch.finger1;
@@ -533,6 +584,7 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                     s_touch.finger2Active = false;
                     s_touch.twoFingerTapCandidate = false;
                     s_touch.pinchDist = 0.0f;
+                    s_touch.twoFingerRotationActive = false;
                     resetSyntheticPosition(s_touch.syntheticX, s_touch.syntheticY);
                 }
                 break;
@@ -997,8 +1049,7 @@ void SDL3GameEngine::pollSDL3Events(void)
 	// Poll the long-press timer every frame; a stationary finger emits no events.
 	if (TheMouse && m_SDLWindow) {
 		SDL3Mouse* touchMouse = dynamic_cast<SDL3Mouse*>(TheMouse);
-		if (touchMouse) {
-			updateTouchLongPress(touchMouse, m_SDLWindow);
+		if (touchMouse) {			updateTouchLongPress(touchMouse, m_SDLWindow);
 		}
 	}
 #endif
@@ -1243,4 +1294,3 @@ AudioManager *SDL3GameEngine::createAudioManager(Bool dummy)
 }
 
 #endif // !_WIN32
-
