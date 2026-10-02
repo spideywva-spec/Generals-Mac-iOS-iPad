@@ -862,19 +862,25 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
         }
 
         if (s_touch.phase == TouchState::BUILD_PLACEMENT) {
-            // FIRST TOUCH RELEASE:
-            //   1. Save the exact building position.
-            //   2. End the first-touch gesture completely.
-            //   3. DO NOT build.
+            // One-finger building is direct:
+            //   tap/release -> build exactly at the last finger position;
+            //   hold + drag -> the building follows the finger and release
+            //                 builds at that final position.
             //
-            // The critical part is returning to IDLE while keeping
-            // buildPositionReady=true. The next finger-down must then be
-            // recognized as the dedicated SECOND TOUCH:
-            //   - release before 0.2s -> build immediately
-            //   - hold for 0.2s       -> rotate in place, then build on release
+            // Do not reuse the original touch-down coordinates and do not
+            // offset the click. The final screen position is the exact
+            // position currently shown by the placement preview.
             s_touch.buildPlacedX = s_touch.lastX;
             s_touch.buildPlacedY = s_touch.lastY;
-            s_touch.buildPositionReady = true;
+            sendSyntheticMouse(mouse, window,
+                               SDL_EVENT_MOUSE_BUTTON_DOWN,
+                               s_touch.buildPlacedX, s_touch.buildPlacedY,
+                               SDL_BUTTON_LEFT);
+            sendSyntheticMouse(mouse, window,
+                               SDL_EVENT_MOUSE_BUTTON_UP,
+                               s_touch.buildPlacedX, s_touch.buildPlacedY,
+                               SDL_BUTTON_LEFT);
+            s_touch.buildPositionReady = false;
             s_touch.phase = TouchState::IDLE;
         } else if (s_touch.phase == TouchState::BUILD_ROTATE_PENDING) {
             // SECOND TOUCH RELEASE before 0.2s = build immediately.
