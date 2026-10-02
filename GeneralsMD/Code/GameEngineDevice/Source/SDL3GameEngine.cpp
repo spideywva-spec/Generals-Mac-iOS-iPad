@@ -475,12 +475,17 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 s_touch.f1y = event.tfinger.y;
 
                 if (s_touch.phase == TouchState::BUILD_PLACEMENT) {
-                    // First 0.1s: move the building only. Camera is disabled.
+                    // Until the 0.1s hold threshold, the finger is a pure
+                    // placement cursor: move the building, never the camera.
                     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, px, py);
+
                     if (heldMs >= LONG_PRESS_MS) {
+                        // The building is already at the desired position.
+                        // Freeze that position and enter rotation-only mode.
                         s_touch.phase = TouchState::BUILD_ROTATE;
                         s_touch.buildRotationStartX = px;
                         s_touch.buildRotationStartY = py;
+
                         ICoord2D anchor;
                         anchor.x = static_cast<Int>(px);
                         anchor.y = static_cast<Int>(py);
@@ -488,12 +493,13 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                         TheInGameUI->setPlacementEnd(&anchor);
                     }
                 } else {
-                    // After 0.1s, one finger controls building rotation only.
+                    // After 0.1s the finger is rotation-only. Do NOT send a
+                    // mouse-motion event here: that would move the building
+                    // again and could re-enter the native drag-to-rotate path.
                     ICoord2D end;
                     end.x = static_cast<Int>(px);
                     end.y = static_cast<Int>(py);
                     TheInGameUI->setPlacementEnd(&end);
-                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, px, py);
                 }
                 s_touch.lastX = px;
                 s_touch.lastY = py;
@@ -589,8 +595,10 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
 
         if (s_touch.phase == TouchState::BUILD_PLACEMENT ||
             s_touch.phase == TouchState::BUILD_ROTATE) {
-            // Release commits the building at the current cursor position.
-            // No held LMB means the movement phase cannot accidentally rotate it.
+            // Release before/after the hold commits the building at its
+            // current position. A short release (<0.1s) therefore builds
+            // immediately without requiring a second press. If the finger was
+            // held for 0.1s+, the last rotation angle is used on release.
             sendSyntheticMouse(mouse, window,
                                SDL_EVENT_MOUSE_BUTTON_DOWN, px, py, SDL_BUTTON_LEFT);
             sendSyntheticMouse(mouse, window,
