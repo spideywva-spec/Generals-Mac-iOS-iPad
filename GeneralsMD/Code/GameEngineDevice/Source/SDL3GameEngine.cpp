@@ -220,7 +220,7 @@ const Uint64 LONG_PRESS_MS = 200;
 const float TAP_DEAD_ZONE_PX = 8.0f;
 const float TWO_FINGER_TAP_MAX_MOVE_PX = 10.0f;
 const float TWO_FINGER_TAP_MAX_DISTANCE_CHANGE_PX = 10.0f;
-const float TWO_FINGER_ROTATION_START_DEGREES = 40.0f;
+const float TWO_FINGER_ROTATION_START_DEGREES = 20.0f;
 
 // W3DView::scrollBy multiplies its input by 250 world units. 0.004 therefore
 // makes one physical finger pixel roughly one world unit of camera travel.
@@ -443,10 +443,14 @@ void resetToSingleFingerPending(SDL_FingerID finger, float x, float y)
     s_touch.f2y = 0.0f;
 }
 
-void beginPinch()
+void beginPinch(int winW, int winH)
 {
-    const float dx = s_touch.f1x - s_touch.f2x;
-    const float dy = s_touch.f1y - s_touch.f2y;
+    // f1x/f1y/f2x/f2y are normalized SDL coordinates. Store all pinch
+    // distances in physical pixels so the first motion event compares values
+    // in exactly the same units. Mixing normalized distance with pixel
+    // distance was the source of the initial zoom jump.
+    const float dx = (s_touch.f1x - s_touch.f2x) * (float)winW;
+    const float dy = (s_touch.f1y - s_touch.f2y) * (float)winH;
 
     s_touch.pinchDist = SDL_sqrtf(dx * dx + dy * dy);
     s_touch.twoFingerStartDist = s_touch.pinchDist;
@@ -552,7 +556,7 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             s_touch.f2x = event.tfinger.x;
             s_touch.f2y = event.tfinger.y;
             s_touch.twoFingerStartedDuringBuild = true;
-            beginPinch();
+            beginPinch(winW, winH);
 
         } else if (s_touch.phase == TouchState::PENDING ||
                    s_touch.phase == TouchState::CAMERA_PAN ||
@@ -566,7 +570,7 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             s_touch.f2x = event.tfinger.x;
             s_touch.f2y = event.tfinger.y;
 
-            beginPinch();
+            beginPinch(winW, winH);
         }
         break;
 
@@ -681,13 +685,14 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             const float rotationThreshold =
                 TWO_FINGER_ROTATION_START_DEGREES * (pi / 180.0f);
 
-            const float distanceFromStart =
-                SDL_fabsf(dist - s_touch.twoFingerStartDist);
-            const bool rotationGesture =
-                distanceFromStart <= 20.0f;
-
+            // Rotation has its own gesture axis. Pinching must not
+            // disable rotation: if the fingers change their pair angle by the
+            // threshold, rotation starts from that exact angle and then follows
+            // every subsequent angular movement. There is deliberately no
+            // distance-stability gate here, so zoom and rotation can happen
+            // simultaneously without one gesture stealing or corrupting the
+            // other.
             if (!s_touch.twoFingerRotationActive &&
-                rotationGesture &&
                 SDL_fabsf(fromStart) >= rotationThreshold) {
                 // Cross the real-rotation threshold without applying the
                 // accumulated angle. The next movement starts from here,
