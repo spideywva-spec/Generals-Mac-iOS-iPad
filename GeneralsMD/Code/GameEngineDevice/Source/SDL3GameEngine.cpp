@@ -583,15 +583,13 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 s_touch.f1y = event.tfinger.y;
 
                 if (s_touch.phase == TouchState::BUILD_PLACEMENT) {
-                    // Once the building is selected/placed, dragging with the
-                    // first finger controls the CAMERA, not the building.
-                    // Keep the building anchored at its initial placement
-                    // point until the touch is released.
-                    const float cameraDX = px - s_touch.lastX;
-                    const float cameraDY = py - s_touch.lastY;
-                    applyCameraPan(cameraDX, cameraDY);
+                    // While placing a building, one-finger movement controls
+                    // the building position only. The camera must stay fixed.
+                    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, px, py);
                     s_touch.lastX = px;
                     s_touch.lastY = py;
+                    s_touch.buildPlacedX = px;
+                    s_touch.buildPlacedY = py;
                 } else if (s_touch.phase == TouchState::BUILD_ROTATE_PENDING) {
                     // SECOND TOUCH: do not move the building. After 0.2s of
                     // deliberate holding, enter rotation mode.
