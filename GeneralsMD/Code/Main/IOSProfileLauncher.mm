@@ -554,8 +554,8 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     UIStackView *content = [[UIStackView alloc] init];
     content.translatesAutoresizingMaskIntoConstraints = NO;
     content.axis = UILayoutConstraintAxisVertical;
-    content.spacing = 7.0;
-    content.layoutMargins = UIEdgeInsetsMake(8.0, 12.0, 10.0, 12.0);
+    content.spacing = 5.0;
+    content.layoutMargins = UIEdgeInsetsMake(4.0, 10.0, 5.0, 10.0);
     content.layoutMarginsRelativeArrangement = YES;
 
     UIView *header = [[UIView alloc] init];
@@ -583,7 +583,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     // Header must have explicit constraints. Without them Auto Layout can
     // collapse/overlap the title, iOS/iPad subtitle and device pill.
     [NSLayoutConstraint activateConstraints:@[
-        [header.heightAnchor constraintEqualToConstant:58.0],
+        [header.heightAnchor constraintEqualToConstant:44.0],
         [title.leadingAnchor constraintEqualToAnchor:header.leadingAnchor],
         [title.topAnchor constraintEqualToAnchor:header.topAnchor constant:2.0],
         [title.trailingAnchor constraintLessThanOrEqualToAnchor:platform.leadingAnchor constant:-18.0],
@@ -592,8 +592,8 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         [subtitle.trailingAnchor constraintLessThanOrEqualToAnchor:platform.leadingAnchor constant:-18.0],
         [platform.trailingAnchor constraintEqualToAnchor:header.trailingAnchor],
         [platform.centerYAnchor constraintEqualToAnchor:header.centerYAnchor],
-        [platform.widthAnchor constraintEqualToConstant:142.0],
-        [platform.heightAnchor constraintEqualToConstant:48.0]
+        [platform.widthAnchor constraintEqualToConstant:124.0],
+        [platform.heightAnchor constraintEqualToConstant:38.0]
     ]];
 
     [content addArrangedSubview:header];
@@ -684,7 +684,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
     [NSLayoutConstraint activateConstraints:@[
         // Fixed hero height: loading the remote artwork must never resize the launcher.
-        [hero.heightAnchor constraintEqualToConstant:330.0],
+        [hero.heightAnchor constraintEqualToConstant:172.0],
 
         [gameTitle.leadingAnchor constraintEqualToAnchor:hero.leadingAnchor constant:28.0],
         [gameTitle.topAnchor constraintEqualToAnchor:hero.topAnchor constant:24.0],
@@ -896,7 +896,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         [button addTarget:self action:action forControlEvents:UIControlEventTouchUpInside];
     else
         button.userInteractionEnabled = NO;
-    [button.heightAnchor constraintGreaterThanOrEqualToConstant:92.0].active = YES;
+    [button.heightAnchor constraintEqualToConstant:72.0].active = YES;
 
     return button;
 }
@@ -907,29 +907,28 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
                            actions:(UIStackView *)actions
 {
     void (^update)(void) = ^{
-        BOOL compact = self.view.bounds.size.width < 700.0;
+        BOOL compactWidth = self.view.bounds.size.width < 700.0;
+        BOOL shortLandscape = self.view.bounds.size.height < 500.0;
 
-        columns.axis = compact ? UILayoutConstraintAxisVertical : UILayoutConstraintAxisHorizontal;
-        columns.spacing = compact ? 12.0 : 14.0;
+        // Non-scrollable landscape launcher: all primary controls fit in the viewport.
+        columns.axis = compactWidth ? UILayoutConstraintAxisVertical : UILayoutConstraintAxisHorizontal;
+        columns.spacing = shortLandscape ? 6.0 : (compactWidth ? 10.0 : 12.0);
+        actions.axis = compactWidth ? UILayoutConstraintAxisVertical : UILayoutConstraintAxisHorizontal;
+        actions.spacing = shortLandscape ? 6.0 : 10.0;
 
-        actions.axis = compact ? UILayoutConstraintAxisVertical : UILayoutConstraintAxisHorizontal;
-
-        if (compact)
+        if (!compactWidth)
         {
-            [sidePanel.widthAnchor constraintEqualToConstant:0.0].active = NO;
+            [sidePanel.widthAnchor constraintEqualToConstant:(shortLandscape ? 170.0 : 190.0)].active = YES;
+            [hero.heightAnchor constraintEqualToConstant:(shortLandscape ? 138.0 : 172.0)].active = YES;
         }
         else
         {
-            // Keep the status card compact; the hero is the dominant panel.
-            // This prevents UIStackView from stretching status to half-screen.
-            [sidePanel.widthAnchor constraintEqualToConstant:190.0].active = YES;
-            [hero.widthAnchor constraintGreaterThanOrEqualToConstant:0.0].active = YES;
+            [hero.heightAnchor constraintEqualToConstant:(shortLandscape ? 120.0 : 172.0)].active = YES;
         }
     };
 
     update();
 }
-
 
 - (UISlider *)makeSliderWithMin:(float)minimum max:(float)maximum
 {
