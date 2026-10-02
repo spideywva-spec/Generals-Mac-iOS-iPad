@@ -146,6 +146,7 @@ struct TouchState {
         CAMERA_PAN,
         SELECTING,
         BUILD_PLACEMENT,
+        BUILD_ROTATE_PENDING,
         BUILD_ROTATE,
         PINCH,
         TWO_FINGER_CANCEL
@@ -189,6 +190,10 @@ struct TouchState {
 
     bool syntheticRightHeld = false;
     bool syntheticLeftHeld = false;
+
+    // First touch places the building and RELEASES without building.
+    // A second touch is required to enter rotation mode.
+    bool buildPositionReady = false;
 };
 
 TouchState s_touch;
@@ -196,7 +201,7 @@ TouchState s_touch;
 // Gesture tuning is expressed in physical screen pixels / radians, not
 // artificial mouse-wheel ticks. This keeps speed proportional to the actual
 // finger movement.
-const Uint64 LONG_PRESS_MS = 300;
+const Uint64 LONG_PRESS_MS = 200;
 const float TAP_DEAD_ZONE_PX = 8.0f;
 const float TWO_FINGER_TAP_MAX_MOVE_PX = 10.0f;
 const float TWO_FINGER_TAP_MAX_DISTANCE_CHANGE_PX = 10.0f;
@@ -311,11 +316,13 @@ void beginCameraPan()
 
 void beginBuildRotation(float x, float y)
 {
-    if (s_touch.phase != TouchState::BUILD_PLACEMENT || !TheInGameUI)
+    if ((s_touch.phase != TouchState::BUILD_PLACEMENT &&
+         s_touch.phase != TouchState::BUILD_ROTATE_PENDING) ||
+        !TheInGameUI)
         return;
 
     // The building is already at the player's chosen location. Freeze that
-    // location and switch the same finger to rotation only.
+    // location and switch the SECOND touch to rotation only.
     s_touch.phase = TouchState::BUILD_ROTATE;
     s_touch.buildRotationStartX = x;
     s_touch.buildRotationStartY = y;
@@ -445,14 +452,35 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
     switch (event.type) {
     case SDL_EVENT_FINGER_DOWN:
         if (s_touch.phase == TouchState::IDLE) {
+            // If the player already placed the building and released the first
+            // touch, the next touch is a dedicated rotation gesture.
+            if (s_touch.buildPositionReady && isBuildPlacementActive()) {
+                s_touch.finger1 = event.tfinger.fingerID;
+                s_touch.finger1Active = true;
+                s_touch.finger2Active = false;
+                s_touch.downX = px;
+                s_touch.downY = py;
+                s_touch.lastX = px;
+                s_touch.lastY = py;
+                s_touch.f1x = event.tfinger.x;
+                s_touch.f1y = event.tfinger.y;
+                s_touch.buildHoldTicks = SDL_GetTicks();
+                s_touch.buildRotationStartX = px;
+                s_touch.buildRotationStartY = py;
+                s_touch.phase = TouchState::BUILD_ROTATE_PENDING;
+                break;
+            }
+
             resetToSingleFingerPending(event.tfinger.fingerID, px, py);
 
-            // If Generals has already entered placement mode, this finger
+            // If Generals has just entered placement mode, this first finger
             // belongs exclusively to the building. Camera input is not created.
             if (isBuildPlacementActive())
                 beginBuildPlacement(mouse, window);
 
         } else if (s_touch.phase == TouchState::BUILD_PLACEMENT ||
+                   s_touch.phase == TouchState::BUILD_ROTATE_PENDING ||
+                   s_touch.phase == TouchState::BUILD_ROTATE ||
                    s_touch.phase == TouchState::BUILD_ROTATE) {
             // Cancel native placement before releasing the held LMB. A right
             // click is Generals' normal cancel path while the build cursor is
@@ -495,6 +523,7 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             break;
 
         if (s_touch.phase == TouchState::BUILD_PLACEMENT ||
+            s_touch.phase == TouchState::BUILD_ROTATE_PENDING ||
             s_touch.phase == TouchState::BUILD_ROTATE) {
             if (event.tfinger.fingerID == s_touch.finger1) {
                 const Uint64 heldMs = SDL_GetTicks() - s_touch.buildHoldTicks;
@@ -502,26 +531,18 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 s_touch.f1y = event.tfinger.y;
 
                 if (s_touch.phase == TouchState::BUILD_PLACEMENT) {
-                    // The first gesture is ALWAYS building movement. Moving the
-                    // finger for a long time must never start rotation by itself.
-                    // The 0.1s timer is restarted whenever the finger actually
-                    // moves, so rotation only appears after the player stops on
-                    // the desired build location and deliberately holds there.
+                    // FIRST TOUCH: move the building only. There is no timer
+                    // here and releasing this touch never starts rotation.
                     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, px, py);
-
-                    const float moveX = px - s_touch.buildLastMoveX;
-                    const float moveY = py - s_touch.buildLastMoveY;
-                    const float moveDistance = SDL_sqrtf(moveX * moveX + moveY * moveY);
-
-                    if (moveDistance > 2.0f) {
-                        s_touch.buildLastMoveX = px;
-                        s_touch.buildLastMoveY = py;
-                        s_touch.buildHoldTicks = SDL_GetTicks();
-                    } else if ((SDL_GetTicks() - s_touch.buildHoldTicks) >= LONG_PRESS_MS) {
-                        // 0.3s of stillness at the chosen location enters
-                        // building rotation. The location is frozen first.
+                    s_touch.lastX = px;
+                    s_touch.lastY = py;
+                } else if (s_touch.phase == TouchState::BUILD_ROTATE_PENDING) {
+                    // SECOND TOUCH: do not move the building. After 0.2s of
+                    // deliberate holding, enter rotation mode.
+                    s_touch.lastX = px;
+                    s_touch.lastY = py;
+                    if ((SDL_GetTicks() - s_touch.buildHoldTicks) >= LONG_PRESS_MS)
                         beginBuildRotation(px, py);
-                    }
                 } else {
                     // Rotation mode: the building stays at the chosen position.
                     // Only the placement angle changes; the camera is untouched.
@@ -720,7 +741,23 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             break;
         }
 
-        if (s_touch.phase == TouchState::SELECTING) {
+        if (s_touch.phase == TouchState::BUILD_PLACEMENT) {
+            // FIRST TOUCH RELEASE: keep the building at this location.
+            // Do NOT click/commit. The next touch is required for rotation.
+            s_touch.buildPositionReady = true;
+        } else if (s_touch.phase == TouchState::BUILD_ROTATE_PENDING) {
+            // Released before the 0.2s hold: keep the building positioned and
+            // wait for another deliberate second touch.
+            s_touch.buildPositionReady = true;
+        } else if (s_touch.phase == TouchState::BUILD_ROTATE) {
+            // SECOND TOUCH RELEASE: commit the building at the frozen position
+            // and final rotation.
+            sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
+                               px, py, SDL_BUTTON_LEFT);
+            sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP,
+                               px, py, SDL_BUTTON_LEFT);
+            s_touch.buildPositionReady = false;
+        } else if (s_touch.phase == TouchState::SELECTING) {
             releaseSyntheticButtons(mouse, window, px, py);
         } else if (s_touch.phase == TouchState::CAMERA_PAN) {
             // Camera is controlled directly; there is no button to release.
@@ -748,8 +785,8 @@ void updateTouchLongPress(SDL3Mouse *mouse, SDL_Window *window)
 {
     const Uint64 now = SDL_GetTicks();
 
-    // Long-press selection and build rotation use the same 0.3s deliberate
-    // hold. This function runs every frame, so a stationary finger is enough;
+    // Long-press selection uses 0.3s; building rotation uses a dedicated
+    // second-touch hold of 0.2s. This function runs every frame, so a stationary finger is enough;
     // no extra FINGER_MOTION event is required.
     if (s_touch.phase == TouchState::PENDING &&
         !isBuildPlacementActive() &&
@@ -758,7 +795,7 @@ void updateTouchLongPress(SDL3Mouse *mouse, SDL_Window *window)
         return;
     }
 
-    if (s_touch.phase == TouchState::BUILD_PLACEMENT &&
+    if (s_touch.phase == TouchState::BUILD_ROTATE_PENDING &&
         (now - s_touch.buildHoldTicks) >= LONG_PRESS_MS) {
         beginBuildRotation(s_touch.lastX, s_touch.lastY);
     }
