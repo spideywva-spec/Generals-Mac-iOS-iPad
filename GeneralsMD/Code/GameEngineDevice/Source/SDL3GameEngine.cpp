@@ -732,6 +732,8 @@ static MobileInputManager s_mobileInput;
 } // anonymous namespace
 
 
+#endif // TARGET_OS_IPHONE
+
 namespace {
 
 Bool DecodeNextUtf8Codepoint(const char* text, size_t length, size_t& offset, UnsignedInt& outCodepoint)
@@ -1305,4 +1307,3 @@ AudioManager *SDL3GameEngine::createAudioManager(Bool dummy)
 }
 
 #endif // !_WIN32
-
