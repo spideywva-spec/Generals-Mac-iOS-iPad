@@ -172,6 +172,12 @@ struct TouchState {
     float buildPlacedX = 0.0f;
     float buildPlacedY = 0.0f;
 
+    // Camera swipe smoothing. The smoothed delta remains proportional to the
+    // real finger movement, while preventing a single uneven touch event from
+    // producing a visible camera jerk.
+    float cameraSmoothDX = 0.0f;
+    float cameraSmoothDY = 0.0f;
+
     float f1x = 0.0f;
     float f1y = 0.0f;
     float f2x = 0.0f;
@@ -314,6 +320,8 @@ void beginSelection(SDL3Mouse *mouse, SDL_Window *window)
 
 void beginCameraPan()
 {
+    s_touch.cameraSmoothDX = 0.0f;
+    s_touch.cameraSmoothDY = 0.0f;
     s_touch.phase = TouchState::CAMERA_PAN;
 }
 
@@ -344,9 +352,22 @@ void applyCameraPan(float dxPixels, float dyPixels)
     if (!TheTacticalView)
         return;
 
+    // Smooth the per-event finger delta instead of using a fixed camera speed.
+    // A slow finger produces small deltas; a fast finger produces larger
+    // deltas. The filter only removes sudden event-to-event spikes.
+    constexpr float CAMERA_SMOOTH_CURRENT = 0.55f;
+    constexpr float CAMERA_SMOOTH_PREVIOUS = 1.0f - CAMERA_SMOOTH_CURRENT;
+
+    s_touch.cameraSmoothDX =
+        s_touch.cameraSmoothDX * CAMERA_SMOOTH_PREVIOUS +
+        dxPixels * CAMERA_SMOOTH_CURRENT;
+    s_touch.cameraSmoothDY =
+        s_touch.cameraSmoothDY * CAMERA_SMOOTH_PREVIOUS +
+        dyPixels * CAMERA_SMOOTH_CURRENT;
+
     Coord2D delta;
-    delta.x = dxPixels * CAMERA_PAN_WORLD_PER_PIXEL;
-    delta.y = dyPixels * CAMERA_PAN_WORLD_PER_PIXEL;
+    delta.x = s_touch.cameraSmoothDX * CAMERA_PAN_WORLD_PER_PIXEL;
+    delta.y = s_touch.cameraSmoothDY * CAMERA_PAN_WORLD_PER_PIXEL;
     TheTacticalView->userScrollBy(&delta);
 }
 
