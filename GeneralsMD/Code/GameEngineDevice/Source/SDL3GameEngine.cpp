@@ -169,6 +169,8 @@ struct TouchState {
     float buildLastMoveY = 0.0f;
     float buildRotationStartX = 0.0f;
     float buildRotationStartY = 0.0f;
+    float buildPlacedX = 0.0f;
+    float buildPlacedY = 0.0f;
 
     float f1x = 0.0f;
     float f1y = 0.0f;
@@ -297,6 +299,8 @@ void beginBuildPlacement(SDL3Mouse *mouse, SDL_Window *window)
     s_touch.buildLastMoveY = s_touch.downY;
     s_touch.buildRotationStartX = s_touch.downX;
     s_touch.buildRotationStartY = s_touch.downY;
+    s_touch.buildPlacedX = s_touch.downX;
+    s_touch.buildPlacedY = s_touch.downY;
     s_touch.phase = TouchState::BUILD_PLACEMENT;
 }
 
@@ -328,8 +332,10 @@ void beginBuildRotation(float x, float y)
     s_touch.buildRotationStartY = y;
 
     ICoord2D anchor;
-    anchor.x = static_cast<Int>(x);
-    anchor.y = static_cast<Int>(y);
+    // Never use the second finger's screen position as the build location.
+    // The building remains exactly where the first touch was released.
+    anchor.x = static_cast<Int>(s_touch.buildPlacedX);
+    anchor.y = static_cast<Int>(s_touch.buildPlacedY);
     TheInGameUI->setPlacementStart(&anchor);
     TheInGameUI->setPlacementEnd(&anchor);
 }
@@ -536,6 +542,8 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, px, py);
                     s_touch.lastX = px;
                     s_touch.lastY = py;
+                    s_touch.buildPlacedX = px;
+                    s_touch.buildPlacedY = py;
                 } else if (s_touch.phase == TouchState::BUILD_ROTATE_PENDING) {
                     // SECOND TOUCH: do not move the building. After 0.2s of
                     // deliberate holding, enter rotation mode.
