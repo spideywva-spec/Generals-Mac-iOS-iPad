@@ -146,6 +146,7 @@ struct TouchState {
         CAMERA_PAN,
         SELECTING,
         BUILD_PLACEMENT,
+        BUILD_ROTATE,
         PINCH,
         TWO_FINGER_CANCEL
     };
@@ -162,6 +163,9 @@ struct TouchState {
     float lastX = 0.0f;
     float lastY = 0.0f;
     Uint64 downTicks = 0;
+    Uint64 buildHoldTicks = 0;
+    float buildRotationStartX = 0.0f;
+    float buildRotationStartY = 0.0f;
 
     float f1x = 0.0f;
     float f1y = 0.0f;
@@ -274,12 +278,14 @@ bool isBuildPlacementActive()
 
 void beginBuildPlacement(SDL3Mouse *mouse, SDL_Window *window)
 {
-    // Native Generals placement already owns movement and free-angle rotation
-    // while LMB is held. We only provide the finger as that mouse.
+    // Do NOT press LMB here. Native Generals treats LMB-drag as the
+    // build-angle gesture, which caused every one-finger movement to rotate
+    // the structure instead of simply moving it.
     sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION,
                        s_touch.downX, s_touch.downY);
-    sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_BUTTON_DOWN,
-                       s_touch.downX, s_touch.downY, SDL_BUTTON_LEFT);
+    s_touch.buildHoldTicks = SDL_GetTicks();
+    s_touch.buildRotationStartX = s_touch.downX;
+    s_touch.buildRotationStartY = s_touch.downY;
     s_touch.phase = TouchState::BUILD_PLACEMENT;
 }
 
@@ -420,7 +426,8 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             if (isBuildPlacementActive())
                 beginBuildPlacement(mouse, window);
 
-        } else if (s_touch.phase == TouchState::BUILD_PLACEMENT) {
+        } else if (s_touch.phase == TouchState::BUILD_PLACEMENT ||
+                   s_touch.phase == TouchState::BUILD_ROTATE) {
             // Cancel native placement before releasing the held LMB. A right
             // click is Generals' normal cancel path while the build cursor is
             // active; releasing LMB first would commit the structure.
@@ -461,16 +468,47 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
         if (s_touch.phase == TouchState::TWO_FINGER_CANCEL)
             break;
 
-        if (s_touch.phase == TouchState::BUILD_PLACEMENT) {
+        if (s_touch.phase == TouchState::BUILD_PLACEMENT ||
+            s_touch.phase == TouchState::BUILD_ROTATE) {
             if (event.tfinger.fingerID == s_touch.finger1) {
+                const Uint64 heldMs = SDL_GetTicks() - s_touch.buildHoldTicks;
+
                 s_touch.f1x = event.tfinger.x;
                 s_touch.f1y = event.tfinger.y;
+
+                if (s_touch.phase == TouchState::BUILD_PLACEMENT) {
+                    // First 0.1s: one finger is a pure placement/move gesture.
+                    // The camera never receives this motion.
+                    sendSyntheticMouse(mouse, window,
+                                       SDL_EVENT_MOUSE_MOTION, px, py);
+
+                    if (heldMs >= LONG_PRESS_MS) {
+                        s_touch.phase = TouchState::BUILD_ROTATE;
+                        s_touch.buildRotationStartX = px;
+                        s_touch.buildRotationStartY = py;
+
+                        // Start the native placement angle at the current
+                        // finger position. Rotation begins only after the
+                        // 0.1s hold has elapsed.
+                        ICoord2D anchor;
+                        anchor.x = static_cast<Int>(px);
+                        anchor.y = static_cast<Int>(py);
+                        TheInGameUI->setPlacementStart(&anchor);
+                        TheInGameUI->setPlacementEnd(&anchor);
+                    }
+                } else {
+                    // After 0.1s, one finger can rotate the building. The
+                    // camera remains completely disabled in this phase.
+                    ICoord2D end;
+                    end.x = static_cast<Int>(px);
+                    end.y = static_cast<Int>(py);
+                    TheInGameUI->setPlacementEnd(&end);
+                    sendSyntheticMouse(mouse, window,
+                                       SDL_EVENT_MOUSE_MOTION, px, py);
+                }
+
                 s_touch.lastX = px;
                 s_touch.lastY = py;
-
-                // Keep the native placement cursor exactly under the finger.
-                // No camera operation is issued in this phase.
-                sendSyntheticMouse(mouse, window, SDL_EVENT_MOUSE_MOTION, px, py);
             }
             break;
         }
@@ -492,31 +530,36 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             const float dy = (s_touch.f1y - s_touch.f2y) * winH;
             const float dist = SDL_sqrtf(dx * dx + dy * dy);
 
-            // Distance controls only zoom.
+            // Distance is the master gesture. Rotation is intentionally
+            // disabled unless the same two-finger movement is also changing
+            // the distance (real pinch/spread). This prevents a tiny two-finger
+            // twist/tap from rotating the camera.
             const float distanceDelta = dist - s_touch.pinchDist;
-            if (distanceDelta != 0.0f) {
+            const bool zooming = SDL_fabsf(distanceDelta) > 1.5f;
+
+            if (zooming) {
                 applyPinchZoom(distanceDelta);
                 s_touch.twoFingerTapCandidate = false;
+
+                // Angle is allowed only while zoom is active. The delta is
+                // calculated from the previous frame, so there is no 360-degree
+                // jump when the angle crosses -PI/PI.
+                const float angle = SDL_atan2f(dy, dx);
+                float angleDelta = angle - s_touch.twoFingerLastAngle;
+                const float pi = 3.14159265358979323846f;
+
+                if (angleDelta > pi)
+                    angleDelta -= 2.0f * pi;
+                else if (angleDelta < -pi)
+                    angleDelta += 2.0f * pi;
+
+                if (SDL_fabsf(angleDelta) > 0.0005f)
+                    applyTwoFingerRotation(angleDelta);
+
+                s_touch.twoFingerLastAngle = angle;
             }
+
             s_touch.pinchDist = dist;
-
-            // Angle controls only yaw. Wrap at +/- PI so crossing the
-            // -180/180 boundary never becomes a giant rotation.
-            const float angle = SDL_atan2f(dy, dx);
-            float angleDelta = angle - s_touch.twoFingerLastAngle;
-            const float pi = 3.14159265358979323846f;
-
-            if (angleDelta > pi)
-                angleDelta -= 2.0f * pi;
-            else if (angleDelta < -pi)
-                angleDelta += 2.0f * pi;
-
-            if (angleDelta != 0.0f) {
-                applyTwoFingerRotation(angleDelta);
-                s_touch.twoFingerTapCandidate = false;
-            }
-
-            s_touch.twoFingerLastAngle = angle;
             break;
         }
 
@@ -564,9 +607,23 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             event.tfinger.fingerID != s_touch.finger2)
             break;
 
-        if (s_touch.phase == TouchState::BUILD_PLACEMENT) {
-            releaseSyntheticButtons(mouse, window, px, py);
+        if (s_touch.phase == TouchState::BUILD_PLACEMENT ||
+            s_touch.phase == TouchState::BUILD_ROTATE) {
+            // Placement cursor has followed the finger. A quick release
+            // commits the building at the current position; no LMB drag is
+            // used, so movement before the 0.1s rotation threshold cannot
+            // accidentally rotate it.
+            sendSyntheticMouse(mouse, window,
+                               SDL_EVENT_MOUSE_BUTTON_DOWN, px, py,
+                               SDL_BUTTON_LEFT);
+            sendSyntheticMouse(mouse, window,
+                               SDL_EVENT_MOUSE_BUTTON_UP, px, py,
+                               SDL_BUTTON_LEFT);
             s_touch.phase = TouchState::IDLE;
+            s_touch.finger1 = 0;
+            s_touch.finger2 = 0;
+            s_touch.finger1Active = false;
+            s_touch.finger2Active = false;
             break;
         }
 
@@ -1098,160 +1155,3 @@ void SDL3GameEngine::handleKeyboardEvent(const SDL_KeyboardEvent& event)
 		}
 	}
 }
-
-/**
- * Handle mouse motion event - dispatch to Mouse manager
- * TheSuperHackers @build 10/02/2026 BenderAI - Phase 1.5 event wiring
- */
-void SDL3GameEngine::handleMouseMotionEvent(const SDL_MouseMotionEvent& event)
-{
-	// Dispatch to SDL3Mouse if available
-	if (TheMouse) {
-		SDL3Mouse* sdlMouse = dynamic_cast<SDL3Mouse*>(TheMouse);
-		if (sdlMouse) {
-			sdlMouse->addSDL3MouseMotionEvent(event);
-		}
-	}
-}
-
-/**
- * Handle mouse button event - dispatch to Mouse manager
- * TheSuperHackers @build 10/02/2026 BenderAI - Phase 1.5 event wiring
- */
-void SDL3GameEngine::handleMouseButtonEvent(const SDL_MouseButtonEvent& event)
-{
-	// Dispatch to SDL3Mouse if available
-	if (TheMouse) {
-		SDL3Mouse* sdlMouse = dynamic_cast<SDL3Mouse*>(TheMouse);
-		if (sdlMouse) {
-			sdlMouse->addSDL3MouseButtonEvent(event);
-		}
-	}
-}
-
-/**
- * Handle mouse wheel event - dispatch to Mouse manager
- * TheSuperHackers @build 10/02/2026 BenderAI - Phase 1.5 event wiring
- */
-void SDL3GameEngine::handleMouseWheelEvent(const SDL_MouseWheelEvent& event)
-{
-	// Dispatch to SDL3Mouse if available
-	if (TheMouse) {
-		SDL3Mouse* sdlMouse = dynamic_cast<SDL3Mouse*>(TheMouse);
-		if (sdlMouse) {
-			sdlMouse->addSDL3MouseWheelEvent(event);
-		}
-	}
-}
-
-/**
- * Handle window event (resize, etc.)
- */
-void SDL3GameEngine::handleWindowEvent(const SDL_WindowEvent& event)
-{
-	// TODO: Phase 2 - Handle window resize, notify graphics subsystem
-	// fprintf(stderr, "DEBUG: Window event (type=%d)\n", event.type);
-}
-
-/**
- * Factory Methods for GameEngine subsystems
- * TheSuperHackers @build felipebraz 13/02/2026
- * Implementations in .cpp to provide complete type definitions and avoid circular includes
- */
-
-LocalFileSystem *SDL3GameEngine::createLocalFileSystem(void)
-{
-	fprintf(stderr, "INFO: SDL3GameEngine::createLocalFileSystem() -> StdLocalFileSystem\n");
-	return NEW StdLocalFileSystem;
-}
-ArchiveFileSystem *SDL3GameEngine::createArchiveFileSystem(void)
-{
-	fprintf(stderr, "INFO: SDL3GameEngine::createArchiveFileSystem() -> StdBIGFileSystem\n");
-	return NEW StdBIGFileSystem;
-}
-
-GameLogic *SDL3GameEngine::createGameLogic(void)
-{
-	fprintf(stderr, "INFO: SDL3GameEngine::createGameLogic() -> W3DGameLogic\n");
-	return NEW W3DGameLogic;
-}
-
-GameClient *SDL3GameEngine::createGameClient(void)
-{
-	fprintf(stderr, "INFO: SDL3GameEngine::createGameClient() -> W3DGameClient\n");
-	return NEW W3DGameClient;
-}
-
-ModuleFactory *SDL3GameEngine::createModuleFactory(void)
-{
-	fprintf(stderr, "INFO: SDL3GameEngine::createModuleFactory() -> W3DModuleFactory\n");
-	return NEW W3DModuleFactory;
-}
-
-ThingFactory *SDL3GameEngine::createThingFactory(void)
-{
-	fprintf(stderr, "INFO: SDL3GameEngine::createThingFactory() -> W3DThingFactory\n");
-	return NEW W3DThingFactory;
-}
-
-FunctionLexicon *SDL3GameEngine::createFunctionLexicon(void)
-{
-	fprintf(stderr, "INFO: SDL3GameEngine::createFunctionLexicon() -> W3DFunctionLexicon\n");
-	return NEW W3DFunctionLexicon;
-}
-
-// GeneralsX @bugfix Copilot 15/04/2026 Match upstream GameEngine pure-virtual signature after sync.
-Radar *SDL3GameEngine::createRadar(Bool dummy)
-{
-	// GeneralsX @bugfix fbraz 04/05/2026 Respect headless mode and create dummy radar.
-	// Upstream reference: Win32GameEngine headless factory behavior, TheSuperHackers/GeneralsGameCode
-	// https://github.com/TheSuperHackers/GeneralsGameCode
-	if (dummy) {
-		fprintf(stderr, "INFO: SDL3GameEngine::createRadar() -> RadarDummy (headless)\n");
-		return NEW RadarDummy;
-	}
-	fprintf(stderr, "INFO: SDL3GameEngine::createRadar() -> W3DRadar\n");
-	return NEW W3DRadar;
-}
-
-// GeneralsX @bugfix Copilot 24/03/2026 Match upstream GameEngine pure-virtual signature after sync.
-ParticleSystemManager* SDL3GameEngine::createParticleSystemManager(Bool dummy)
-{
-	// GeneralsX @bugfix fbraz 04/05/2026 Respect headless mode and create dummy particle manager.
-	if (dummy) {
-		fprintf(stderr, "INFO: SDL3GameEngine::createParticleSystemManager() -> ParticleSystemManagerDummy (headless)\n");
-		return NEW ParticleSystemManagerDummy;
-	}
-	fprintf(stderr, "INFO: SDL3GameEngine::createParticleSystemManager() -> W3DParticleSystemManager\n");
-	return NEW W3DParticleSystemManager;
-}
-
-WebBrowser *SDL3GameEngine::createWebBrowser(void)
-{
-	// WebBrowser uses Windows COM (CComObject<W3DWebBrowser>)
-	// Not available on Linux - return nullptr
-	fprintf(stderr, "WARNING: WebBrowser not available on Linux platform\n");
-	return nullptr;
-}
-
-/**
- * Factory method: AudioManager
- * Select audio backend based on compile flags
- * GeneralsX @bugfix Copilot 15/04/2026 Match upstream GameEngine pure-virtual signature after sync.
- */
-AudioManager *SDL3GameEngine::createAudioManager(Bool dummy)
-{
-	(void)dummy;
-	fprintf(stderr, "INFO: SDL3GameEngine::createAudioManager()\n");
-
-#ifdef SAGE_USE_OPENAL
-	fprintf(stderr, "INFO: Creating OpenAL audio backend\n");
-	return new OpenALAudioManager();
-#else
-	fprintf(stderr, "INFO: Audio backend not available (SAGE_USE_OPENAL not defined)\n");
-	fprintf(stderr, "WARNING: Falls back to parent implementation or silent mode\n");
-	return GameEngine::createAudioManager();  // Call parent (may return stub)
-#endif
-}
-
-#endif // !_WIN32
