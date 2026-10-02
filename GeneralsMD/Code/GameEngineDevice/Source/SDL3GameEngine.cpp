@@ -97,8 +97,7 @@ static inline bool iosShouldPauseRendering()
 
 static bool SDLCALL iosLifecycleWatcher(void *userdata, SDL_Event *event)
 {
-	switch (event->type) {		case SDL_EVENT_WILL_ENTER_BACKGROUND:
-		case SDL_EVENT_DID_ENTER_BACKGROUND:
+	switch (event->type) {		case SDL_EVENT_WILL_ENTER_BACKGROUND:		case SDL_EVENT_DID_ENTER_BACKGROUND:
 			s_appBackgrounded.store(true);
 			break;
 		case SDL_EVENT_DID_ENTER_FOREGROUND:
@@ -197,7 +196,6 @@ public:
             if (travel >= SELECTION_DISTANCE_PX)
                 beginSelection();
         }
-
         if (m_state == STATE_BUILDING &&
             m_buildConfirmationPending &&
             m_autoBuildAfterRotation &&
@@ -297,8 +295,7 @@ private:
             return;
 
         SDL_Event ev;
-        SDL_zero(ev);
-        ev.type = type;
+        SDL_zero(ev);        ev.type = type;
 
         if (type == SDL_EVENT_MOUSE_MOTION) {
             ev.motion.windowID = SDL_GetWindowID(m_window);
@@ -397,8 +394,7 @@ private:
         m_holdStartTicks = SDL_GetTicks();
         m_buildX = x;
         m_buildY = y;
-        m_lastX = x;
-        m_lastY = y;
+        m_lastX = x;        m_lastY = y;
 
         // Building preview follows the finger; camera is never touched.
         sendMouse(SDL_EVENT_MOUSE_MOTION, x, y);
@@ -497,8 +493,7 @@ private:
         } else if (event.tfinger.fingerID == m_secondaryFinger) {
             m_f2x = event.tfinger.x;
             m_f2y = event.tfinger.y;
-        } else {
-            return;
+        } else {            return;
         }
 
         const float w = static_cast<float>(windowW());
@@ -598,7 +593,6 @@ private:
 
         m_f1x = event.tfinger.x;
         m_f1y = event.tfinger.y;
-
         const float dxPixels = event.tfinger.dx * static_cast<float>(windowW());
         const float dyPixels = event.tfinger.dy * static_cast<float>(windowH());
         const float travel = SDL_sqrtf(
@@ -697,8 +691,7 @@ private:
                 if (m_autoBuildAfterRotation && m_buildRotating) {
                     // Variant B: release after rotation builds immediately.
                     confirmBuilding();
-                } else if (!m_autoBuildAfterRotation) {
-                    // Variant A: second tap confirms only if it was actually a tap.
+                } else if (!m_autoBuildAfterRotation) {                    // Variant A: second tap confirms only if it was actually a tap.
                     const float travel = SDL_sqrtf(
                         (x - m_downX) * (x - m_downX) +
                         (y - m_downY) * (y - m_downY));
@@ -797,8 +790,7 @@ Bool DecodeNextUtf8Codepoint(const char* text, size_t length, size_t& offset, Un
 
 /**
  * Constructor: Initialize SDL3 game engine state
- */
-SDL3GameEngine::SDL3GameEngine()
+ */SDL3GameEngine::SDL3GameEngine()
 	: GameEngine(),
 	  m_SDLWindow(nullptr),
 	  m_IsInitialized(false),
@@ -897,8 +889,7 @@ void SDL3GameEngine::update(void)
 	pollSDL3Events();
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 	// Pause sim + render while backgrounded OR inactive (see iosLifecycleWatcher).
-	// Acquiring a Metal drawable in these windows fights iOS for the layer and,
-	// across repeated suspend/switcher cycles, crashes MoltenVK. Keep polling so
+	// Acquiring a Metal drawable in these windows fights iOS for the layer and,	// across repeated suspend/switcher cycles, crashes MoltenVK. Keep polling so
 	// we still catch the resume events; just don't touch the GPU.
 	if (iosShouldPauseRendering()) {
 		SDL_Delay(50);
@@ -997,8 +988,7 @@ void SDL3GameEngine::pollSDL3Events(void)
 
 			case SDL_EVENT_DID_ENTER_FOREGROUND:
 				m_IsActive = true;
-				if (TheMouse) {
-					TheMouse->regainFocus();
+				if (TheMouse) {					TheMouse->regainFocus();
 					TheMouse->refreshCursorCapture();
 				}
 				break;
@@ -1058,12 +1048,8 @@ void SDL3GameEngine::pollSDL3Events(void)
 			case SDL_EVENT_FINGER_MOTION:
 			case SDL_EVENT_FINGER_UP:
 			case SDL_EVENT_FINGER_CANCELED:
-				if (TheMouse && m_SDLWindow) {
-					SDL3Mouse* mouse = dynamic_cast<SDL3Mouse*>(TheMouse);
-					if (mouse) {
-						handleTouchEvent(mouse, m_SDLWindow, event);
-					}
-				}
+				s_mobileInput.SetWindow(m_SDLWindow);
+				s_mobileInput.ProcessInput(event);
 				break;
 #endif
 
@@ -1097,7 +1083,6 @@ void SDL3GameEngine::updateTextInputState(void)
 	GameWindow* focusedWindow = TheWindowManager->winGetFocus();
 	const Bool wantsTextInput =
 		focusedWindow != nullptr && BitIsSet(focusedWindow->winGetStyle(), GWS_ENTRY_FIELD);
-
 	if (wantsTextInput) {
 		if (!m_IsTextInputActive) {
 			if (SDL_StartTextInput(m_SDLWindow)) {
@@ -1197,8 +1182,7 @@ void SDL3GameEngine::handleMouseButtonEvent(const SDL_MouseButtonEvent& event)
 	}
 }
 
-/**
- * Handle mouse wheel event - dispatch to Mouse manager
+/** * Handle mouse wheel event - dispatch to Mouse manager
  * TheSuperHackers @build 10/02/2026 BenderAI - Phase 1.5 event wiring
  */
 void SDL3GameEngine::handleMouseWheelEvent(const SDL_MouseWheelEvent& event)
@@ -1297,8 +1281,7 @@ WebBrowser *SDL3GameEngine::createWebBrowser(void)
 {
 	// WebBrowser uses Windows COM (CComObject<W3DWebBrowser>)
 	// Not available on Linux - return nullptr
-	fprintf(stderr, "WARNING: WebBrowser not available on Linux platform\n");
-	return nullptr;
+	fprintf(stderr, "WARNING: WebBrowser not available on Linux platform\n");	return nullptr;
 }
 
 /**
