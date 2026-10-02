@@ -169,6 +169,9 @@ struct TouchState {
     float buildLastMoveY = 0.0f;
     float buildRotationStartX = 0.0f;
     float buildRotationStartY = 0.0f;
+    float buildRotationLastTouchAngle = 0.0f;
+    float buildRotationAngle = 0.0f;
+    float buildRotationRadius = 64.0f;
     float buildPlacedX = 0.0f;
     float buildPlacedY = 0.0f;
 
@@ -338,13 +341,30 @@ void beginBuildRotation(float x, float y)
     s_touch.buildRotationStartX = x;
     s_touch.buildRotationStartY = y;
 
+    const float anchorX = s_touch.buildPlacedX;
+    const float anchorY = s_touch.buildPlacedY;
+
+    // Preserve the angle that was already chosen during placement. The second
+    // touch must rotate from that angle, not snap the building to the second
+    // finger's absolute position.
+    s_touch.buildRotationAngle =
+        static_cast<float>(TheInGameUI->getPlacementAngle());
+
+    float touchDX = x - anchorX;
+    float touchDY = y - anchorY;
+    float touchRadius = SDL_sqrtf(touchDX * touchDX + touchDY * touchDY);
+    if (touchRadius < 16.0f)
+        touchRadius = 64.0f;
+
+    s_touch.buildRotationRadius = touchRadius;
+    s_touch.buildRotationLastTouchAngle = SDL_atan2f(touchDY, touchDX);
+
     ICoord2D anchor;
-    // Never use the second finger's screen position as the build location.
-    // The building remains exactly where the first touch was released.
-    anchor.x = static_cast<Int>(s_touch.buildPlacedX);
-    anchor.y = static_cast<Int>(s_touch.buildPlacedY);
+    anchor.x = static_cast<Int>(anchorX);
+    anchor.y = static_cast<Int>(anchorY);
+
+    // Keep the placement anchor fixed for the entire rotation gesture.
     TheInGameUI->setPlacementStart(&anchor);
-    TheInGameUI->setPlacementEnd(&anchor);
 }
 
 void applyCameraPan(float dxPixels, float dyPixels)
@@ -506,7 +526,6 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
 
         } else if (s_touch.phase == TouchState::BUILD_PLACEMENT ||
                    s_touch.phase == TouchState::BUILD_ROTATE_PENDING ||
-                   s_touch.phase == TouchState::BUILD_ROTATE ||
                    s_touch.phase == TouchState::BUILD_ROTATE) {
             // Cancel native placement before releasing the held LMB. A right
             // click is Generals' normal cancel path while the build cursor is
@@ -572,11 +591,41 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                     if ((SDL_GetTicks() - s_touch.buildHoldTicks) >= LONG_PRESS_MS)
                         beginBuildRotation(px, py);
                 } else {
-                    // Rotation mode: the building stays at the chosen position.
-                    // Only the placement angle changes; the camera is untouched.
+                    // ROTATION MODE: the building and camera stay completely
+                    // fixed in position. Only the angle changes according to
+                    // the finger's angular movement around the saved anchor.
+                    const float anchorX = s_touch.buildPlacedX;
+                    const float anchorY = s_touch.buildPlacedY;
+                    const float dxFromAnchor = px - anchorX;
+                    const float dyFromAnchor = py - anchorY;
+                    const float touchAngle =
+                        SDL_atan2f(dyFromAnchor, dxFromAnchor);
+
+                    const float pi = 3.14159265358979323846f;
+                    float angleDelta =
+                        touchAngle - s_touch.buildRotationLastTouchAngle;
+                    if (angleDelta > pi)
+                        angleDelta -= 2.0f * pi;
+                    else if (angleDelta < -pi)
+                        angleDelta += 2.0f * pi;
+
+                    s_touch.buildRotationAngle += angleDelta;
+                    s_touch.buildRotationLastTouchAngle = touchAngle;
+
+                    ICoord2D anchor;
+                    anchor.x = static_cast<Int>(anchorX);
+                    anchor.y = static_cast<Int>(anchorY);
+                    TheInGameUI->setPlacementStart(&anchor);
+
                     ICoord2D end;
-                    end.x = static_cast<Int>(px);
-                    end.y = static_cast<Int>(py);
+                    end.x = static_cast<Int>(
+                        anchorX +
+                        SDL_cosf(s_touch.buildRotationAngle) *
+                            s_touch.buildRotationRadius);
+                    end.y = static_cast<Int>(
+                        anchorY +
+                        SDL_sinf(s_touch.buildRotationAngle) *
+                            s_touch.buildRotationRadius);
                     TheInGameUI->setPlacementEnd(&end);
                 }
                 s_touch.lastX = px;
