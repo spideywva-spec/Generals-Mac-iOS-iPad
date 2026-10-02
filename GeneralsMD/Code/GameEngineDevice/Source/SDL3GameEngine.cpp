@@ -176,9 +176,8 @@ struct TouchState {
     float buildPlacedX = 0.0f;
     float buildPlacedY = 0.0f;
 
-    // Camera swipe smoothing. The smoothed delta remains proportional to the
-    // real finger movement, while preventing a single uneven touch event from
-    // producing a visible camera jerk.
+    // Camera input is kept as a direct per-event delta. These fields remain
+    // for state compatibility but are intentionally not used as a lag filter.
     float cameraSmoothDX = 0.0f;
     float cameraSmoothDY = 0.0f;
 
@@ -380,23 +379,23 @@ void applyCameraPan(float dxPixels, float dyPixels)
     if (!TheTacticalView)
         return;
 
-    // Smooth the per-event finger delta instead of using a fixed camera speed.
-    // A slow finger produces small deltas; a fast finger produces larger
-    // deltas. The filter only removes sudden event-to-event spikes.
-    constexpr float CAMERA_SMOOTH_CURRENT = 0.55f;
-    constexpr float CAMERA_SMOOTH_PREVIOUS = 1.0f - CAMERA_SMOOTH_CURRENT;
-
-    s_touch.cameraSmoothDX =
-        s_touch.cameraSmoothDX * CAMERA_SMOOTH_PREVIOUS +
-        dxPixels * CAMERA_SMOOTH_CURRENT;
-    s_touch.cameraSmoothDY =
-        s_touch.cameraSmoothDY * CAMERA_SMOOTH_PREVIOUS +
-        dyPixels * CAMERA_SMOOTH_CURRENT;
-
+    // The camera follows the finger directly. Do not low-pass filter the
+    // gesture: filtering each event makes the camera visibly lag behind the
+    // finger and makes fast direction changes feel delayed.
+    //
+    // The input delta is continuous and proportional:
+    //   slow finger -> small camera movement
+    //   fast finger -> larger camera movement
+    // There are no mouse-wheel ticks, fixed steps, acceleration jumps, or
+    // synthetic mouse coordinates involved in camera movement.
     Coord2D delta;
-    delta.x = s_touch.cameraSmoothDX * CAMERA_PAN_WORLD_PER_PIXEL;
-    delta.y = s_touch.cameraSmoothDY * CAMERA_PAN_WORLD_PER_PIXEL;
+    delta.x = dxPixels * CAMERA_PAN_WORLD_PER_PIXEL;
+    delta.y = dyPixels * CAMERA_PAN_WORLD_PER_PIXEL;
     TheTacticalView->userScrollBy(&delta);
+
+    // Keep these fields zeroed for compatibility with older state handling.
+    s_touch.cameraSmoothDX = 0.0f;
+    s_touch.cameraSmoothDY = 0.0f;
 }
 
 void applyPinchZoom(float distanceDelta)
@@ -729,14 +728,19 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
                 (px - s_touch.downX) * (px - s_touch.downX) +
                 (py - s_touch.downY) * (py - s_touch.downY));
 
-            if (travel >= TAP_DEAD_ZONE_PX)
+            if (travel >= TAP_DEAD_ZONE_PX) {
+                // Preserve the exact movement outside the tap dead-zone.
+                // This prevents the first camera event from jumping by the
+                // entire dead-zone distance.
+                const float excess = travel - TAP_DEAD_ZONE_PX;
+                const float scale = (travel > 0.0f) ? (excess / travel) : 0.0f;
                 beginCameraPan();
-        }
-
-        if (s_touch.phase == TouchState::CAMERA_PAN) {
-            // Direct camera control: no synthetic RMB and no absolute mouse
-            // motion. The actual finger delta is used on every event, so
-            // movement speed follows finger speed and remains smooth.
+                applyCameraPan(dx * scale, dy * scale);
+            }
+        } else if (s_touch.phase == TouchState::CAMERA_PAN) {
+            // Direct 1:1 finger tracking. Every real finger delta is consumed
+            // immediately, so the game continuously understands both the
+            // direction and speed of the player's movement.
             applyCameraPan(dx, dy);
         }
         break;
