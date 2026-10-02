@@ -457,7 +457,7 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
         }
         break;
 
-    case SDL_EVENT_FINGER_MOTION:
+    case SDL_EVENT_FINGER_MOTION: {
         if (s_touch.phase == TouchState::TWO_FINGER_CANCEL)
             break;
 
@@ -556,6 +556,7 @@ void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &eve
             applyCameraPan(dx, dy);
         }
         break;
+    }
 
     case SDL_EVENT_FINGER_UP:
     case SDL_EVENT_FINGER_CANCELED:
