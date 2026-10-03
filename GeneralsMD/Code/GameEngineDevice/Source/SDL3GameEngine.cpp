@@ -38,11 +38,13 @@
 #include "GameClient/GameWindow.h"
 #include "GameClient/GameWindowManager.h"
 #include "GameClient/Gadget.h"
+#include "GameClient/GadgetListBox.h"
 #include "GameClient/Display.h"
 #include "WW3D2/dx8wrapper.h"
 #include "GameClient/View.h"
 #include "GameClient/Shell.h"
 #include "GameClient/InGameUI.h"
+#include "GameClient/Drawable.h"
 #include "W3DDevice/GameLogic/W3DGameLogic.h"
 #include "W3DDevice/GameClient/W3DGameClient.h"
 #include "W3DDevice/Common/W3DModuleFactory.h"
@@ -54,6 +56,7 @@
 #include "StdDevice/Common/StdLocalFileSystem.h"
 #include "StdDevice/Common/StdBIGFileSystem.h"
 #include "Common/GlobalData.h"
+#include "GXTrace.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 #include <cstdio>
@@ -61,6 +64,8 @@
 #include <cstring>
 
 #include "GameClient/LookAtXlat.h"
+#include "Common/AudioAffect.h"
+#include "Common/GameAudio.h"
 #include "GameLogic/GameLogic.h"
 #include "SDL3Device/GameClient/TouchInput.h"
 #if defined(__APPLE__)
@@ -110,6 +115,11 @@ extern GameWindowManager *TheWindowManager;
 // multitasking a few times"). Pause whenever either is set.
 static std::atomic<bool> s_appBackgrounded{false};
 static std::atomic<bool> s_appInactive{false};
+
+// GeneralsX @bugfix Android port 08/09/2026 Whether the background transition is what
+// silenced the audio, so the foreground transition resumes exactly that and nothing
+// else. Without it a resume would also undo a pause the game made for its own reasons.
+static bool s_audioPausedByLifecycle = false;
 
 static inline bool mobileShouldPauseRendering()
 {
@@ -324,6 +334,9 @@ struct TouchState {
 		             // motion publishes a position so the radius decal, the validity hint and
 		             // the on-screen reticle follow it, and release fires the command there.
 		             // See the FINGER_DOWN case for why this cannot be left to PENDING.
+		LIST_SCROLL, // finger1 landed on a list box and dragged past the dead zone -- the list
+		             // follows the finger (GadgetListBoxTouchScroll*), nothing is sent to the
+		             // window manager, and the release selects nothing.
 		UI_PRESS     // finger1 landed directly on a GameWindow (button, panel, etc.) --
 		             // LEFT_BUTTON_DOWN already sent immediately at touch-down, motion is
 		             // ignored entirely (frozen at the anchor) until release/cancel sends
@@ -338,6 +351,7 @@ struct TouchState {
 	float downX = 0.0f, downY = 0.0f;   // finger1 down position (window points), fixed until release
 	float lastX = 0.0f, lastY = 0.0f;   // finger1 latest position (pixels)
 	Uint64 downTicks = 0;
+	GameWindow *listBox = nullptr;      // list box under finger1 at touch-down, see LIST_SCROLL
 
 	// GeneralsX @feature Android port 01/08/2026 Native touch camera control:
 	// pan/zoom go straight to TheTacticalView (userScrollBy/userZoom), driven
@@ -362,6 +376,13 @@ struct TouchState {
 	float f1px = 0.0f, f1py = 0.0f, f2px = 0.0f, f2py = 0.0f;
 	float twoCentroidLastX = 0.0f, twoCentroidLastY = 0.0f;
 	float twoDistLastPx = 0.0f;
+	// GeneralsX @feature Android port 09/09/2026 Two-finger twist -> camera rotation.
+	// twoAngleLastRad is the angle of the finger-to-finger vector on the previous frame;
+	// twoTwistAccumRad is how far the gesture has twisted in total since it began, used
+	// only to decide whether the player MEANT to rotate (see applyPendingCameraMotion).
+	float twoAngleLastRad = 0.0f;
+	float twoTwistAccumRad = 0.0f;
+	Bool twoRotateArmed = FALSE;
 
 	// TWOFINGER tap-to-cancel: frozen landing position of each finger (unlike
 	// f1px/f2px above, never overwritten by later motion), so release can
@@ -473,6 +494,55 @@ const float ZOOM_HEIGHT_PER_PIXEL = (float)View::ZoomHeightPerSecond / ZOOM_PX_P
 // that was under the finger before should be under the finger after (drag-
 // the-map feel), so the camera moves by (worldAtOldScreenPos -
 // worldAtNewScreenPos), using the CURRENT camera for both projections.
+// GeneralsX @bugfix Android port 09/09/2026 The script owns the camera during a
+// cinematic, and a finger drag must not fight it.
+//
+// Reported from device: during cutscenes the camera can still be dragged, which
+// breaks the scripted follow the mission authors wrote. Two distinct ways the
+// script takes the camera, and both have to be honoured:
+//
+//   - isCameraMovementFinished() is false while a scripted rotate, pitch, zoom or
+//     move-along-waypoint-path is running. The engine's own keyboard rotate path
+//     already gates on exactly this (CommandXlat.cpp), so this is the idiomatic
+//     test, not a new invention.
+//   - getCameraLock()/getCameraLockDrawable() are set while the camera is pinned to
+//     an object -- the "follow that unit" shot.
+//
+// Deliberately not a blanket "no input during cutscenes": selection and orders are
+// left alone, because the player is still allowed to give them. Only the camera is
+// handed back to the script.
+static Bool gxScriptOwnsCamera(void)
+{
+	if (!TheTacticalView) {
+		return FALSE;
+	}
+
+	// GeneralsX @bugfix Android port 09/09/2026 The camera-state tests below are not
+	// enough on their own, and a device report said so: in some missions the camera could
+	// still be dragged during a cutscene. They only catch a script that is ACTIVELY moving
+	// the camera. A cutscene that holds a fixed shot, or one that has finished its move and
+	// is playing out dialogue, sets none of them -- and neither does a scripted move whose
+	// own state is cleared while it runs (resetCamera does exactly that).
+	//
+	// What every cutscene does do is call the Disable Input script action, and on the PC
+	// that is precisely what stops the mouse from scrolling: LookAtTranslator::setScrolling
+	// returns immediately when getInputEnabled() is false (LookAtXlat.cpp:87). The touch
+	// path calls TheTacticalView directly and never goes near that translator, so it never
+	// inherited the rule. Ask the same question here and the behaviour matches the desktop
+	// build for every cutscene, not just the ones that happen to be moving the camera.
+	if (TheInGameUI != NULL && !TheInGameUI->getInputEnabled()) {
+		return TRUE;
+	}
+
+	if (!TheTacticalView->isCameraMovementFinished()) {
+		return TRUE;
+	}
+	if (TheTacticalView->getCameraLock() != INVALID_ID) {
+		return TRUE;
+	}
+	return TheTacticalView->getCameraLockDrawable() != NULL;
+}
+
 void applyCameraPan(float fromPxX, float fromPxY, float toPxX, float toPxY)
 {
 	if (!TheTacticalView) {
@@ -498,6 +568,10 @@ void applyCameraPan(float fromPxX, float fromPxY, float toPxX, float toPxY)
 		// loading/match-start, not anything about being "near the command
 		// center" -- this line turns that inference into a direct fact.
 		GX_TRACE("applyCameraPan: blocked, TheShell->isShellActive()==true\n");
+		return;
+	}
+	if (gxScriptOwnsCamera()) {
+		GX_TRACE("applyCameraPan: blocked, the script owns the camera (cinematic)\n");
 		return;
 	}
 	ICoord2D fromScreen, toScreen;
@@ -576,10 +650,36 @@ void applyCameraZoom(float distDeltaPx)
 		GX_TRACE("applyCameraZoom: blocked, TheShell->isShellActive()==true\n");
 		return;
 	}
+	if (gxScriptOwnsCamera()) {
+		GX_TRACE("applyCameraZoom: blocked, the script owns the camera (cinematic)\n");
+		return;
+	}
 	const Real zoomDelta = -distDeltaPx * ZOOM_HEIGHT_PER_PIXEL;
 	TheTacticalView->userZoom(zoomDelta);
 	GX_TRACE("applyCameraZoom: distDeltaPx=%.2f zoomDelta=%.4f locked=%d\n",
 	         distDeltaPx, zoomDelta, (int)TheTacticalView->isUserControlLocked());
+}
+
+// GeneralsX @feature Android port 09/09/2026 Camera rotation, the last thing the
+// mouse-and-keyboard build could do that touch could not.
+//
+// userSetAngle() rather than rotateCamera(): rotateCamera() is the SCRIPTED,
+// eased-over-N-frames rotation, and driving it once per frame from a gesture would
+// fight itself. userSetAngle() is the direct, immediate yaw the keyboard's own rotate
+// ends up at, and going through the user* wrapper means an engine user-control lock
+// still holds -- the same reason pan and zoom use userSetPosition()/userZoom().
+void applyCameraRotate(float deltaRad)
+{
+	if (!TheTacticalView || deltaRad == 0.0f) {
+		return;
+	}
+	if (TheShell && TheShell->isShellActive()) {
+		return;
+	}
+	if (gxScriptOwnsCamera()) {
+		return;
+	}
+	TheTacticalView->userSetAngle(TheTacticalView->getAngle() + (Real)deltaRad);
 }
 
 // GeneralsX @feature Android port 01/08/2026 These three functions are the
@@ -625,6 +725,43 @@ Bool isRealUiHit(GameWindow *hit)
 	return hit != nullptr && BitIsSet(hit->winGetStyle(), GWS_PUSH_BUTTON);
 }
 
+// GeneralsX @bugfix Android port 07/09/2026 The question above ("is this a button
+// I should press immediately?") is deliberately narrow. It is the WRONG question
+// for the other consumer of a UI test: "does this finger position mean a point on
+// the battlefield?" -- reported as, with a unit selected and Guard armed, opening
+// the generals-promotions dialog and tapping inside it dragging the guard radius
+// around the map behind the dialog. That dialog is not made of push buttons, so
+// isRealUiHit() said "battlefield" for every tap in it.
+//
+// Ask the window manager the same thing winProcessMouseEvent() asks itself instead:
+// which window does a press here belong to? A null answer -- and only a null answer
+// -- means the press belongs to the world. That covers dialogs, list boxes, sliders
+// and panels alike, and it excludes WIN_STATUS_NO_INPUT windows (the decorative
+// full-screen tracking/hint windows that made an earlier, wider attempt at this test
+// swallow battlefield taps), because winProcessMouseEvent() excludes them too.
+Bool touchPointBelongsToUi(Real px, Real py)
+{
+	return TheWindowManager != nullptr &&
+	       TheWindowManager->getWindowForInputAt((Int)px, (Int)py) != nullptr;
+}
+
+// GeneralsX @feature Android port 27/09/2026 The list box (map list, replays, a combo box's
+// drop-down, lobby lists) a finger at this point would scroll, or null. The hit window itself
+// or the nearest ancestor that is a list; the scroll bar's arrows and thumb are push buttons
+// and never get here -- they take the UI_PRESS path first.
+GameWindow *listBoxAt(Real px, Real py)
+{
+	if (TheWindowManager == nullptr) {
+		return nullptr;
+	}
+	for (GameWindow *w = TheWindowManager->getWindowUnderCursor((Int)px, (Int)py); w != nullptr; w = w->winGetParent()) {
+		if (BitIsSet(w->winGetStyle(), GWS_SCROLL_LISTBOX)) {
+			return w;
+		}
+	}
+	return nullptr;
+}
+
 // Hover/position hint -- WindowXlat.cpp uses this to set GUI hilite state,
 // SelectionXlat.cpp uses it to build the selection-box drag region, and
 // LookAtXlat.cpp uses it to know where a drag/edge-scroll anchor is. A real
@@ -665,6 +802,28 @@ void pushMousePosition(float x, float y)
 // instead marks the NEXT up as a double-click (matching real click
 // semantics exactly -- see the double-tap handling below for why DOUBLE_
 // CLICK is sent instead of, not in addition to, a DOWN).
+// GeneralsX @bugfix Android port 07/09/2026 Tell the window manager the pointer is gone.
+//
+// Reported: the Guard button stayed visually pressed after the command was issued.
+// GadgetPushButton clears a check-like button's WIN_STATE_SELECTED on GWM_MOUSE_LEAVING
+// (GadgetPushButton.cpp:120-138), not on the button-up -- on a mouse that arrives by
+// itself the moment the pointer travels to the map. A finger travels nowhere: it lifts,
+// and m_currMouseRgn stays parked on that button for the rest of the match, so the button
+// stays lit and every later hover decision is made about a widget nobody is touching.
+//
+// The truthful statement after a lift is not "the pointer moved somewhere else", it is
+// "there is no pointer". An off-screen position says exactly that: getWindowUnderCursor()
+// finds nothing there, so winProcessMouseEvent's enter/leave tail sends MOUSE_LEAVING to
+// whatever held the region and clears it. Nothing else reads it -- screen-edge scrolling,
+// the one thing that used to care where an unattended pointer sat, is off on touch.
+//
+// Must come AFTER the button-up: the leave tail only runs while m_grabWindow is null, and
+// the up is what clears the grab.
+void pushPointerGone()
+{
+	pushMousePosition(-1.0f, -1.0f);
+}
+
 void pushMouseButton(GameMessage::Type type, float x, float y)
 {
 	if (!TheMessageStream) {
@@ -744,8 +903,7 @@ void handleTouchEvent(SDL_Window *window, const SDL_Event &event)
 	//
 	const Bool touchIsOnUi =
 		(s_touch.phase == TouchState::UI_PRESS) ||
-		(TheWindowManager != nullptr &&
-		 isRealUiHit(TheWindowManager->getWindowUnderCursor((Int)px, (Int)py)));
+		touchPointBelongsToUi(px, py);
 
 	if (TheMouse && !touchIsOnUi) {
 		SDL3Mouse *sdlMouse = dynamic_cast<SDL3Mouse *>(TheMouse);
@@ -841,7 +999,14 @@ void handleTouchEvent(SDL_Window *window, const SDL_Event &event)
 			// Cancel is unchanged: a second finger still goes through the two-finger
 			// path and right-clicks, which SelectionXlat turns into a GUI-command
 			// cancel.
-			if (TheInGameUI && TheInGameUI->getGUICommand() != nullptr) {
+			// GeneralsX @bugfix Android port 07/09/2026 ...but only for a finger on the
+			// battlefield. An armed command does not make the whole screen a targeting
+			// surface: with Guard armed and the generals-promotions dialog open, taps
+			// inside the dialog were being read as aiming, publishing a pointer position
+			// on the dialog when the finger lifted. A touch the window manager would route
+			// to a widget goes down the PENDING path instead, whose release asks the
+			// manager first and stops there when the manager takes the input.
+			if (TheInGameUI && TheInGameUI->getGUICommand() != nullptr && !touchPointBelongsToUi(px, py)) {
 				s_touch.finger1 = event.tfinger.fingerID;
 				s_touch.phase = TouchState::TARGETING;
 				s_touch.downX = s_touch.lastX = px;
@@ -864,6 +1029,7 @@ void handleTouchEvent(SDL_Window *window, const SDL_Event &event)
 			s_touch.downX = s_touch.lastX = px;
 			s_touch.downY = s_touch.lastY = py;
 			s_touch.downTicks = SDL_GetTicks();
+			s_touch.listBox = listBoxAt(px, py);
 			// Move the cursor to the touch point NOW (motion clicks nothing, so the
 			// deferred-tap protection is intact). This lets the GUI process hover
 			// over the next frame(s) before the tap commits — hover-driven widgets
@@ -914,6 +1080,9 @@ void handleTouchEvent(SDL_Window *window, const SDL_Event &event)
 			{
 				const float ddx = s_touch.f2px - s_touch.f1px, ddy = s_touch.f2py - s_touch.f1py;
 				s_touch.twoDistLastPx = SDL_sqrtf(ddx * ddx + ddy * ddy);
+				s_touch.twoAngleLastRad = SDL_atan2f(ddy, ddx);
+				s_touch.twoTwistAccumRad = 0.0f;
+				s_touch.twoRotateArmed = FALSE;
 			}
 			s_touch.phase = TouchState::TWOFINGER;
 		}
@@ -968,6 +1137,15 @@ void handleTouchEvent(SDL_Window *window, const SDL_Event &event)
 		if (s_touch.phase == TouchState::PENDING && event.tfinger.fingerID == s_touch.finger1) {
 			const float moved = SDL_fabsf(px - s_touch.downX) + SDL_fabsf(py - s_touch.downY);
 			if (moved >= TAP_DEAD_ZONE_PX) {
+				// GeneralsX @feature Android port 27/09/2026 A drag that started on a list
+				// scrolls the list, not the camera. Re-hit-tested at the press point rather than
+				// trusting the pointer taken at touch-down: a screen change in between destroys
+				// windows, and a stale list must not be touched.
+				if (s_touch.listBox != nullptr && listBoxAt(s_touch.downX, s_touch.downY) == s_touch.listBox) {
+					GadgetListBoxTouchScrollBegin(s_touch.listBox, (Int)s_touch.downY);
+					GadgetListBoxTouchScrollMove(s_touch.listBox, (Int)py);
+					s_touch.phase = TouchState::LIST_SCROLL;
+				} else
 				if (TheInGameUI && TheInGameUI->getPendingPlaceType()) {
 					// GeneralsX @feature Android port 02/08/2026 Building
 					// placement: a drag past the dead zone while a build is
@@ -1040,6 +1218,11 @@ void handleTouchEvent(SDL_Window *window, const SDL_Event &event)
 				}
 			}
 		}
+		else if (s_touch.phase == TouchState::LIST_SCROLL && event.tfinger.fingerID == s_touch.finger1) {
+			if (listBoxAt(s_touch.downX, s_touch.downY) == s_touch.listBox) {
+				GadgetListBoxTouchScrollMove(s_touch.listBox, (Int)py);
+			}
+		}
 		else if (s_touch.phase == TouchState::SELECTING && event.tfinger.fingerID == s_touch.finger1) {
 			// Every motion event feeds SelectionXlat's MSG_RAW_MOUSE_POSITION
 			// case (grows the selection-box hint rectangle) directly -- message
@@ -1099,8 +1282,31 @@ void handleTouchEvent(SDL_Window *window, const SDL_Event &event)
 					if (event.type == SDL_EVENT_FINGER_CANCELED) {
 						break;
 					}
+					// GeneralsX @feature Android port 08/09/2026 A long press on the minimap
+					// moves the camera there instead. This has to be tested BEFORE the
+					// deselect branch below and before the window-manager replay further
+					// down, because both would otherwise claim it: the replay turns every
+					// radar touch into a left button down, and a left button down on the
+					// radar with units selected is an ORDER, not a look
+					// (ControlBarCallback.cpp:300). That is the bug this fixes -- with an
+					// army selected the player could not move the camera from the minimap
+					// at all, and the attempt marched the army across the map.
+					//
+					// Mouse parity, not an invention: on the radar a left click orders and a
+					// right click looks (ControlBarCallback.cpp:262). A tap is the left one;
+					// this is the right one.
 					if ((SDL_GetTicks() - s_touch.downTicks) >= LONG_PRESS_MS &&
-					    !(TheInGameUI && TheInGameUI->getPendingPlaceType())) {
+					    TouchInput::lookAtRadarPoint((Int)s_touch.downX, (Int)s_touch.downY)) {
+						break;
+					}
+
+					// GeneralsX @bugfix Android port 07/09/2026 ...and not for a press that
+					// landed on UI the window manager owns. Dwelling on a dialog is not a
+					// battlefield gesture, and cancelOrDeselect() there would throw away the
+					// armed command the player is holding the dialog open to use.
+					if ((SDL_GetTicks() - s_touch.downTicks) >= LONG_PRESS_MS &&
+					    !(TheInGameUI && TheInGameUI->getPendingPlaceType()) &&
+					    !touchPointBelongsToUi(s_touch.downX, s_touch.downY)) {
 						// Still PENDING at release means it never crossed the pan
 						// dead zone (crossing it is what moves phase to PANNING) --
 						// held still for the whole long-press threshold, right-click
@@ -1154,10 +1360,68 @@ void handleTouchEvent(SDL_Window *window, const SDL_Event &event)
 							ICoord2D uiPoint;
 							uiPoint.x = (Int)s_touch.downX;
 							uiPoint.y = (Int)s_touch.downY;
+
+							// GeneralsX @bugfix Android port 07/09/2026 Hover first, and it has to
+							// be its own pass. Reported: promotions in the generals menu could not
+							// be bought even when unlocked, and the pause menu ignored Exit/Return.
+							//
+							// winProcessMouseEvent() does its enter/leave tracking at the very END
+							// of the function, and only `if (m_grabWindow == nullptr)`
+							// (GameWindowManager.cpp:1267). So a bare LEFT_DOWN reaches the widget
+							// while it is still un-hilited, and the same call then sets m_grabWindow
+							// -- which means GWM_MOUSE_ENTERING is never sent at all. A widget that
+							// ignores a click unless WIN_STATE_HILITED was set by a prior
+							// mouse-enter (the generals-promotion and Challenge checkboxes are
+							// exactly that) therefore never sees a usable click.
+							//
+							// A real mouse cannot press a widget it was not already over, so give
+							// the manager that move first. GWM_MOUSE_POS is not forwarded to windows
+							// unless a static flag says so, but that does not matter here: what is
+							// wanted is the region-tracking tail, which sends MOUSE_ENTERING and
+							// updates m_currMouseRgn. Being a direct call, it is synchronous -- the
+							// hilite is set before the DOWN on the next line, with no frame gap and
+							// no message in the stream.
+							TheWindowManager->winProcessMouseEvent(GWM_MOUSE_POS, &uiPoint, nullptr);
+
+							// GeneralsX @feature Android port 13/09/2026 A long press on shell UI
+							// is a right-click.
+							//
+							// The menus still expect one. The lobby's player menu -- profile,
+							// add friend, mute -- opens from GLM_RIGHT_CLICKED, which only a
+							// GWM_RIGHT_UP produces, and a touchscreen never sends one; the menu
+							// was unreachable in principle, as was every other right-click
+							// affordance in the shell.
+							//
+							// It belongs HERE rather than in the UI_PRESS branch above, which was
+							// the first place I put it and the wrong one: isRealUiHit() admits
+							// only GWS_PUSH_BUTTON, so a list, a panel or a slider never takes
+							// that path at all -- which is exactly why this direct-to-manager
+							// exchange exists. A list is also the only thing with a right-click
+							// menu to open, and pressing a button is not a gesture that wants one.
+							//
+							// Shell only, because in-game a long press already means
+							// cancelOrDeselect -- a synthesized right-click there was what once
+							// left the camera scrolling forever (see TouchInput.h).
+							const Bool shellLongPress =
+								(TheShell && TheShell->isShellActive()) &&
+								(SDL_GetTicks() - s_touch.downTicks) >= LONG_PRESS_MS;
+
+							const GameWindowMessage downMsg = shellLongPress ? GWM_RIGHT_DOWN : GWM_LEFT_DOWN;
+							const GameWindowMessage upMsg   = shellLongPress ? GWM_RIGHT_UP   : GWM_LEFT_UP;
+
 							const WinInputReturnCode usedDown =
-								TheWindowManager->winProcessMouseEvent(GWM_LEFT_DOWN, &uiPoint, nullptr);
+								TheWindowManager->winProcessMouseEvent(downMsg, &uiPoint, nullptr);
 							const WinInputReturnCode usedUp =
-								TheWindowManager->winProcessMouseEvent(GWM_LEFT_UP, &uiPoint, nullptr);
+								TheWindowManager->winProcessMouseEvent(upMsg, &uiPoint, nullptr);
+
+							// ...and the pointer is gone again, same reason as pushPointerGone().
+							// Direct call rather than a message because this whole exchange is
+							// synchronous; the up above has already cleared the grab.
+							ICoord2D nowhere;
+							nowhere.x = -1;
+							nowhere.y = -1;
+							TheWindowManager->winProcessMouseEvent(GWM_MOUSE_POS, &nowhere, nullptr);
+
 							if (usedDown == WIN_INPUT_USED || usedUp == WIN_INPUT_USED) {
 								break;
 							}
@@ -1308,10 +1572,64 @@ void handleTouchEvent(SDL_Window *window, const SDL_Event &event)
 					// player aims again rather than having a superweapon land wherever the
 					// OS interrupted them.
 					if (event.type != SDL_EVENT_FINGER_CANCELED) {
-						TouchInput::fireArmed((Int)px, (Int)py);
+						// GeneralsX @bugfix Android port 07/09/2026 A long press gets you out.
+						// Reported: issuing Guard left the player stuck in targeting mode with
+						// no way back. Introducing this phase took the escape away without
+						// noticing: a long press is the cancel gesture everywhere else in the
+						// game, but it lives in PENDING, and an armed command routes every
+						// battlefield touch here instead -- where release unconditionally fired.
+						// Tapping again just re-fires, and if the target is one the command
+						// rejects, nothing clears it either (CommandXlat only nulls the pending
+						// command on a VALID DO_COMMAND), so the mode is genuinely inescapable
+						// apart from the two-finger tap.
+						//
+						// Same rule PENDING uses for its own escape: held past the threshold AND
+						// never crossed the dead zone. Aiming an area ability means moving, so a
+						// deliberate aim cannot be swallowed by this; pressing and waiting is
+						// what "get me out of here" looks like on a touchscreen.
+						const float movedFromDown = SDL_fabsf(px - s_touch.downX) + SDL_fabsf(py - s_touch.downY);
+						if ((SDL_GetTicks() - s_touch.downTicks) >= LONG_PRESS_MS &&
+						    movedFromDown < TAP_DEAD_ZONE_PX) {
+							TouchInput::cancelOrDeselect();
+						} else {
+							// GeneralsX @bugfix Android port 07/09/2026 An armed command commits
+							// as a real click, and this one is not a retreat from native input --
+							// it is the same judgement building placement already gets.
+							//
+							// Reported: Guard stayed armed after being used, its button still lit.
+							// evaluateContextCommand() dispatches only the CONTEXT commands --
+							// special powers, hijack, carbomb, sabotage, fire weapon, combat drop
+							// (CommandXlat.cpp:1712-1763). Guard, evacuate and the rest belong to
+							// GUICommandTranslator (priority 40), which acts on MSG_MOUSE_LEFT_CLICK
+							// and nothing else, and which is also what reports COMMAND_COMPLETE and
+							// so clears the mode. Sending no click meant that whole class of
+							// commands was never issued and never cleared -- the mode could only be
+							// escaped, never completed.
+							//
+							// Dispatching them by hand would mean reimplementing doGuardCommand()
+							// and its siblings, which is reintroducing game rules by hand: exactly
+							// what the native path exists to avoid. The click is how the engine
+							// dispatches an armed command, so let it. Special powers are unaffected
+							// -- GUICommandTranslator returns KEEP_MESSAGE for them and the same
+							// click reaches CommandXlat's evaluateContextCommand, which is the
+							// desktop path verbatim.
+							//
+							// The AIM stays native: the radius circle and the valid/invalid answer
+							// still come from armedTargetValid()/setTouchAimPoint() with no messages
+							// at all. Only the commit is a click, at the point the finger let go.
+							pushMousePosition(px, py);
+							pushMouseButton(GameMessage::MSG_RAW_MOUSE_LEFT_BUTTON_DOWN, px, py);
+							pushMouseButton(GameMessage::MSG_RAW_MOUSE_LEFT_BUTTON_UP, px, py);
+						}
 					}
 					break;
+				case TouchState::LIST_SCROLL:
+					// The drag was a scroll: nothing to select, nothing to click.
+					GadgetListBoxTouchScrollEnd();
+					s_touch.listBox = nullptr;
+					break;
 				case TouchState::UI_PRESS:
+				{
 					// GeneralsX @bugfix Android port 03/08/2026 Release at the
 					// ORIGINAL anchor (downX/downY), not wherever the finger
 					// ended up (lastX/lastY) -- matches the PENDING tap case
@@ -1323,6 +1641,8 @@ void handleTouchEvent(SDL_Window *window, const SDL_Event &event)
 					// deferred classification instead.
 					pushMousePosition(s_touch.downX, s_touch.downY);
 					pushMouseButton(GameMessage::MSG_RAW_MOUSE_LEFT_BUTTON_UP, s_touch.downX, s_touch.downY);
+
+					pushPointerGone();
 					TouchInput::reportUiHold(0, 0, FALSE);
 					// GeneralsX @bugfix Android port 06/09/2026 Reported: holding a build
 					// button to read its description eventually enters build mode and the
@@ -1335,6 +1655,7 @@ void handleTouchEvent(SDL_Window *window, const SDL_Event &event)
 						TouchInput::cancelOrDeselect();
 					}
 					break;
+				}
 				default:
 					break;
 			}
@@ -1393,6 +1714,7 @@ const char *touchPhaseName(TouchState::Phase phase)
 		case TouchState::PLACING:   return "PLACING";
 		case TouchState::SELECTING: return "SELECTING";
 		case TouchState::TARGETING: return "TARGETING";
+		case TouchState::LIST_SCROLL: return "LIST_SCROLL";
 		case TouchState::UI_PRESS:  return "UI_PRESS";
 	}
 	return "?";
@@ -1500,10 +1822,71 @@ void enforceNoPointerScrollWithoutFinger()
 #endif
 }
 
+// GeneralsX @feature Android port 09/09/2026 The two things a finger loses that a mouse
+// pointer had: it cannot hover, and it has no cursor to change shape.
+//
+//   - Health bars. Drawable::drawHealthBar shows the bar for a drawable that is selected or
+//     that TheInGameUI calls its moused-over drawable, and that id is fed by
+//     MSG_MOUSEOVER_DRAWABLE_HINT -- a message a finger never produces, so tapping a unit
+//     told the player nothing about its condition. Point it at whatever is under the finger.
+//   - Which order is pending. Touch already draws the ability's ground decal, but that decal
+//     is the same green square for every ability, where the mouse had a distinct cursor per
+//     command. Pin the command button's own image under the finger instead, so the picture
+//     the player pressed to get here is the picture they are holding.
+//
+// Both are refreshed here, every frame the finger is down, and both expire on their own in
+// InGameUI::preDraw(). That matters more than it looks: a touch release is the one event
+// this layer cannot count on receiving, and every bug in it so far has been something that
+// latched on a press and waited for a release to clear it.
+static void updateTouchTargetFeedback()
+{
+#if defined(__ANDROID__) || (defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE)
+	if (TheInGameUI == nullptr || TheTacticalView == nullptr) {
+		return;
+	}
+	const Bool fingerDown = (s_touch.phase != TouchState::IDLE && s_touch.phase != TouchState::MOMENTUM);
+	if (!fingerDown) {
+		return;
+	}
+	if (TheShell && TheShell->isShellActive()) {
+		return;
+	}
+	if (touchPointBelongsToUi(s_touch.lastX, s_touch.lastY)) {
+		return;
+	}
+
+	ICoord2D pixel;
+	pixel.x = (Int)s_touch.lastX;
+	pixel.y = (Int)s_touch.lastY;
+
+	Drawable *under = TheTacticalView->pickDrawable(&pixel, TheInGameUI->isInForceAttackMode(),
+	                                                (PickType)PICK_TYPE_SELECTABLE);
+	const DrawableID underID = under ? under->getID() : INVALID_DRAWABLE_ID;
+	TheInGameUI->setTouchHoverDrawable(underID);
+
+	// GeneralsX @feature Android port 09/09/2026 The target is only handed over in PENDING --
+	// the phase where letting go actually issues an order. Once the gesture has become a pan,
+	// a two-finger zoom or a selection box, releasing gives no order at all, and whatever the
+	// finger happens to be sliding over is not about to be attacked; advertising an order
+	// there would be a lie that flickers on and off as the map moves underneath. The pending
+	// GUI command's own icon is unaffected and still follows the finger in every phase, as
+	// before: that one is the player's own armed choice, not a guess about the target.
+	const DrawableID orderTargetID =
+		(s_touch.phase == TouchState::PENDING) ? underID : INVALID_DRAWABLE_ID;
+
+	// The icon comes from TheInGameUI: either the pending command's button image, or -- with
+	// nothing armed -- whatever the implicit order on this target turns out to be. Asking it
+	// to do the lookup keeps ControlBar.h out of this file (that header does not compile
+	// standalone here) and puts the intent test next to the predicates it has to call.
+	TheInGameUI->updateTouchCommandIcon(pixel.x, pixel.y, orderTargetID);
+#endif
+}
+
 void applyPendingCameraMotion()
 {
 	publishTouchDebug();
 	enforceNoPointerScrollWithoutFinger();
+	updateTouchTargetFeedback();
 
 	if (s_touch.phase == TouchState::PANNING) {
 		s_touch.panVelX = s_touch.lastX - s_touch.panLastPxX;
@@ -1526,6 +1909,35 @@ void applyPendingCameraMotion()
 		const float dist = SDL_sqrtf(dx * dx + dy * dy);
 		applyCameraZoom(dist - s_touch.twoDistLastPx);
 		s_touch.twoDistLastPx = dist;
+
+		// GeneralsX @feature Android port 09/09/2026 Twist the two fingers, rotate the
+		// camera. The angle of the finger-to-finger vector was already being computed and
+		// thrown away; this is the delta of it, wrapped into (-pi, pi] so the seam at the
+		// half-turn does not produce a spin.
+		//
+		// It has to be armed, not applied immediately. Two fingers never pinch or drag
+		// perfectly parallel, so every zoom carries a degree or two of incidental twist,
+		// and applying that would make the camera creep whenever the player zooms. So
+		// accumulate the twist and only start rotating once the gesture has clearly asked
+		// for it; from then on the gesture is 1:1 and stays armed for its lifetime.
+		const float angle = SDL_atan2f(dy, dx);
+		float twist = angle - s_touch.twoAngleLastRad;
+		while (twist > PI)  { twist -= 2.0f * PI; }
+		while (twist < -PI) { twist += 2.0f * PI; }
+		s_touch.twoAngleLastRad = angle;
+
+		if (s_touch.twoRotateArmed) {
+			applyCameraRotate(twist);
+		}
+		else {
+			const float TWIST_ARM_RAD = 0.14f;   // ~8 degrees of deliberate twist
+			s_touch.twoTwistAccumRad += twist;
+			if (SDL_fabsf(s_touch.twoTwistAccumRad) >= TWIST_ARM_RAD) {
+				s_touch.twoRotateArmed = TRUE;
+				GX_TRACE("two-finger twist armed after %.3f rad\n",
+				         (double)s_touch.twoTwistAccumRad);
+			}
+		}
 	}
 	else if (s_touch.phase == TouchState::MOMENTUM) {
 		// GeneralsX @feature Android port 02/08/2026 Coast with the velocity
@@ -1836,6 +2248,18 @@ void SDL3GameEngine::pollSDL3Events(void)
 				if (TheMouse) {
 					TheMouse->loseFocus();
 				}
+				// GeneralsX @bugfix Android port 08/09/2026 Silence the audio too. The
+				// comment above this block has always claimed audio pauses here; nothing
+				// ever did it. Worse than merely playing on in the background: from the
+				// second consecutive paused frame update() returns before the engine
+				// update (see mobileShouldPauseRendering there), so TheAudio->UPDATE()
+				// stops running and streamed music and speech simply drain their queues
+				// and die -- one of the "sound cuts out" reports. Pausing properly here
+				// is what makes the resume below able to put them back.
+				if (TheAudio && !s_audioPausedByLifecycle) {
+					s_audioPausedByLifecycle = true;
+					TheAudio->pauseAudio(AudioAffect_All);
+				}
 				break;
 
 			case SDL_EVENT_DID_ENTER_FOREGROUND:
@@ -1843,6 +2267,17 @@ void SDL3GameEngine::pollSDL3Events(void)
 				if (TheMouse) {
 					TheMouse->regainFocus();
 					TheMouse->refreshCursorCapture();
+				}
+				// Resume only what this pause silenced, and only what the game itself
+				// still wants audible: coming back into an open pause menu must not
+				// restart the battlefield behind it, because GameLogic paused everything
+				// but the music on its own account (GameLogic.cpp:4554) and nothing will
+				// pause it again on our behalf.
+				if (TheAudio && s_audioPausedByLifecycle) {
+					s_audioPausedByLifecycle = false;
+					const Bool gamePaused =
+						(TheGameLogic != nullptr && TheGameLogic->isGamePaused());
+					TheAudio->resumeAudio(gamePaused ? AudioAffect_Music : AudioAffect_All);
 				}
 				break;
 #endif
@@ -1861,6 +2296,22 @@ void SDL3GameEngine::pollSDL3Events(void)
 
 			case SDL_EVENT_KEY_DOWN:
 			case SDL_EVENT_KEY_UP:
+				// GeneralsX @bugfix Android port 27/09/2026 Enter never finished a text entry under
+				// SDL. On Windows the Return key reaches a focused entry as the character VK_RETURN
+				// (WM_CHAR), and that is the only thing GadgetTextEntryInput takes as "done" -- its
+				// KEY_ENTER case has been commented out since the original code. SDL delivers Return
+				// as a key only (text input carries no control characters), so an entry without a
+				// button of its own could not be submitted: the join-game password popup sat with
+				// "213" typed and nothing happening. Hand the focused entry the same character.
+				if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat &&
+						(event.key.scancode == SDL_SCANCODE_RETURN || event.key.scancode == SDL_SCANCODE_KP_ENTER) &&
+						m_TextInputFocusWindow != nullptr && TheWindowManager != nullptr &&
+						TheWindowManager->winGetFocus() == m_TextInputFocusWindow &&
+						BitIsSet(m_TextInputFocusWindow->winGetStyle(), GWS_ENTRY_FIELD)) {
+					const WideChar returnCharacter = 0x0D; // VK_RETURN, which GadgetTextEntryInput compares against
+					TheWindowManager->winSendInputMsg(m_TextInputFocusWindow, GWM_IME_CHAR,
+						static_cast<WindowMsgData>(returnCharacter), 0);
+				}
 				// Fighter19 pattern: direct addSDLEvent() call
 				// GeneralsX @refactor felipebraz 16/02/2026 Simplified event routing
 				if (TheKeyboard) {
@@ -1912,8 +2363,31 @@ void SDL3GameEngine::pollSDL3Events(void)
 				// Set on both since the eventual entry-field focus change is processed a
 				// few frames later by GameEngine::update(), not synchronously here -- see
 				// updateTextInputState() and m_PendingTextInputRearmFrames.
+				//
+				// GeneralsX @bugfix Android port 13/09/2026 ...but only when the
+				// finger actually landed on a text field. This used to rearm on
+				// every touch anywhere on screen, and in the lobby and chat rooms
+				// the chat box holds focus the whole time -- so tapping a player,
+				// a map, a dropdown or empty space all summoned the on-screen
+				// keyboard again, over and over, with no way to keep it down.
+				// Dismissing it and tapping anything brought it straight back.
 				if (event.type == SDL_EVENT_FINGER_DOWN || event.type == SDL_EVENT_FINGER_UP) {
-					m_PendingTextInputRearmFrames = 20;
+					int winW = 0;
+					int winH = 0;
+					if (m_SDLWindow) {
+						SDL_GetWindowSize(m_SDLWindow, &winW, &winH);
+					}
+
+					GameWindow* touched = (TheWindowManager && winW > 0 && winH > 0)
+						? TheWindowManager->getWindowUnderCursor(
+							(Int)(event.tfinger.x * (float)winW),
+							(Int)(event.tfinger.y * (float)winH))
+						: nullptr;
+
+					if (touched != nullptr &&
+						BitIsSet(touched->winGetStyle(), GWS_ENTRY_FIELD)) {
+						m_PendingTextInputRearmFrames = 20;
+					}
 				}
 				if (m_SDLWindow) {
 					handleTouchEvent(m_SDLWindow, event);
@@ -2030,6 +2504,13 @@ void SDL3GameEngine::forwardTextInputEvent(const char* utf8Text)
 		}
 
 		if (codepoint > 0xFFFFU) {
+			continue;
+		}
+
+		// Return is delivered from the key event (see SDL_EVENT_KEY_DOWN); a line break that
+		// also arrives as text (some Android keyboards commit "\n") must not submit twice or be
+		// typed into the field.
+		if (codepoint == '\n' || codepoint == '\r') {
 			continue;
 		}
 
