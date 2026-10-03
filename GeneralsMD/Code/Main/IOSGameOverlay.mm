@@ -9,6 +9,7 @@ static UIButton *s_escButton = nil;
 static SDL_Window *s_sdlWindow = nullptr;
 static SDL_WindowID s_windowID = 0;
 static id s_keyWindowObserver = nil;
+static NSUInteger s_escVisibilityGeneration = 0;
 
 static UIWindow *GXFindSDLWindow(void)
 {
@@ -67,6 +68,43 @@ static void GXPushEscapeEvent(bool down)
     SDL_PushEvent(&event);
 }
 
+static void GXShowEscButton(void)
+{
+    if (s_escButton == nil) {
+        return;
+    }
+
+    ++s_escVisibilityGeneration;
+    s_escButton.alpha = 1.0;
+    s_escButton.hidden = NO;
+
+    const NSUInteger generation = s_escVisibilityGeneration;
+
+    // Stay fully visible for about 3 seconds after the last ESC interaction.
+    dispatch_after(
+        dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)),
+        dispatch_get_main_queue(), ^{
+            if (s_escButton == nil ||
+                generation != s_escVisibilityGeneration ||
+                s_windowID == 0) {
+                return;
+            }
+
+            // Fade smoothly from 100% to 0% over 2 seconds.
+            [UIView animateWithDuration:2.0
+                                  delay:0.0
+                                options:UIViewAnimationOptionBeginFromCurrentState |
+                                        UIViewAnimationOptionAllowUserInteraction |
+                                        UIViewAnimationOptionCurveEaseInOut
+                             animations:^{
+                if (generation == s_escVisibilityGeneration &&
+                    s_escButton != nil) {
+                    s_escButton.alpha = 0.0;
+                }
+            } completion:nil];
+        });
+}
+
 @interface GXEscButton : UIButton
 @end
 
@@ -75,6 +113,8 @@ static void GXPushEscapeEvent(bool down)
 - (void)touchesBegan:(NSSet<UITouch *> *)touches
            withEvent:(UIEvent *)event
 {
+    [self.layer removeAllAnimations];
+    GXShowEscButton();
     self.alpha = 0.65;
     GXPushEscapeEvent(true);
     [super touchesBegan:touches withEvent:event];
@@ -83,6 +123,8 @@ static void GXPushEscapeEvent(bool down)
 - (void)touchesEnded:(NSSet<UITouch *> *)touches
            withEvent:(UIEvent *)event
 {
+    [self.layer removeAllAnimations];
+    GXShowEscButton();
     self.alpha = 1.0;
     GXPushEscapeEvent(false);
     [super touchesEnded:touches withEvent:event];
@@ -91,6 +133,8 @@ static void GXPushEscapeEvent(bool down)
 - (void)touchesCancelled:(NSSet<UITouch *> *)touches
                 withEvent:(UIEvent *)event
 {
+    [self.layer removeAllAnimations];
+    GXShowEscButton();
     self.alpha = 1.0;
     GXPushEscapeEvent(false);
     [super touchesCancelled:touches withEvent:event];
@@ -144,6 +188,7 @@ static void GXAttachEscButtonToSDLWindow(void)
     }
 
     [hostWindow bringSubviewToFront:s_escButton];
+    GXShowEscButton();
 
     fprintf(stderr,
             "INFO: iOS in-game ESC overlay attached to SDL UIWindow at x=%.0f y=%.0f size=%.0fx%.0f\n",
@@ -204,7 +249,10 @@ extern "C" void GeneralsXRemoveIOSEscOverlay(void)
             s_keyWindowObserver = nil;
         }
 
+        ++s_escVisibilityGeneration;
+
         if (s_escButton != nil) {
+            [s_escButton.layer removeAllAnimations];
             [s_escButton removeFromSuperview];
             s_escButton = nil;
         }
