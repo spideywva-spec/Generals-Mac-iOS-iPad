@@ -38,6 +38,7 @@
 #include "GameClient/GameWindowManager.h"
 #include "GameClient/Gadget.h"
 #include "GameClient/InGameUI.h"
+#include "GameClient/View.h"
 #include "W3DDevice/GameLogic/W3DGameLogic.h"
 #include "W3DDevice/GameClient/W3DGameClient.h"
 #include "W3DDevice/Common/W3DModuleFactory.h"
@@ -54,6 +55,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
+#if __has_include("GameNetwork/NetworkInterface.h")
+#include "GameNetwork/NetworkInterface.h"
+#endif
 #if defined(__APPLE__)
 #include <TargetConditionals.h>
 #endif
@@ -97,7 +102,9 @@ static inline bool iosShouldPauseRendering()
 
 static bool SDLCALL iosLifecycleWatcher(void *userdata, SDL_Event *event)
 {
-	switch (event->type) {		case SDL_EVENT_WILL_ENTER_BACKGROUND:		case SDL_EVENT_DID_ENTER_BACKGROUND:
+	switch (event->type) {
+		case SDL_EVENT_WILL_ENTER_BACKGROUND:
+		case SDL_EVENT_DID_ENTER_BACKGROUND:
 			s_appBackgrounded.store(true);
 			break;
 		case SDL_EVENT_DID_ENTER_FOREGROUND:
@@ -165,6 +172,36 @@ public:
         m_window = window;
     }
 
+    // Drop any in-flight gesture (app backgrounded, engine reset, touch cancelled).
+    void Reset()
+    {
+        if (m_leftHeld)
+        {
+            // A held LMB during building rotation would BUILD on release: cancel first.
+            if (m_buildRotating && TheInGameUI)
+                TheInGameUI->placeBuildAvailable(nullptr, nullptr);
+
+            SendMouse(SDL_EVENT_MOUSE_BUTTON_UP, m_lastX, m_lastY, SDL_BUTTON_LEFT);
+        }
+
+        m_leftHeld = false;
+        m_selectionMouseDown = false;
+        m_primaryActive = false;
+        m_secondaryActive = false;
+        m_buildConfirmationPending = false;
+        m_buildConfirmTapActive = false;
+        m_buildRotating = false;
+        m_buildRotationStarted = false;
+        m_buildHoldStartTicks = 0;
+        m_multiRotationActive = false;
+        m_accumulatedRotation = 0.0f;
+        m_twoFingerCancelCandidate = false;
+        m_twoFingerMoved = false;
+        m_twoFingerStartTicks = 0;
+        m_state = STATE_CAMERA_PAN;
+        m_stateBeforeMultiTouch = STATE_CAMERA_PAN;
+    }
+
     void ProcessEvent(const SDL_Event &event)
     {
         if (!m_window)
@@ -222,6 +259,7 @@ private:
     static constexpr float PINCH_ZOOM_WORLD_PER_PIXEL = 0.05f;
     static constexpr float ROTATION_DEAD_ZONE_RAD = 0.6981317008f;
     static constexpr float TWO_PI = 6.28318530717958647692f;
+    static constexpr float BUILD_ROTATE_RAD_PER_PIXEL = 0.012f;
 
     State m_state = STATE_CAMERA_PAN;
     State m_stateBeforeMultiTouch = STATE_CAMERA_PAN;
@@ -246,6 +284,7 @@ private:
     bool m_buildConfirmationPending = false;
     bool m_buildConfirmTapActive = false;
     bool m_buildRotating = false;
+    bool m_buildRotationStarted = false;
     Uint64 m_buildHoldStartTicks = 0;
     float m_buildX = 0.0f;
     float m_buildY = 0.0f;
@@ -447,48 +486,32 @@ private:
             !TheInGameUI)
             return;
 
+        // Same path as desktop: LMB goes down on the placement anchor, the drag
+        // vector (anchor -> end point) defines the facing, LMB up builds.
+        // Camera stays locked (STATE_BUILDING).
         m_buildRotating = true;
-        m_buildLastAngle = SDL_atan2f(m_lastY - m_buildY, m_lastX - m_buildX);
-        m_buildRotation = static_cast<float>(TheInGameUI->getPlacementAngle());
+        m_buildRotationStarted = false;
+        m_buildRotation = 0.0f;
 
-        // The finger is currently at the same point as the placement anchor,
-        // so use a stable radius for the first rotation sample.
-        m_buildRotationRadius = 64.0f;
-
-        ICoord2D anchor;
-        anchor.x = static_cast<Int>(m_buildX);
-        anchor.y = static_cast<Int>(m_buildY);
-        TheInGameUI->setPlacementStart(&anchor);
+        SendMouse(SDL_EVENT_MOUSE_MOTION, m_buildX, m_buildY);
+        SendMouse(SDL_EVENT_MOUSE_BUTTON_DOWN, m_buildX, m_buildY, SDL_BUTTON_LEFT);
 
         fprintf(stderr, "[iOS-INPUT] STATE_BUILDING -> ROTATION after 200ms hold\n");
     }
 
-    void UpdateBuildingRotation(float x, float y)
+    void UpdateBuildingRotation(float dxPixels)
     {
-        if (m_state != STATE_BUILDING ||
-            !m_buildRotating ||
-            !TheInGameUI)
+        if (m_state != STATE_BUILDING || !m_buildRotating)
             return;
 
-        const float angle = SDL_atan2f(y - m_buildY, x - m_buildX);
-        const float delta = NormalizeAngle(angle - m_buildLastAngle);
+        // Continuous angle accumulation proportional to finger speed:
+        // no 45/90 degree snapping, full 360 degrees.
+        m_buildRotation = NormalizeAngle(m_buildRotation + dxPixels * BUILD_ROTATE_RAD_PER_PIXEL);
+        m_buildRotationStarted = true;
 
-        // Continuous angle accumulation: no 45°/90° snapping.
-        m_buildRotation += delta;
-        m_buildLastAngle = angle;
-
-        ICoord2D start;
-        start.x = static_cast<Int>(m_buildX);
-        start.y = static_cast<Int>(m_buildY);
-
-        ICoord2D end;
-        end.x = static_cast<Int>(
-            m_buildX + SDL_cosf(m_buildRotation) * m_buildRotationRadius);
-        end.y = static_cast<Int>(
-            m_buildY + SDL_sinf(m_buildRotation) * m_buildRotationRadius);
-
-        TheInGameUI->setPlacementStart(&start);
-        TheInGameUI->setPlacementEnd(&end);
+        SendMouse(SDL_EVENT_MOUSE_MOTION,
+                  m_buildX + SDL_cosf(m_buildRotation) * m_buildRotationRadius,
+                  m_buildY + SDL_sinf(m_buildRotation) * m_buildRotationRadius);
     }
 
     void ConfirmBuilding()
@@ -496,12 +519,30 @@ private:
         if (m_state != STATE_BUILDING)
             return;
 
-        SendMouse(SDL_EVENT_MOUSE_BUTTON_DOWN, m_buildX, m_buildY, SDL_BUTTON_LEFT);
-        SendMouse(SDL_EVENT_MOUSE_BUTTON_UP, m_buildX, m_buildY, SDL_BUTTON_LEFT);
+        if (m_buildRotating)
+        {
+            // LMB is already held: release at the rotated end point -> native build.
+            float ex = m_buildX;
+            float ey = m_buildY;
+
+            if (m_buildRotationStarted)
+            {
+                ex += SDL_cosf(m_buildRotation) * m_buildRotationRadius;
+                ey += SDL_sinf(m_buildRotation) * m_buildRotationRadius;
+            }
+
+            SendMouse(SDL_EVENT_MOUSE_BUTTON_UP, ex, ey, SDL_BUTTON_LEFT);
+        }
+        else
+        {
+            SendMouse(SDL_EVENT_MOUSE_BUTTON_DOWN, m_buildX, m_buildY, SDL_BUTTON_LEFT);
+            SendMouse(SDL_EVENT_MOUSE_BUTTON_UP, m_buildX, m_buildY, SDL_BUTTON_LEFT);
+        }
 
         m_buildConfirmationPending = false;
         m_buildConfirmTapActive = false;
         m_buildRotating = false;
+        m_buildRotationStarted = false;
         m_buildHoldStartTicks = 0;
     }
 
@@ -517,6 +558,7 @@ private:
 
         m_buildConfirmationPending = false;
         m_buildRotating = false;
+        m_buildRotationStarted = false;
         m_buildHoldStartTicks = 0;
 
         m_state = STATE_CAMERA_PAN;
@@ -580,6 +622,10 @@ private:
         {
             return;
         }
+
+        // One finger already lifted: the gesture is winding down, no more zoom/rotation.
+        if (!m_primaryActive || !m_secondaryActive)
+            return;
 
         const float w = static_cast<float>(WindowW());
         const float h = static_cast<float>(WindowH());
@@ -681,6 +727,10 @@ private:
         const float x = ScreenX(event.tfinger.x);
         const float y = ScreenY(event.tfinger.y);
 
+        // A two-finger gesture is still winding down: ignore new contacts.
+        if (m_state == STATE_MULTI_TOUCH)
+            return;
+
         if (!m_primaryActive)
         {
             m_primaryFinger = event.tfinger.fingerID;
@@ -725,7 +775,10 @@ private:
         // Any second distinct finger immediately switches to multi-touch.
         // This is deliberately not delayed and does not depend on finger 0/1
         // numbering, because SDL3 identifies each contact by SDL_FingerID.
+        // While the building is being rotated (LMB held) a 2nd finger is ignored:
+        // releasing the mouse there would start construction.
         if (!m_secondaryActive &&
+            !m_buildRotating &&
             event.tfinger.fingerID != m_primaryFinger)
         {
             StartMultiTouch(event);
@@ -760,7 +813,7 @@ private:
             {
                 // After the 0.2s hold, the same finger exclusively rotates
                 // the building. Camera input remains locked.
-                UpdateBuildingRotation(x, y);
+                UpdateBuildingRotation(dxPixels);
             }
             else
             {
@@ -988,21 +1041,23 @@ Bool DecodeNextUtf8Codepoint(const char* text, size_t length, size_t& offset, Un
 	}
 
 	// Invalid UTF-8 sequence: skip one byte and keep processing.
-	offset += 1;	return false;
+	offset += 1;
+	return false;
 }
 
 }
 
 /**
  * Constructor: Initialize SDL3 game engine state
- */SDL3GameEngine::SDL3GameEngine()
+ */
+SDL3GameEngine::SDL3GameEngine()
 	: GameEngine(),
 	  m_SDLWindow(nullptr),
 	  m_IsInitialized(false),
 	  m_IsActive(false),
 	  m_IsTextInputActive(false),
 	  m_TextInputFocusWindow(nullptr),
-  m_TextInputSuppressedFocusWindow(nullptr)
+	  m_TextInputSuppressedFocusWindow(nullptr)
 {
 	fprintf(stderr, "DEBUG: SDL3GameEngine::SDL3GameEngine() created\n");
 }
@@ -1014,7 +1069,8 @@ SDL3GameEngine::~SDL3GameEngine()
 {
 	if (m_SDLWindow && m_IsTextInputActive) {
 		SDL_StopTextInput(m_SDLWindow);
-		m_IsTextInputActive = false;		m_TextInputFocusWindow = nullptr;
+		m_IsTextInputActive = false;
+		m_TextInputFocusWindow = nullptr;
 	}
 
 	if (m_IsInitialized) {
@@ -1061,6 +1117,8 @@ void SDL3GameEngine::init(void)
 	m_IsActive = true;
 
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+	s_mobileInput.SetWindow(m_SDLWindow);
+	s_mobileInput.SetBuildConfirmationMode(false);   // false = variant A (tap preview to build)
 	// Lifecycle events can fire outside the poll cycle on iOS; catch them
 	// immediately so rendering halts before the process is suspended.
 	SDL_AddEventWatch(iosLifecycleWatcher, nullptr);
@@ -1084,6 +1142,9 @@ void SDL3GameEngine::reset(void)
 		m_TextInputFocusWindow = nullptr;
 	}
 	m_TextInputSuppressedFocusWindow = nullptr;
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+	s_mobileInput.Reset();
+#endif
 	GameEngine::reset();
 }
 /**
@@ -1094,7 +1155,8 @@ void SDL3GameEngine::update(void)
 	pollSDL3Events();
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 	// Pause sim + render while backgrounded OR inactive (see iosLifecycleWatcher).
-	// Acquiring a Metal drawable in these windows fights iOS for the layer and,	// across repeated suspend/switcher cycles, crashes MoltenVK. Keep polling so
+	// Acquiring a Metal drawable in these windows fights iOS for the layer and,
+	// across repeated suspend/switcher cycles, crashes MoltenVK. Keep polling so
 	// we still catch the resume events; just don't touch the GPU.
 	if (iosShouldPauseRendering()) {
 		SDL_Delay(50);
@@ -1184,8 +1246,10 @@ void SDL3GameEngine::pollSDL3Events(void)
 
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 			// App suspension/resume: mirror the desktop focus handling so audio
-			// and mouse state pause cleanly (the render gate lives in update()).			case SDL_EVENT_DID_ENTER_BACKGROUND:
+			// and mouse state pause cleanly (the render gate lives in update()).
+			case SDL_EVENT_DID_ENTER_BACKGROUND:
 				m_IsActive = false;
+				s_mobileInput.Reset();
 				if (TheMouse) {
 					TheMouse->loseFocus();
 				}
@@ -1193,8 +1257,192 @@ void SDL3GameEngine::pollSDL3Events(void)
 
 			case SDL_EVENT_DID_ENTER_FOREGROUND:
 				m_IsActive = true;
-				if (TheMouse) {					TheMouse->regainFocus();
+				if (TheMouse) {
+					TheMouse->regainFocus();
 					TheMouse->refreshCursorCapture();
 				}
 				break;
 #endif
+
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+			// The on-screen keyboard was dismissed by the user: do not pop it up again
+			// for the same focused widget until focus moves elsewhere.
+			case SDL_EVENT_SCREEN_KEYBOARD_HIDDEN:
+				if (m_IsTextInputActive) {
+					SDL_StopTextInput(m_SDLWindow);
+					m_IsTextInputActive = false;
+					m_TextInputSuppressedFocusWindow = m_TextInputFocusWindow;
+					m_TextInputFocusWindow = nullptr;
+				}
+				break;
+
+			// Touch -> game gestures (camera, selection, building, zoom/rotate).
+			case SDL_EVENT_FINGER_DOWN:
+			case SDL_EVENT_FINGER_MOTION:
+			case SDL_EVENT_FINGER_UP:
+			case SDL_EVENT_FINGER_CANCELED:
+				s_mobileInput.ProcessEvent(event);
+				break;
+#endif
+
+			case SDL_EVENT_KEY_DOWN:
+			case SDL_EVENT_KEY_UP:
+				if (TheKeyboard) {
+					SDL3Keyboard *keyboard = dynamic_cast<SDL3Keyboard *>(TheKeyboard);
+					if (keyboard) {
+						keyboard->addSDLEvent(&event);
+					}
+				}
+				break;
+
+			// Non-ASCII text (IME / on-screen keyboard). Plain ASCII already reaches
+			// the widgets through the key events above, so it is not forwarded twice.
+			case SDL_EVENT_TEXT_INPUT:
+				if (TheWindowManager && event.text.text) {
+					GameWindow *focus = TheWindowManager->winGetFocus();
+					if (focus) {
+						const char *text = event.text.text;
+						const size_t length = strlen(text);
+						size_t offset = 0;
+						while (offset < length) {
+							UnsignedInt codepoint = 0;
+							if (!DecodeNextUtf8Codepoint(text, length, offset, codepoint)) {
+								continue;
+							}
+							if (codepoint >= 0x80 && codepoint <= 0xFFFF) {
+								TheWindowManager->winSendInputMsg(focus, GWM_IME_CHAR,
+									static_cast<WindowMsgData>(codepoint), 0);
+							}
+						}
+					}
+				}
+				break;
+
+			case SDL_EVENT_MOUSE_MOTION:
+			case SDL_EVENT_MOUSE_BUTTON_DOWN:
+			case SDL_EVENT_MOUSE_BUTTON_UP:
+			case SDL_EVENT_MOUSE_WHEEL:
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+				// Fake mouse events SDL derives from touches: the gesture manager
+				// above already feeds the mouse queue itself.
+				if (event.motion.which == SDL_TOUCH_MOUSEID) {
+					break;
+				}
+#endif
+				if (TheMouse) {
+					SDL3Mouse *mouse = dynamic_cast<SDL3Mouse *>(TheMouse);
+					if (mouse) {
+						mouse->addSDLEvent(&event);
+					}
+				}
+				break;
+
+			default:
+				break;
+		}
+	}
+
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+	// 0.2s hold timer for building rotation: no event fires while the finger is still.
+	s_mobileInput.Update();
+#endif
+}
+
+/**
+ * Show / hide the OS text input (on-screen keyboard on iOS) depending on whether
+ * the focused game widget is a text entry field.
+ */
+void SDL3GameEngine::updateTextInputState(void)
+{
+	if (!m_SDLWindow || !TheWindowManager) {
+		return;
+	}
+
+	GameWindow *focus = TheWindowManager->winGetFocus();
+	const Bool wantsText = (focus != nullptr) && BitIsSet(focus->winGetStyle(), GWS_ENTRY_FIELD);
+
+	if (!wantsText) {
+		if (m_IsTextInputActive) {
+			SDL_StopTextInput(m_SDLWindow);
+			m_IsTextInputActive = false;
+			m_TextInputFocusWindow = nullptr;
+		}
+		m_TextInputSuppressedFocusWindow = nullptr;
+		return;
+	}
+
+	if (focus == m_TextInputSuppressedFocusWindow) {
+		return;   // user dismissed the keyboard for this widget
+	}
+
+	if (!m_IsTextInputActive || m_TextInputFocusWindow != focus) {
+		SDL_StartTextInput(m_SDLWindow);
+		m_IsTextInputActive = true;
+		m_TextInputFocusWindow = focus;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Subsystem factories (W3D rendering, std file systems, OpenAL audio)
+// ---------------------------------------------------------------------------
+GameLogic *SDL3GameEngine::createGameLogic(void)
+{
+	return NEW W3DGameLogic;
+}
+
+GameClient *SDL3GameEngine::createGameClient(void)
+{
+	return NEW W3DGameClient;
+}
+
+ModuleFactory *SDL3GameEngine::createModuleFactory(void)
+{
+	return NEW W3DModuleFactory;
+}
+
+ThingFactory *SDL3GameEngine::createThingFactory(void)
+{
+	return NEW W3DThingFactory;
+}
+
+FunctionLexicon *SDL3GameEngine::createFunctionLexicon(void)
+{
+	return NEW W3DFunctionLexicon;
+}
+
+LocalFileSystem *SDL3GameEngine::createLocalFileSystem(void)
+{
+	return NEW StdLocalFileSystem;
+}
+
+ArchiveFileSystem *SDL3GameEngine::createArchiveFileSystem(void)
+{
+	return NEW StdBIGFileSystem;
+}
+
+NetworkInterface *SDL3GameEngine::createNetwork(void)
+{
+	return NetworkInterface::createNetwork();
+}
+
+Radar *SDL3GameEngine::createRadar(void)
+{
+	return NEW W3DRadar;
+}
+
+WebBrowser *SDL3GameEngine::createWebBrowser(void)
+{
+	return NEW W3DWebBrowser;
+}
+
+ParticleSystemManager *SDL3GameEngine::createParticleSystemManager(void)
+{
+	return NEW W3DParticleSystemManager;
+}
+
+AudioManager *SDL3GameEngine::createAudioManager(void)
+{
+	return NEW OpenALAudioManager;
+}
+
+#endif // !_WIN32
