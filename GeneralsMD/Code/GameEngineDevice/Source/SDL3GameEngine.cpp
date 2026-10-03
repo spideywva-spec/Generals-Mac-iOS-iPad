@@ -493,12 +493,6 @@ private:
         m_buildRotationStarted = false;
         m_buildRotation = 0.0f;
 
-        ICoord2D anchor;
-        anchor.x = static_cast<Int>(m_buildX);
-        anchor.y = static_cast<Int>(m_buildY);
-        TheInGameUI->setPlacementStart(&anchor);
-        TheInGameUI->setPlacementEnd(&anchor);
-
         SendMouse(SDL_EVENT_MOUSE_MOTION, m_buildX, m_buildY, 0, true);
         SendMouse(SDL_EVENT_MOUSE_BUTTON_DOWN, m_buildX, m_buildY, SDL_BUTTON_LEFT);
 
@@ -515,16 +509,12 @@ private:
         m_buildRotation = NormalizeAngle(m_buildRotation + dxPixels * BUILD_ROTATE_RAD_PER_PIXEL);
         m_buildRotationStarted = true;
 
-        // Change only the placement direction around the fixed anchor.
-        // Do NOT move the mouse/preview position while rotating.
-        ICoord2D anchor;
-        ICoord2D end;
-        anchor.x = static_cast<Int>(m_buildX);
-        anchor.y = static_cast<Int>(m_buildY);
-        end.x = static_cast<Int>(m_buildX + SDL_cosf(m_buildRotation) * m_buildRotationRadius);
-        end.y = static_cast<Int>(m_buildY + SDL_sinf(m_buildRotation) * m_buildRotationRadius);
-        TheInGameUI->setPlacementStart(&anchor);
-        TheInGameUI->setPlacementEnd(&end);
+        // The building position stays at m_buildX/m_buildY. The drag endpoint
+        // changes only its facing through the native placement path.
+        SendMouse(SDL_EVENT_MOUSE_MOTION,
+                  m_buildX + SDL_cosf(m_buildRotation) * m_buildRotationRadius,
+                  m_buildY + SDL_sinf(m_buildRotation) * m_buildRotationRadius,
+                  0, true);
     }
 
     void ConfirmBuilding()
@@ -913,21 +903,16 @@ private:
 
             if (m_useHoldToRotate)
             {
-                // Mode B: hold 0.2s -> rotate; release after rotation -> build.
+                // 0.2s is ONLY the hold threshold for entering rotation.
+                // Releasing before the threshold always builds at the current
+                // preview position. There is no separate movement window.
                 if (m_buildRotating)
                 {
                     ConfirmBuilding();
                 }
-                else if (heldMs <= TAP_MAX_DURATION_MS &&
-                         travel <= TAP_MAX_DISTANCE_PX)
-                {
-                    // Short tap still builds immediately.
-                    ConfirmBuilding();
-                }
                 else
                 {
-                    // Released before 0.2s: keep the preview.
-                    m_buildConfirmationPending = true;
+                    ConfirmBuilding();
                 }
             }
             else
