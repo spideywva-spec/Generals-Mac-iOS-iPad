@@ -1385,11 +1385,6 @@ ArchiveFileSystem *SDL3GameEngine::createArchiveFileSystem(void)
 	return NEW StdBIGFileSystem;
 }
 
-NetworkInterface *SDL3GameEngine::createNetwork(void)
-{
-	return NetworkInterface::createNetwork();
-}
-
 Radar *SDL3GameEngine::createRadar(Bool dummy)
 {
 	return NEW W3DRadar;
