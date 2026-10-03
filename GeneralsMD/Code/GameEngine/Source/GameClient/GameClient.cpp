@@ -1075,6 +1075,13 @@ void GameClient::flushTextBearingDrawables()
 }
 
 // ------------------------------------------------------------------------------------------------
+GameMessage::Type GameClient::evaluateForceAttack( Drawable *draw, const Coord3D *pos, CommandTranslator::CommandEvaluateType cmdType )
+{
+	if( m_commandTranslator ) return m_commandTranslator->evaluateForceAttack( draw, pos, cmdType );
+	return GameMessage::MSG_INVALID;
+}
+
+// ------------------------------------------------------------------------------------------------
 GameMessage::Type GameClient::evaluateContextCommand( Drawable *draw,
 																											const Coord3D *pos,
 																											CommandTranslator::CommandEvaluateType cmdType )
