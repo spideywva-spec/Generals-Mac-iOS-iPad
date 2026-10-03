@@ -53,6 +53,7 @@ public:
 	Bool hasMouseMovedRecently();
 	void setCurrentPos( const ICoord2D& pos );
 	void setScreenEdgeScrollMode(ScreenEdgeScrollMode mode);
+	const char *getCameraModeDebugText() const;
 
 	void resetModes(); //Used when disabling input, so when we reenable it we aren't stuck in a mode.
 
