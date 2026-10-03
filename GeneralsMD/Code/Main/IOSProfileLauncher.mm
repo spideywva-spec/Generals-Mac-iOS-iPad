@@ -205,6 +205,12 @@ NSString *ZeroHourSettingsPath()
     return [GameRootPath() stringByAppendingPathComponent:@"ZeroHourSettings.ini"];
 }
 
+NSString *GameOptionsPath()
+{
+    // The engine's OptionPreferences loads the canonical Options.ini from its working directory.
+    return [GameRootPath() stringByAppendingPathComponent:@"Options.ini"];
+}
+
 NSString *EngineOptionsPath()
 {
     NSString *dir = [NSHomeDirectory()
@@ -2194,7 +2200,34 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     NSError *zeroHourError = nil;
     BOOL zeroHourOK = WriteKeyValueFile(ZeroHourSettingsPath(), zeroHourValues, &zeroHourError);
 
-    if (iosOK && zeroHourOK)
+    // Options.ini is the file actually consumed by OptionPreferences at game startup.
+    // Keep existing engine options and replace only values controlled by this launcher.
+    NSMutableDictionary<NSString *, NSString *> *gameOptions = ReadKeyValueFile(GameOptionsPath());
+    gameOptions[@"TextureReduction"] = [NSString stringWithFormat:@"%ld", (long)textureReduction];
+    gameOptions[@"HeatEffects"] = self.heatEffectsSwitch.on ? @"yes" : @"no";
+    gameOptions[@"DynamicLOD"] = self.dynamicLODSwitch.on ? @"yes" : @"no";
+    gameOptions[@"UseShadowVolumes"] = self.shadow3DSwitch.on ? @"yes" : @"no";
+    gameOptions[@"UseShadowDecals"] = self.shadow2DSwitch.on ? @"yes" : @"no";
+    gameOptions[@"UseCloudMap"] = self.cloudShadowsSwitch.on ? @"yes" : @"no";
+    gameOptions[@"UseLightMap"] = self.groundLightingSwitch.on ? @"yes" : @"no";
+    gameOptions[@"ShowSoftWaterEdge"] = self.softWaterSwitch.on ? @"yes" : @"no";
+    gameOptions[@"ShowTrees"] = self.showPropsSwitch.on ? @"yes" : @"no";
+    gameOptions[@"ExtraAnimations"] = self.extraAnimationsSwitch.on ? @"yes" : @"no";
+    gameOptions[@"BuildingOcclusion"] = self.buildingOcclusionSwitch.on ? @"yes" : @"no";
+    gameOptions[@"MaxParticleCount"] = [NSString stringWithFormat:@"%ld", (long)particleCount];
+    gameOptions[@"TextureFilter"] = textureFilter;
+    gameOptions[@"AnisotropyLevel"] = @"8";
+    gameOptions[@"FPSLimit"] = self.fpsLimitSwitch.on ? @"yes" : @"no";
+    gameOptions[@"MaxCameraHeight"] = [NSString stringWithFormat:@"%.1f", self.maxCameraSlider.value];
+    gameOptions[@"MinCameraHeight"] = [NSString stringWithFormat:@"%.1f", self.minCameraSlider.value];
+    gameOptions[@"CameraPitch"] = [NSString stringWithFormat:@"%.1f", self.cameraPitchSlider.value];
+    gameOptions[@"TerrainDrawDistanceScale"] = [NSString stringWithFormat:@"%.2f", self.drawDistanceSlider.value];
+    gameOptions[@"ScrollFactor"] = [NSString stringWithFormat:@"%ld", lroundf(self.scrollSpeedSlider.value * 100.0f)];
+
+    NSError *optionsError = nil;
+    BOOL optionsOK = WriteKeyValueFile(GameOptionsPath(), gameOptions, &optionsError);
+
+    if (iosOK && zeroHourOK && optionsOK)
     {
         self.settingsStatus.text = @"✓ Настройки сохранены. Изменения применятся при следующем запуске игры.";
         self.settingsStatus.textColor = [UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0];
@@ -2202,7 +2235,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     }
     else
     {
-        NSError *error = iosError != nil ? iosError : zeroHourError;
+        NSError *error = iosError != nil ? iosError : (zeroHourError != nil ? zeroHourError : optionsError);
         self.settingsStatus.text = [NSString stringWithFormat:@"✕ Не удалось сохранить настройки: %@",
                                     error.localizedDescription ?: @"неизвестная ошибка"];
         self.settingsStatus.textColor = [UIColor colorWithRed:1.0 green:0.42 blue:0.32 alpha:1.0];
@@ -2345,6 +2378,18 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     self.textureFilterSegment.selectedSegmentIndex =
         [filter caseInsensitiveCompare:@"Bilinear"] == NSOrderedSame ? 0 :
         ([filter caseInsensitiveCompare:@"Trilinear"] == NSOrderedSame ? 1 : 2);
+}
+
+- (void)resetНастройки
+{
+    // Reset the visible controls and immediately persist the defaults to the same
+    // Options.ini file consumed by the game. This replaces the old missing selector
+    // that caused the launcher to terminate when the button was pressed.
+    [self resetНастройкиControls];
+    [self saveНастройки];
+    self.settingsStatus.text = @"✓ Настройки сброшены и сохранены. Изменения применятся при следующем запуске игры.";
+    self.settingsStatus.textColor = [UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0];
+    fprintf(stderr, "INFO: iOS launcher settings reset to defaults and saved to Options.ini\\n");
 }
 
 - (void)resetНастройкиControls
