@@ -39,6 +39,8 @@
 #include "GameClient/Gadget.h"
 #include "GameClient/InGameUI.h"
 #include "GameClient/View.h"
+#include "GameClient/CommandXlat.h"
+#include "GameClient/SelectionXlat.h"
 #include "W3DDevice/GameLogic/W3DGameLogic.h"
 #include "W3DDevice/GameClient/W3DGameClient.h"
 #include "W3DDevice/Common/W3DModuleFactory.h"
@@ -411,14 +413,80 @@ private:
         if (TheInGameUI) TheInGameUI->setSelecting(FALSE);
     }
 
-    void ApplyCameraPan(float dxPixels, float dyPixels)
+    // MYSOREZ reference architecture: move the map by projecting the
+    // previous/current finger positions onto the terrain. This keeps the
+    // finger-to-ground relationship exact at every zoom/camera angle instead
+    // of guessing a pixels->world multiplier.
+    void ApplyCameraPan(float fromX, float fromY, float toX, float toY)
     {
-        if (m_state != STATE_CAMERA_PAN || !TheTacticalView) return;
+        if (m_state != STATE_CAMERA_PAN || !TheTacticalView)
+            return;
 
-        Coord2D delta;
-        delta.x = -dxPixels;
-        delta.y = -dyPixels;
-        TheTacticalView->userScrollBy(&delta);
+        if (TheShell && TheShell->isShellActive())
+            return;
+
+        ICoord2D from;
+        from.x = static_cast<Int>(fromX);
+        from.y = static_cast<Int>(fromY);
+
+        ICoord2D to;
+        to.x = static_cast<Int>(toX);
+        to.y = static_cast<Int>(toY);
+
+        Coord3D worldFrom;
+        Coord3D worldTo;
+        if (!TheTacticalView->screenToTerrain(&from, &worldFrom) ||
+            !TheTacticalView->screenToTerrain(&to, &worldTo))
+            return;
+
+        Coord3D pos = TheTacticalView->getPosition();
+        pos.x += worldFrom.x - worldTo.x;
+        pos.y += worldFrom.y - worldTo.y;
+        TheTacticalView->userSetPosition(pos);
+        TheTacticalView->forceRedraw();
+    }
+
+    void HandleTap(float x, float y)
+    {
+        if (!TheTacticalView || !TheInGameUI)
+            return;
+
+        ICoord2D pixel;
+        pixel.x = static_cast<Int>(x);
+        pixel.y = static_cast<Int>(y);
+
+        // Armed abilities/special powers own the tap.
+        if (TheInGameUI->getGUICommand() != nullptr)
+        {
+            Coord3D pos;
+            if (TheTacticalView->screenToTerrain(&pixel, &pos) && TheGameClient)
+                TheGameClient->evaluateContextCommand(nullptr, &pos,
+                    CommandTranslator::DO_COMMAND);
+            return;
+        }
+
+        Coord3D pos;
+        const Bool onTerrain = TheTacticalView->screenToTerrain(&pixel, &pos);
+        Drawable *picked = TheTacticalView->pickDrawable(
+            &pixel, FALSE, PICK_TYPE_SELECTABLE);
+
+        if (picked && picked->getObject() &&
+            picked->getObject()->isLocallyControlled())
+        {
+            TheInGameUI->deselectAllDrawables();
+            TheInGameUI->selectDrawable(picked);
+            return;
+        }
+
+        if (onTerrain && TheInGameUI->areSelectedObjectsControllable() && TheGameClient)
+        {
+            TheGameClient->evaluateContextCommand(picked, &pos,
+                CommandTranslator::DO_COMMAND);
+            return;
+        }
+
+        if (!picked)
+            TheInGameUI->deselectAllDrawables();
     }
 
     void BeginSelection(int index)
@@ -797,7 +865,7 @@ private:
             if (SDL_GetTicks() - f.downTicks <= SELECTION_HOLD_MS ||
                 f.travelPixels > SELECTION_START_TRAVEL_PX)
             {
-                ApplyCameraPan(dx, dy);
+                ApplyCameraPan(f.lastXPixels, f.lastYPixels, x, y);
             }
         }
 
@@ -855,14 +923,13 @@ private:
             return;
         }
 
-        // Short, stationary one-finger touch is a normal native click/raycast.
+        // MYSOREZ-style native battlefield tap: resolve selection/order
+        // directly from the finger position instead of synthesizing a mouse.
         if (!canceled &&
             held < SELECTION_HOLD_MS &&
             f.travelPixels <= TAP_MAX_TRAVEL_PX)
         {
-            SendMouseMotion(x, y, dx, dy);
-            SendMouseButton(SDL_EVENT_MOUSE_BUTTON_DOWN, x, y);
-            SendMouseButton(SDL_EVENT_MOUSE_BUTTON_UP, x, y);
+            HandleTap(x, y);
         }
 
         f.active = false;
