@@ -110,6 +110,7 @@ public:
 
 	virtual Drawable *firstDrawable() { return m_drawableList; }
 
+	virtual GameMessage::Type evaluateForceAttack( Drawable *draw, const Coord3D *pos, CommandTranslator::CommandEvaluateType cmdType );
 	virtual GameMessage::Type evaluateContextCommand( Drawable *draw,
 																										const Coord3D *pos,
 																										CommandTranslator::CommandEvaluateType cmdType );
