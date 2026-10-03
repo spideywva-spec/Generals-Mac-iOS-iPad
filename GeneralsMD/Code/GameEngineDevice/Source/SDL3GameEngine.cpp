@@ -486,12 +486,18 @@ private:
             !TheInGameUI)
             return;
 
-        // Same path as desktop: LMB goes down on the placement anchor, the drag
-        // vector (anchor -> end point) defines the facing, LMB up builds.
-        // Camera stays locked (STATE_BUILDING).
+        // Rotation mode is anchored to the current building position.
+        // From this point the building MUST NOT move: only its placement angle
+        // changes. The camera is also hard-locked by STATE_BUILDING.
         m_buildRotating = true;
         m_buildRotationStarted = false;
         m_buildRotation = 0.0f;
+
+        ICoord2D anchor;
+        anchor.x = static_cast<Int>(m_buildX);
+        anchor.y = static_cast<Int>(m_buildY);
+        TheInGameUI->setPlacementStart(&anchor);
+        TheInGameUI->setPlacementEnd(&anchor);
 
         SendMouse(SDL_EVENT_MOUSE_MOTION, m_buildX, m_buildY, 0, true);
         SendMouse(SDL_EVENT_MOUSE_BUTTON_DOWN, m_buildX, m_buildY, SDL_BUTTON_LEFT);
@@ -509,10 +515,16 @@ private:
         m_buildRotation = NormalizeAngle(m_buildRotation + dxPixels * BUILD_ROTATE_RAD_PER_PIXEL);
         m_buildRotationStarted = true;
 
-        SendMouse(SDL_EVENT_MOUSE_MOTION,
-                  m_buildX + SDL_cosf(m_buildRotation) * m_buildRotationRadius,
-                  m_buildY + SDL_sinf(m_buildRotation) * m_buildRotationRadius,
-                  0, true);
+        // Change only the placement direction around the fixed anchor.
+        // Do NOT move the mouse/preview position while rotating.
+        ICoord2D anchor;
+        ICoord2D end;
+        anchor.x = static_cast<Int>(m_buildX);
+        anchor.y = static_cast<Int>(m_buildY);
+        end.x = static_cast<Int>(m_buildX + SDL_cosf(m_buildRotation) * m_buildRotationRadius);
+        end.y = static_cast<Int>(m_buildY + SDL_sinf(m_buildRotation) * m_buildRotationRadius);
+        TheInGameUI->setPlacementStart(&anchor);
+        TheInGameUI->setPlacementEnd(&end);
     }
 
     void ConfirmBuilding()
@@ -522,17 +534,10 @@ private:
 
         if (m_buildRotating)
         {
-            // LMB is already held: release at the rotated end point -> native build.
-            float ex = m_buildX;
-            float ey = m_buildY;
-
-            if (m_buildRotationStarted)
-            {
-                ex += SDL_cosf(m_buildRotation) * m_buildRotationRadius;
-                ey += SDL_sinf(m_buildRotation) * m_buildRotationRadius;
-            }
-
-            SendMouse(SDL_EVENT_MOUSE_BUTTON_UP, ex, ey, SDL_BUTTON_LEFT);
+            // The building stays at the fixed anchor. Its angle was already
+            // updated through InGameUI placement points. Release at the anchor
+            // to build immediately without moving the building.
+            SendMouse(SDL_EVENT_MOUSE_BUTTON_UP, m_buildX, m_buildY, SDL_BUTTON_LEFT);
         }
         else
         {
