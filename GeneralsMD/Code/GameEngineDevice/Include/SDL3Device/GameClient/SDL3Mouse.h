@@ -33,6 +33,9 @@
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <array>
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
 
 // USER INCLUDES
 #include "GameClient/Mouse.h"
@@ -60,6 +63,37 @@ public:
 	virtual void setVisibility(Bool visible);
 	virtual void loseFocus();
 	virtual void regainFocus();
+
+#if (defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE) || defined(__ANDROID__)
+	// GeneralsX @feature Android port 01/08/2026 On touch-first platforms there
+	// is no real mouse hardware, and SDL3GameEngine.cpp's touch handler drives
+	// the message stream directly (MSG_RAW_MOUSE_* pushed straight onto
+	// TheMessageStream from real finger events). The base Mouse::
+	// createStreamMessages() unconditionally emits a MSG_RAW_MOUSE_POSITION
+	// every single frame from this object's own (never-updated-by-touch)
+	// m_currMouse.pos -- left enabled, that stale per-frame ping would fight
+	// the touch-driven position messages for GUI hover every frame. Override
+	// it to do nothing here; nothing on mobile calls addSDLEvent() on this
+	// object anymore, so there's no button/wheel state to flush either.
+	virtual void createStreamMessages() override;
+
+	// GeneralsX @bugfix Android port 06/09/2026 Where the last finger touched.
+	//
+	// Writes ONLY m_currMouse.pos, the value getMouseStatus() returns. That field
+	// is read by preview drawing -- InGameUI::handleRadiusCursor() for the ability
+	// radius, InGameUI::handleBuildPlacements() for the placement icon, both called
+	// once a frame from InGameUI::preDraw() -- and with nothing writing it on a
+	// touch device they drew at (0,0), in the top-left corner.
+	//
+	// It deliberately does NOT emit MSG_RAW_MOUSE_POSITION. That message is the
+	// event that drives GUI hilite, the selection box, and the engine's edge-scroll
+	// anchor; two earlier attempts at this published one and had to be reverted,
+	// because a position event arriving every frame gives the game a cursor that
+	// outlives the finger -- menu buttons hilited with nothing on screen, and the
+	// map scrolling by itself from a point left near an edge. The position and the
+	// event are different things and only the first one is wanted here.
+	void setTouchCursorPos(Int x, Int y);
+#endif
 
 	// SDL3-specific methods
 	// Fighter19 pattern: addSDLEvent() accepts raw SDL_Event directly
