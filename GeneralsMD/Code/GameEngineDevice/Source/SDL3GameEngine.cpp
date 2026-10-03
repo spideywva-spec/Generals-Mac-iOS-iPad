@@ -260,13 +260,20 @@ private:
 
     // Gesture thresholds. These classify gestures; they never create
     // movement speed or acceleration.
-    static constexpr Uint64 SELECTION_HOLD_MS = 100;
+    static constexpr Uint64 SELECTION_HOLD_MS = 150;   // selection box: hold > 150 ms ...
+    static constexpr Uint64 TAP_MAX_HOLD_MS = 100;     // single tap: released before 100 ms
     static constexpr Uint64 BUILD_ROTATE_HOLD_MS = 200;
     static constexpr Uint64 TWO_FINGER_TAP_MS = 150;
 
-    static constexpr float SELECTION_TRAVEL_PX = 20.0f;
+    static constexpr float SELECTION_TRAVEL_PX = 60.0f; // ... AND travelled > 60 px
     static constexpr float TAP_MAX_TRAVEL_PX = 10.0f;
+    static constexpr float TWO_FINGER_TAP_TRAVEL_PX = 15.0f;
     static constexpr float BUILD_TAP_RADIUS_PX = 24.0f;
+
+    // Pure pixel-speed gains. Nothing here is divided by window size.
+    static constexpr float BUILD_ROTATE_RAD_PER_PX = 0.006f;
+    static constexpr float PINCH_ZOOM_GAIN = 1.5f;
+    static constexpr float PINCH_ZOOM_DIVISOR = 500.0f;
 
     // Exactly 40 degrees.
     static constexpr float ROTATION_DEAD_ZONE = 0.6981317007977318f;
@@ -656,13 +663,9 @@ private:
         if (!m_buildRotating || !TheInGameUI)
             return;
 
-        // One full screen width corresponds to one complete 360-degree
-        // rotation. Therefore rotation is still driven directly by the
-        // current finger's pixel speed, with no arbitrary fixed speed.
-        const float screenFraction =
-            dxPixels / static_cast<float>(WindowW());
-
-        const float angleDelta = screenFraction * MOBILE_TWO_PI;
+        // Rotation is driven directly by the finger's per-event pixel
+        // delta (no division by screen size).
+        const float angleDelta = dxPixels * BUILD_ROTATE_RAD_PER_PX;
 
         m_buildRotation = NormalizeAngle(
             m_buildRotation + angleDelta);
@@ -765,7 +768,23 @@ private:
         m_multiA = first;
         m_multiB = second;
 
-        m_stateBeforeMulti = m_state;
+        // A selection rectangle in progress is closed first, so we never
+        // return to STATE_SELECTION with no finger driving it.
+        if (m_state == STATE_SELECTION)
+        {
+            ReleaseSelectionMouse();
+            m_stateBeforeMulti = STATE_CAMERA_PAN;
+        }
+        else
+        {
+            m_stateBeforeMulti = m_state;
+        }
+
+        // A pending rotation/confirm hold must not fire while two fingers are down.
+        m_buildConfirm = false;
+        m_buildRotating = false;
+        m_buildHoldStart = 0;
+
         m_state = STATE_MULTI_TOUCH;
 
         m_multiStarted = true;
@@ -788,20 +807,6 @@ private:
 
         // Multi-touch always freezes the camera's normal single-finger pan.
         LockCamera();
-    }
-
-    void UpdateMultiFingerFromEvent(const SDL_Event &event)
-    {
-        const int index = FindFinger(event.tfinger.fingerID);
-
-        if (index < 0)
-            return;
-
-        m_fingers[index].xPixels = XPixels(event.tfinger.x);
-        m_fingers[index].yPixels = YPixels(event.tfinger.y);
-
-        if (index == m_multiA || index == m_multiB)
-            return;
     }
 
     void MultiTouchMotion(const SDL_Event &event)
@@ -850,20 +855,12 @@ private:
         const float angleDelta =
             NormalizeAngle(currentAngle - m_lastPairAngle);
 
-        if (SDL_fabsf(dxPixels) > 0.0f ||
-            SDL_fabsf(dyPixels) > 0.0f)
-        {
-            m_multiMoved = true;
-        }
-
-        // Pinch: requested direct pixel-distance delta divided by the
-        // physical screen width. No fixed zoom step is used.
+        // Pinch: per-event pixel-distance delta, scaled by a constant gain.
+        // Faster pinch -> faster zoom. No window-size division.
         if (pinchDeltaPixels != 0.0f && TheTacticalView)
         {
-            const float zoomDelta =
-                pinchDeltaPixels / static_cast<float>(WindowW());
-
-            TheTacticalView->userZoom(-zoomDelta);
+            TheTacticalView->userZoom(
+                -pinchDeltaPixels * PINCH_ZOOM_GAIN / PINCH_ZOOM_DIVISOR);
         }
 
         // Accumulate only for deciding whether the 40-degree rotation
@@ -921,15 +918,21 @@ private:
         if (ActiveFingerCount() != 0)
             return;
 
-        const Uint64 duration =
-            SDL_GetTicks() - m_multiStartTicks;
+        // Both fingers must have been pressed AND released within 150 ms
+        // (measured from the earliest touch-down), each travelling < 15 px.
+        const Uint64 firstDown =
+            m_fingers[m_multiA].downTicks < m_fingers[m_multiB].downTicks
+                ? m_fingers[m_multiA].downTicks
+                : m_fingers[m_multiB].downTicks;
 
-        bool shortTwoFingerTap =
+        const Uint64 duration = SDL_GetTicks() - firstDown;
+
+        const bool shortTwoFingerTap =
             m_multiStarted &&
-            !m_multiMoved &&
+            !m_multiMoved &&   // set only when the gesture was canceled by the OS
             duration <= TWO_FINGER_TAP_MS &&
-            m_fingers[m_multiA].travelPixels < TAP_MAX_TRAVEL_PX &&
-            m_fingers[m_multiB].travelPixels < TAP_MAX_TRAVEL_PX;
+            m_fingers[m_multiA].travelPixels < TWO_FINGER_TAP_TRAVEL_PX &&
+            m_fingers[m_multiB].travelPixels < TWO_FINGER_TAP_TRAVEL_PX;
 
         if (shortTwoFingerTap &&
             m_stateBeforeMulti == STATE_BUILDING &&
@@ -1117,7 +1120,7 @@ private:
                 SDL_GetTicks() - finger.downTicks;
 
             // Selection requires BOTH conditions:
-            // strictly more than 100 ms AND strictly more than 20 pixels.
+            // strictly more than 150 ms AND strictly more than 60 pixels.
             if (held > SELECTION_HOLD_MS &&
                 finger.travelPixels > SELECTION_TRAVEL_PX)
             {
@@ -1254,7 +1257,7 @@ private:
         // no delay and no movement means one immediate native click/raycast.
         if (!canceled &&
             finger.travelPixels <= TAP_MAX_TRAVEL_PX &&
-            held < SELECTION_HOLD_MS)
+            held < TAP_MAX_HOLD_MS)
         {
             SendMouseMotionPixels(
                 xPixels,
@@ -1277,8 +1280,8 @@ private:
         m_state = STATE_CAMERA_PAN;
     }
 };
-    static MobileInputManager s_mobileInput;
-    static MobileInputManager s_mobileInput;
+
+static MobileInputManager s_mobileInput;
 
 } // anonymous namespace
 
