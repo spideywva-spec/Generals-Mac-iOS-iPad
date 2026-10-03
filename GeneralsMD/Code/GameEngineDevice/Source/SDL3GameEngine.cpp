@@ -358,7 +358,7 @@ private:
         return angle;
     }
 
-    void SendMouse(Uint32 type, float x, float y, Uint8 button = 0)
+    void SendMouse(Uint32 type, float x, float y, Uint8 button = 0, bool suppressRelativeMotion = false)
     {
         SDL3Mouse *mouse = Mouse();
         if (!mouse)
@@ -374,8 +374,8 @@ private:
             event.motion.which = 0;
             event.motion.x = x;
             event.motion.y = y;
-            event.motion.xrel = x - m_lastX;
-            event.motion.yrel = y - m_lastY;
+            event.motion.xrel = suppressRelativeMotion ? 0.0f : (x - m_lastX);
+            event.motion.yrel = suppressRelativeMotion ? 0.0f : (y - m_lastY);
         }
         else if (type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
                  type == SDL_EVENT_MOUSE_BUTTON_UP)
@@ -493,7 +493,7 @@ private:
         m_buildRotationStarted = false;
         m_buildRotation = 0.0f;
 
-        SendMouse(SDL_EVENT_MOUSE_MOTION, m_buildX, m_buildY);
+        SendMouse(SDL_EVENT_MOUSE_MOTION, m_buildX, m_buildY, 0, true);
         SendMouse(SDL_EVENT_MOUSE_BUTTON_DOWN, m_buildX, m_buildY, SDL_BUTTON_LEFT);
 
         fprintf(stderr, "[iOS-INPUT] STATE_BUILDING -> ROTATION after 200ms hold\n");
@@ -511,7 +511,8 @@ private:
 
         SendMouse(SDL_EVENT_MOUSE_MOTION,
                   m_buildX + SDL_cosf(m_buildRotation) * m_buildRotationRadius,
-                  m_buildY + SDL_sinf(m_buildRotation) * m_buildRotationRadius);
+                  m_buildY + SDL_sinf(m_buildRotation) * m_buildRotationRadius,
+                  0, true);
     }
 
     void ConfirmBuilding()
@@ -819,7 +820,7 @@ private:
             {
                 // Before rotation, the same finger only moves the building preview.
                 // The 0.2s hold timer starts at initial touch and is NOT reset by movement.
-                SendMouse(SDL_EVENT_MOUSE_MOTION, x, y);
+                SendMouse(SDL_EVENT_MOUSE_MOTION, x, y, 0, true);
                 m_buildX = x;
                 m_buildY = y;
             }
