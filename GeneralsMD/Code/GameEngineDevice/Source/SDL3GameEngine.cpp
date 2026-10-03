@@ -157,43 +157,26 @@ public:
         STATE_MULTI_TOUCH
     };
 
-    State GetState() const
-    {
-        return m_state;
-    }
-
-    void SetWindow(SDL_Window *window)
-    {
-        m_window = window;
-    }
+    void SetWindow(SDL_Window *window) { m_window = window; }
 
     void Reset()
     {
         ReleaseSelectionMouse();
-        UnlockCamera();
-
         m_fingers[0] = Finger();
         m_fingers[1] = Finger();
-
         m_state = STATE_CAMERA_PAN;
         m_stateBeforeMulti = STATE_CAMERA_PAN;
-
-        m_selectionMouseDown = false;
-
+        m_selectionFinger = -1;
         m_buildFixed = false;
         m_buildConfirm = false;
         m_buildRotating = false;
         m_buildHoldStart = 0;
-        m_buildX = 0.0f;
-        m_buildY = 0.0f;
+        m_buildX = m_buildY = 0.0f;
         m_buildRotation = 0.0f;
-
-        m_multiStarted = false;
-        m_multiMoved = false;
+        m_multiA = m_multiB = -1;
         m_multiStartTicks = 0;
-        m_multiA = -1;
-        m_multiB = -1;
-        m_lastPinchDistancePixels = 0.0f;
+        m_multiMoved = false;
+        m_lastPinchDistance = 0.0f;
         m_lastPairAngle = 0.0f;
         m_multiAccumulatedRotation = 0.0f;
         m_multiRotationActive = false;
@@ -201,39 +184,39 @@ public:
 
     void ProcessEvent(const SDL_Event &event)
     {
-        if (!m_window)
-            return;
-
+        if (!m_window) return;
         switch (event.type)
         {
-            case SDL_EVENT_FINGER_DOWN:
-                FingerDown(event);
-                break;
-
-            case SDL_EVENT_FINGER_MOTION:
-                FingerMotion(event);
-                break;
-
-            case SDL_EVENT_FINGER_UP:
-                FingerUp(event, false);
-                break;
-
-            case SDL_EVENT_FINGER_CANCELED:
-                FingerUp(event, true);
-                break;
-
-            default:
-                break;
+            case SDL_EVENT_FINGER_DOWN: FingerDown(event); break;
+            case SDL_EVENT_FINGER_MOTION: FingerMotion(event); break;
+            case SDL_EVENT_FINGER_UP: FingerUp(event, false); break;
+            case SDL_EVENT_FINGER_CANCELED: FingerUp(event, true); break;
+            default: break;
         }
     }
 
     void Update()
     {
+        const Uint64 now = SDL_GetTicks();
+
+        // A finger held still for 0.1s becomes selection mode.
+        // If it moved before that point, it remains a camera swipe.
+        if (m_state == STATE_CAMERA_PAN &&
+            ActiveFingerCount() == 1 &&
+            m_fingers[0].active &&
+            now - m_fingers[0].downTicks > SELECTION_HOLD_MS &&
+            m_fingers[0].travelPixels <= SELECTION_START_TRAVEL_PX)
+        {
+            BeginSelection(0);
+        }
+
+        // Building rotation is the only timed building transition.
         if (m_state == STATE_BUILDING &&
+            m_buildFixed &&
             m_buildConfirm &&
             !m_buildRotating &&
             m_buildHoldStart != 0 &&
-            SDL_GetTicks() - m_buildHoldStart >= BUILD_ROTATE_HOLD_MS)
+            now - m_buildHoldStart >= BUILD_ROTATE_HOLD_MS)
         {
             BeginBuildingRotation();
         }
@@ -244,75 +227,49 @@ private:
     {
         SDL_FingerID id = 0;
         bool active = false;
-
-        // These values are always physical screen pixels after conversion
-        // at the SDL event boundary.
         float xPixels = 0.0f;
         float yPixels = 0.0f;
         float downXPixels = 0.0f;
         float downYPixels = 0.0f;
         float lastXPixels = 0.0f;
         float lastYPixels = 0.0f;
-
-        Uint64 downTicks = 0;
         float travelPixels = 0.0f;
+        Uint64 downTicks = 0;
     };
 
-    // Gesture thresholds. These classify gestures; they never create
-    // movement speed or acceleration.
-    static constexpr Uint64 SELECTION_HOLD_MS = 150;   // selection box: hold > 150 ms ...
-    static constexpr Uint64 TAP_MAX_HOLD_MS = 100;     // single tap: released before 100 ms
+    static constexpr Uint64 SELECTION_HOLD_MS = 100;
     static constexpr Uint64 BUILD_ROTATE_HOLD_MS = 200;
     static constexpr Uint64 TWO_FINGER_TAP_MS = 150;
 
-    static constexpr float SELECTION_TRAVEL_PX = 60.0f; // ... AND travelled > 60 px
-    static constexpr float TAP_MAX_TRAVEL_PX = 10.0f;
+    static constexpr float SELECTION_START_TRAVEL_PX = 20.0f;
+    static constexpr float TAP_MAX_TRAVEL_PX = 12.0f;
     static constexpr float TWO_FINGER_TAP_TRAVEL_PX = 15.0f;
-    static constexpr float BUILD_TAP_RADIUS_PX = 24.0f;
-
-    // Pure pixel-speed gains. Nothing here is divided by window size.
-    static constexpr float BUILD_ROTATE_RAD_PER_PX = 0.006f;
-    static constexpr float PINCH_ZOOM_GAIN = 1.5f;
-    static constexpr float PINCH_ZOOM_DIVISOR = 500.0f;
-
-    // Exactly 40 degrees.
-    static constexpr float ROTATION_DEAD_ZONE = 0.6981317007977318f;
-
+    static constexpr float BUILD_TAP_RADIUS_PX = 30.0f;
+    static constexpr float ROTATION_DEAD_ZONE = 0.6981317008f;
     static constexpr float MOBILE_PI = 3.14159265358979323846f;
     static constexpr float MOBILE_TWO_PI = 6.28318530717958647692f;
 
     State m_state = STATE_CAMERA_PAN;
     State m_stateBeforeMulti = STATE_CAMERA_PAN;
-
     SDL_Window *m_window = nullptr;
-
-    // Real SDL_FingerID -> stable local slot mapping.
-    // No assumption is made about the numeric value of SDL_FingerID.
     Finger m_fingers[2];
 
+    int m_selectionFinger = -1;
     bool m_selectionMouseDown = false;
 
-    // Building state.
     bool m_buildFixed = false;
     bool m_buildConfirm = false;
     bool m_buildRotating = false;
     Uint64 m_buildHoldStart = 0;
-
-    // Absolute screen-pixel position of the fixed/preview building.
     float m_buildX = 0.0f;
     float m_buildY = 0.0f;
-
-    // Current placement angle in radians.
     float m_buildRotation = 0.0f;
 
-    // Multi-touch state.
-    bool m_multiStarted = false;
-    bool m_multiMoved = false;
-    Uint64 m_multiStartTicks = 0;
     int m_multiA = -1;
     int m_multiB = -1;
-
-    float m_lastPinchDistancePixels = 0.0f;
+    Uint64 m_multiStartTicks = 0;
+    bool m_multiMoved = false;
+    float m_lastPinchDistance = 0.0f;
     float m_lastPairAngle = 0.0f;
     float m_multiAccumulatedRotation = 0.0f;
     bool m_multiRotationActive = false;
@@ -324,65 +281,37 @@ private:
 
     int WindowW() const
     {
-        int w = 1;
-        int h = 1;
-
-        if (m_window)
-            SDL_GetWindowSizeInPixels(m_window, &w, &h);
-
+        int w = 1, h = 1;
+        if (m_window) SDL_GetWindowSizeInPixels(m_window, &w, &h);
         return w > 0 ? w : 1;
     }
 
     int WindowH() const
     {
-        int w = 1;
-        int h = 1;
-
-        if (m_window)
-            SDL_GetWindowSizeInPixels(m_window, &w, &h);
-
+        int w = 1, h = 1;
+        if (m_window) SDL_GetWindowSizeInPixels(m_window, &w, &h);
         return h > 0 ? h : 1;
     }
 
-    float XPixels(float normalized) const
+    float XPixels(float v) const { return v * static_cast<float>(WindowW()); }
+    float YPixels(float v) const { return v * static_cast<float>(WindowH()); }
+    float DXPixels(float v) const { return v * static_cast<float>(WindowW()); }
+    float DYPixels(float v) const { return v * static_cast<float>(WindowH()); }
+
+    static float NormalizeAngle(float a)
     {
-        return normalized * static_cast<float>(WindowW());
-    }
-
-    float YPixels(float normalized) const
-    {
-        return normalized * static_cast<float>(WindowH());
-    }
-
-    float DXPixels(float normalizedDelta) const
-    {
-        return normalizedDelta * static_cast<float>(WindowW());
-    }
-
-    float DYPixels(float normalizedDelta) const
-    {
-        return normalizedDelta * static_cast<float>(WindowH());
-    }
-
-    static float NormalizeAngle(float angle)
-    {
-        while (angle > MOBILE_PI)
-            angle -= MOBILE_TWO_PI;
-
-        while (angle < -MOBILE_PI)
-            angle += MOBILE_TWO_PI;
-
-        return angle;
+        while (a > MOBILE_PI) a -= MOBILE_TWO_PI;
+        while (a < -MOBILE_PI) a += MOBILE_TWO_PI;
+        return a;
     }
 
     static float DistancePixels(float x1, float y1, float x2, float y2)
     {
-        const float dx = x2 - x1;
-        const float dy = y2 - y1;
+        const float dx = x2 - x1, dy = y2 - y1;
         return SDL_sqrtf(dx * dx + dy * dy);
     }
 
-    static float AngleBetweenPixels(float x1, float y1, float x2, float y2)
+    static float PairAngle(float x1, float y1, float x2, float y2)
     {
         return SDL_atan2f(y2 - y1, x2 - x1);
     }
@@ -390,215 +319,143 @@ private:
     int FindFinger(SDL_FingerID id) const
     {
         for (int i = 0; i < 2; ++i)
-        {
-            if (m_fingers[i].active && m_fingers[i].id == id)
-                return i;
-        }
-
+            if (m_fingers[i].active && m_fingers[i].id == id) return i;
         return -1;
     }
 
-    int FindFreeFingerSlot() const
+    int FindFreeFinger() const
     {
         for (int i = 0; i < 2; ++i)
-        {
-            if (!m_fingers[i].active)
-                return i;
-        }
-
+            if (!m_fingers[i].active) return i;
         return -1;
     }
 
     int ActiveFingerCount() const
     {
-        int count = 0;
-
+        int n = 0;
         for (int i = 0; i < 2; ++i)
-        {
-            if (m_fingers[i].active)
-                ++count;
-        }
-
-        return count;
+            if (m_fingers[i].active) ++n;
+        return n;
     }
 
     bool BuildingPending() const
     {
-        return TheInGameUI &&
-               TheInGameUI->getPendingPlaceType() != nullptr;
+        return TheInGameUI && TheInGameUI->getPendingPlaceType() != nullptr;
     }
 
-    bool IsNearFixedBuilding(float xPixels, float yPixels) const
+    bool IsNearFixedBuilding(float x, float y) const
     {
-        if (!m_buildFixed)
-            return false;
-
-        return DistancePixels(
-                   xPixels,
-                   yPixels,
-                   m_buildX,
-                   m_buildY) <= BUILD_TAP_RADIUS_PX;
+        return m_buildFixed &&
+            DistancePixels(x, y, m_buildX, m_buildY) <= BUILD_TAP_RADIUS_PX;
     }
 
     void LockCamera()
     {
-        if (TheTacticalView)
-            TheTacticalView->setMouseLock(TRUE);
+        if (TheTacticalView) TheTacticalView->setMouseLock(TRUE);
     }
 
     void UnlockCamera()
     {
-        if (TheTacticalView)
-            TheTacticalView->setMouseLock(FALSE);
+        if (TheTacticalView) TheTacticalView->setMouseLock(FALSE);
     }
 
-    void SendMouseMotionPixels(
-        float xPixels,
-        float yPixels,
-        float dxPixels = 0.0f,
-        float dyPixels = 0.0f)
+    void SendMouseMotion(float x, float y, float dx = 0.0f, float dy = 0.0f)
     {
         SDL3Mouse *mouse = Mouse();
-        if (!mouse)
-            return;
+        if (!mouse) return;
 
         SDL_Event e;
         SDL_zero(e);
-
         e.type = SDL_EVENT_MOUSE_MOTION;
         e.motion.windowID = SDL_GetWindowID(m_window);
         e.motion.which = 0;
-
-        // Absolute physical screen-pixel position.
-        e.motion.x = xPixels;
-        e.motion.y = yPixels;
-
-        // Exact physical screen-pixel movement for this event.
-        e.motion.xrel = dxPixels;
-        e.motion.yrel = dyPixels;
-
+        e.motion.x = x;
+        e.motion.y = y;
+        e.motion.xrel = dx;
+        e.motion.yrel = dy;
         mouse->addSDLEvent(&e);
     }
 
-    void SendMouseButtonPixels(Uint32 type, float xPixels, float yPixels)
+    void SendMouseButton(Uint32 type, float x, float y, Uint8 button = SDL_BUTTON_LEFT)
     {
         SDL3Mouse *mouse = Mouse();
-        if (!mouse)
-            return;
+        if (!mouse) return;
 
         SDL_Event e;
         SDL_zero(e);
-
         e.type = type;
         e.button.windowID = SDL_GetWindowID(m_window);
         e.button.which = 0;
-        e.button.button = SDL_BUTTON_LEFT;
+        e.button.button = button;
         e.button.down = (type == SDL_EVENT_MOUSE_BUTTON_DOWN);
         e.button.clicks = 1;
-
-        // Absolute physical screen-pixel position.
-        e.button.x = xPixels;
-        e.button.y = yPixels;
-
+        e.button.x = x;
+        e.button.y = y;
         mouse->addSDLEvent(&e);
     }
 
     void ReleaseSelectionMouse()
     {
-        if (!m_selectionMouseDown)
-            return;
+        if (!m_selectionMouseDown) return;
 
-        int index = FindFinger(m_fingers[0].id);
-        if (index < 0)
+        int index = m_selectionFinger;
+        if (index < 0 || index >= 2 || !m_fingers[index].active)
             index = 0;
 
-        SendMouseButtonPixels(
-            SDL_EVENT_MOUSE_BUTTON_UP,
-            m_fingers[index].lastXPixels,
-            m_fingers[index].lastYPixels);
+        SendMouseButton(SDL_EVENT_MOUSE_BUTTON_UP,
+                        m_fingers[index].xPixels,
+                        m_fingers[index].yPixels);
 
         m_selectionMouseDown = false;
-
-        if (TheInGameUI)
-            TheInGameUI->setSelecting(FALSE);
+        m_selectionFinger = -1;
+        if (TheInGameUI) TheInGameUI->setSelecting(FALSE);
     }
 
-    // Camera movement is a direct world-space application of the exact
-    // physical screen-pixel finger delta. No acceleration, interpolation,
-    // velocity cap, minimum step or fixed speed is introduced here.
-    void ApplyCameraPanPixels(float dxPixels, float dyPixels)
+    void ApplyCameraPan(float dxPixels, float dyPixels)
     {
-        if (m_state != STATE_CAMERA_PAN || !TheTacticalView)
-            return;
+        if (m_state != STATE_CAMERA_PAN || !TheTacticalView) return;
 
         Coord2D delta;
         delta.x = -dxPixels;
         delta.y = -dyPixels;
-
         TheTacticalView->userScrollBy(&delta);
     }
 
-    void BeginSelection(int fingerIndex)
+    void BeginSelection(int index)
     {
-        if (m_state != STATE_CAMERA_PAN)
-            return;
-
-        if (fingerIndex < 0 || fingerIndex >= 2 ||
-            !m_fingers[fingerIndex].active)
+        if (m_state != STATE_CAMERA_PAN || index < 0 || !m_fingers[index].active)
             return;
 
         m_state = STATE_SELECTION;
-
-        // Selection must never move the camera.
+        m_selectionFinger = index;
         LockCamera();
 
-        if (TheInGameUI)
-            TheInGameUI->setSelecting(TRUE);
+        if (TheInGameUI) TheInGameUI->setSelecting(TRUE);
 
-        const Finger &finger = m_fingers[fingerIndex];
-
-        // Start the native selection rectangle at the original finger-down
-        // position. Subsequent motion events use exact pixel deltas.
-        SendMouseMotionPixels(
-            finger.downXPixels,
-            finger.downYPixels,
-            0.0f,
-            0.0f);
-
-        SendMouseButtonPixels(
-            SDL_EVENT_MOUSE_BUTTON_DOWN,
-            finger.downXPixels,
-            finger.downYPixels);
-
+        const Finger &f = m_fingers[index];
+        SendMouseMotion(f.downXPixels, f.downYPixels);
+        SendMouseButton(SDL_EVENT_MOUSE_BUTTON_DOWN,
+                        f.downXPixels, f.downYPixels);
         m_selectionMouseDown = true;
     }
 
-    void StartBuildingPreview(float xPixels, float yPixels)
+    void StartBuildingPreview(float x, float y)
     {
         m_state = STATE_BUILDING;
-
         m_buildFixed = false;
         m_buildConfirm = false;
         m_buildRotating = false;
         m_buildHoldStart = 0;
-        m_buildRotation = 0.0f;
-
-        // REQUIRED: absolute finger position, never += and never offset.
-        m_buildX = xPixels;
-        m_buildY = yPixels;
-
-        // Building placement freezes camera movement.
+        m_buildX = x;
+        m_buildY = y;
         LockCamera();
-
-        SendMouseMotionPixels(
-            m_buildX,
-            m_buildY,
-            0.0f,
-            0.0f);
+        SendMouseMotion(x, y);
     }
 
-    void FixBuildingPreview()
+    void FixBuildingPreview(float x, float y)
     {
+        m_buildX = x;
+        m_buildY = y;
         m_buildFixed = true;
         m_buildConfirm = false;
         m_buildRotating = false;
@@ -609,9 +466,8 @@ private:
         if (TheInGameUI)
         {
             ICoord2D point;
-            point.x = static_cast<Int>(m_buildX);
-            point.y = static_cast<Int>(m_buildY);
-
+            point.x = static_cast<Int>(x);
+            point.y = static_cast<Int>(y);
             TheInGameUI->setPlacementStart(&point);
             TheInGameUI->setPlacementEnd(&point);
         }
@@ -623,68 +479,40 @@ private:
         m_buildConfirm = true;
         m_buildRotating = false;
         m_buildHoldStart = SDL_GetTicks();
-
         LockCamera();
     }
 
     void BeginBuildingRotation()
     {
-        if (m_state != STATE_BUILDING ||
-            !m_buildFixed ||
-            !m_buildConfirm ||
-            m_buildRotating)
-        {
-            return;
-        }
+        if (m_state != STATE_BUILDING || !m_buildFixed ||
+            !m_buildConfirm || m_buildRotating) return;
 
         m_buildRotating = true;
         m_buildHoldStart = 0;
-
-        // Preserve the preview's current orientation as the rotation origin.
-        m_buildRotation = TheInGameUI
-            ? TheInGameUI->getPlacementAngle()
-            : 0.0f;
-
+        m_buildRotation = TheInGameUI ? TheInGameUI->getPlacementAngle() : 0.0f;
         LockCamera();
-
-        if (TheInGameUI)
-        {
-            ICoord2D start;
-            start.x = static_cast<Int>(m_buildX);
-            start.y = static_cast<Int>(m_buildY);
-
-            TheInGameUI->setPlacementStart(&start);
-            TheInGameUI->setPlacementEnd(&start);
-        }
     }
 
-    void UpdateBuildingRotationPixels(float dxPixels)
+    void UpdateBuildingRotation(float dxPixels)
     {
-        if (!m_buildRotating || !TheInGameUI)
-            return;
+        if (!m_buildRotating || !TheInGameUI) return;
 
-        // Rotation is driven directly by the finger's per-event pixel
-        // delta (no division by screen size).
-        const float angleDelta = dxPixels * BUILD_ROTATE_RAD_PER_PX;
-
+        // Map horizontal finger travel to a full turn using the actual
+        // physical width. There is no arbitrary speed coefficient.
         m_buildRotation = NormalizeAngle(
-            m_buildRotation + angleDelta);
+            m_buildRotation +
+            dxPixels * MOBILE_TWO_PI / static_cast<float>(WindowW()));
 
         ICoord2D start;
         start.x = static_cast<Int>(m_buildX);
         start.y = static_cast<Int>(m_buildY);
 
-        // The radius is only the visual direction-vector length. It does not
-        // determine rotation speed or movement speed.
-        const float directionRadius =
-            static_cast<float>(
-                WindowW() < WindowH() ? WindowW() : WindowH()) * 0.10f;
+        const float radius =
+            static_cast<float>(WindowW() < WindowH() ? WindowW() : WindowH()) * 0.10f;
 
         ICoord2D end;
-        end.x = start.x + static_cast<Int>(
-            SDL_cosf(m_buildRotation) * directionRadius);
-        end.y = start.y + static_cast<Int>(
-            SDL_sinf(m_buildRotation) * directionRadius);
+        end.x = start.x + static_cast<Int>(SDL_cosf(m_buildRotation) * radius);
+        end.y = start.y + static_cast<Int>(SDL_sinf(m_buildRotation) * radius);
 
         TheInGameUI->setPlacementStart(&start);
         TheInGameUI->setPlacementEnd(&end);
@@ -692,32 +520,17 @@ private:
 
     void BuildNow()
     {
-        if (m_state != STATE_BUILDING || !m_buildFixed)
-            return;
+        if (m_state != STATE_BUILDING || !m_buildFixed) return;
 
-        // Commit exactly the fixed screen-pixel building position.
-        SendMouseMotionPixels(
-            m_buildX,
-            m_buildY,
-            0.0f,
-            0.0f);
-
-        SendMouseButtonPixels(
-            SDL_EVENT_MOUSE_BUTTON_DOWN,
-            m_buildX,
-            m_buildY);
-
-        SendMouseButtonPixels(
-            SDL_EVENT_MOUSE_BUTTON_UP,
-            m_buildX,
-            m_buildY);
+        SendMouseMotion(m_buildX, m_buildY);
+        SendMouseButton(SDL_EVENT_MOUSE_BUTTON_DOWN, m_buildX, m_buildY);
+        SendMouseButton(SDL_EVENT_MOUSE_BUTTON_UP, m_buildX, m_buildY);
 
         m_buildFixed = false;
         m_buildConfirm = false;
         m_buildRotating = false;
         m_buildHoldStart = 0;
         m_buildRotation = 0.0f;
-
         m_state = STATE_CAMERA_PAN;
         UnlockCamera();
     }
@@ -732,44 +545,24 @@ private:
         m_buildRotating = false;
         m_buildHoldStart = 0;
         m_buildRotation = 0.0f;
-
         m_state = STATE_CAMERA_PAN;
         UnlockCamera();
     }
 
     void StartMultiTouch()
     {
-        if (m_multiA >= 0 && m_multiB >= 0)
-            return;
-
-        int first = -1;
-        int second = -1;
-
+        int first = -1, second = -1;
         for (int i = 0; i < 2; ++i)
         {
-            if (!m_fingers[i].active)
-                continue;
-
-            if (first < 0)
-                first = i;
-            else
-            {
-                second = i;
-                break;
-            }
+            if (!m_fingers[i].active) continue;
+            if (first < 0) first = i;
+            else { second = i; break; }
         }
+        if (first < 0 || second < 0) return;
 
-        if (first < 0 || second < 0)
-            return;
-
-        // Any active one-finger operation is frozen immediately.
-        // In particular, camera pan is never allowed to continue while
-        // two fingers are down.
         m_multiA = first;
         m_multiB = second;
 
-        // A selection rectangle in progress is closed first, so we never
-        // return to STATE_SELECTION with no finger driving it.
         if (m_state == STATE_SELECTION)
         {
             ReleaseSelectionMouse();
@@ -780,182 +573,124 @@ private:
             m_stateBeforeMulti = m_state;
         }
 
-        // A pending rotation/confirm hold must not fire while two fingers are down.
-        m_buildConfirm = false;
-        m_buildRotating = false;
-        m_buildHoldStart = 0;
-
+        // A second finger always freezes the one-finger gesture immediately.
         m_state = STATE_MULTI_TOUCH;
-
-        m_multiStarted = true;
-        m_multiMoved = false;
         m_multiStartTicks = SDL_GetTicks();
+        m_multiMoved = false;
 
-        const float x1 = m_fingers[m_multiA].xPixels;
-        const float y1 = m_fingers[m_multiA].yPixels;
-        const float x2 = m_fingers[m_multiB].xPixels;
-        const float y2 = m_fingers[m_multiB].yPixels;
+        const float x1 = m_fingers[first].xPixels;
+        const float y1 = m_fingers[first].yPixels;
+        const float x2 = m_fingers[second].xPixels;
+        const float y2 = m_fingers[second].yPixels;
 
-        m_lastPinchDistancePixels =
-            DistancePixels(x1, y1, x2, y2);
-
-        m_lastPairAngle =
-            AngleBetweenPixels(x1, y1, x2, y2);
-
+        m_lastPinchDistance = DistancePixels(x1, y1, x2, y2);
+        m_lastPairAngle = PairAngle(x1, y1, x2, y2);
         m_multiAccumulatedRotation = 0.0f;
         m_multiRotationActive = false;
-
-        // Multi-touch always freezes the camera's normal single-finger pan.
-        LockCamera();
+        // No mouse lock here: two-finger gestures own the camera.
     }
 
     void MultiTouchMotion(const SDL_Event &event)
     {
-        if (m_multiA < 0 || m_multiB < 0)
-            return;
-
         const int index = FindFinger(event.tfinger.fingerID);
-        if (index < 0)
-            return;
+        if (index < 0 || m_multiA < 0 || m_multiB < 0) return;
 
-        // The event's x/y and dx/dy are converted to physical screen pixels
-        // immediately. The stored state never uses normalized coordinates.
-        const float dxPixels = DXPixels(event.tfinger.dx);
-        const float dyPixels = DYPixels(event.tfinger.dy);
+        const float dx = DXPixels(event.tfinger.dx);
+        const float dy = DYPixels(event.tfinger.dy);
 
-        m_fingers[index].xPixels = XPixels(event.tfinger.x);
-        m_fingers[index].yPixels = YPixels(event.tfinger.y);
+        Finger &f = m_fingers[index];
+        f.xPixels = XPixels(event.tfinger.x);
+        f.yPixels = YPixels(event.tfinger.y);
+        f.travelPixels += DistancePixels(0.0f, 0.0f, dx, dy);
 
-        m_fingers[index].travelPixels +=
-            DistancePixels(
-                0.0f,
-                0.0f,
-                dxPixels,
-                dyPixels);
+        if (f.travelPixels >= TWO_FINGER_TAP_TRAVEL_PX)
+            m_multiMoved = true;
 
-        const float x1 = m_fingers[m_multiA].xPixels;
-        const float y1 = m_fingers[m_multiA].yPixels;
-        const float x2 = m_fingers[m_multiB].xPixels;
-        const float y2 = m_fingers[m_multiB].yPixels;
+        const Finger &a = m_fingers[m_multiA];
+        const Finger &b = m_fingers[m_multiB];
 
-        const float pairDX = x2 - x1;
-        const float pairDY = y2 - y1;
+        const float pairDX = b.xPixels - a.xPixels;
+        const float pairDY = b.yPixels - a.yPixels;
+        const float distance = SDL_sqrtf(pairDX * pairDX + pairDY * pairDY);
+        const float angle = SDL_atan2f(pairDY, pairDX);
 
-        const float currentDistance =
-            SDL_sqrtf(pairDX * pairDX + pairDY * pairDY);
-
-        const float currentAngle =
-            SDL_atan2f(pairDY, pairDX);
-
-        // Exact per-event distance change in physical pixels.
-        const float pinchDeltaPixels =
-            currentDistance - m_lastPinchDistancePixels;
-
-        // Exact per-event angular change.
-        const float angleDelta =
-            NormalizeAngle(currentAngle - m_lastPairAngle);
-
-        // Pinch: per-event pixel-distance delta, scaled by a constant gain.
-        // Faster pinch -> faster zoom. No window-size division.
-        if (pinchDeltaPixels != 0.0f && TheTacticalView)
-        {
+        // Exact pinch delta in physical pixels, normalized only by screen
+        // width as requested. No arbitrary zoom gain/divisor.
+        const float pinchDelta = distance - m_lastPinchDistance;
+        if (pinchDelta != 0.0f && TheTacticalView)
             TheTacticalView->userZoom(
-                -pinchDeltaPixels * PINCH_ZOOM_GAIN / PINCH_ZOOM_DIVISOR);
-        }
+                -pinchDelta / static_cast<float>(WindowW()));
 
-        // Accumulate only for deciding whether the 40-degree rotation
-        // dead-zone has actually been crossed.
+        const float angleDelta = NormalizeAngle(angle - m_lastPairAngle);
         m_multiAccumulatedRotation += angleDelta;
 
         if (!m_multiRotationActive)
         {
-            if (SDL_fabsf(m_multiAccumulatedRotation) >
-                ROTATION_DEAD_ZONE)
+            if (SDL_fabsf(m_multiAccumulatedRotation) > ROTATION_DEAD_ZONE)
             {
                 m_multiRotationActive = true;
-
-                // Apply only the part beyond the dead-zone. The dead-zone
-                // itself never rotates the camera.
-                const float sign =
-                    m_multiAccumulatedRotation >= 0.0f
-                        ? 1.0f
-                        : -1.0f;
-
-                const float excess =
-                    SDL_fabsf(m_multiAccumulatedRotation) -
-                    ROTATION_DEAD_ZONE;
-
+                const float sign = m_multiAccumulatedRotation >= 0.0f ? 1.0f : -1.0f;
+                const float excess = SDL_fabsf(m_multiAccumulatedRotation) - ROTATION_DEAD_ZONE;
                 if (excess > 0.0f && TheTacticalView)
-                {
                     TheTacticalView->userSetAngle(
-                        NormalizeAngle(
-                            TheTacticalView->getAngle() +
-                            sign * excess));
-                }
+                        NormalizeAngle(TheTacticalView->getAngle() + sign * excess));
             }
         }
         else if (angleDelta != 0.0f && TheTacticalView)
         {
-            // After activation the camera follows the exact angular delta.
-            // No rotation rate, acceleration or frame-based step exists.
             TheTacticalView->userSetAngle(
-                NormalizeAngle(
-                    TheTacticalView->getAngle() + angleDelta));
+                NormalizeAngle(TheTacticalView->getAngle() + angleDelta));
         }
 
-        m_fingers[index].lastXPixels =
-            m_fingers[index].xPixels;
-
-        m_fingers[index].lastYPixels =
-            m_fingers[index].yPixels;
-
-        m_lastPinchDistancePixels = currentDistance;
-        m_lastPairAngle = currentAngle;
+        f.lastXPixels = f.xPixels;
+        f.lastYPixels = f.yPixels;
+        m_lastPinchDistance = distance;
+        m_lastPairAngle = angle;
     }
 
     void FinishMultiTouch()
     {
-        if (ActiveFingerCount() != 0)
-            return;
+        if (ActiveFingerCount() != 0) return;
 
-        // Both fingers must have been pressed AND released within 150 ms
-        // (measured from the earliest touch-down), each travelling < 15 px.
         const Uint64 firstDown =
-            m_fingers[m_multiA].downTicks < m_fingers[m_multiB].downTicks
-                ? m_fingers[m_multiA].downTicks
-                : m_fingers[m_multiB].downTicks;
+            m_fingers[m_multiA].downTicks < m_fingers[m_multiB].downTicks ?
+            m_fingers[m_multiA].downTicks : m_fingers[m_multiB].downTicks;
 
         const Uint64 duration = SDL_GetTicks() - firstDown;
-
-        const bool shortTwoFingerTap =
-            m_multiStarted &&
-            !m_multiMoved &&   // set only when the gesture was canceled by the OS
+        const bool shortTap =
             duration <= TWO_FINGER_TAP_MS &&
+            !m_multiMoved &&
             m_fingers[m_multiA].travelPixels < TWO_FINGER_TAP_TRAVEL_PX &&
             m_fingers[m_multiB].travelPixels < TWO_FINGER_TAP_TRAVEL_PX;
 
-        if (shortTwoFingerTap &&
-            m_stateBeforeMulti == STATE_BUILDING &&
-            BuildingPending())
+        if (shortTap)
         {
-            CancelBuilding();
+            // Two-finger tap is the mobile equivalent of RMB: cancel
+            // building/selection/action, or send an actual right-click.
+            if (m_stateBeforeMulti == STATE_BUILDING && BuildingPending())
+                CancelBuilding();
+            else
+            {
+                const float x = (m_fingers[m_multiA].xPixels + m_fingers[m_multiB].xPixels) * 0.5f;
+                const float y = (m_fingers[m_multiA].yPixels + m_fingers[m_multiB].yPixels) * 0.5f;
+                SendMouseMotion(x, y);
+                SendMouseButton(SDL_EVENT_MOUSE_BUTTON_DOWN, x, y, SDL_BUTTON_RIGHT);
+                SendMouseButton(SDL_EVENT_MOUSE_BUTTON_UP, x, y, SDL_BUTTON_RIGHT);
+                m_state = STATE_CAMERA_PAN;
+                UnlockCamera();
+            }
         }
         else
         {
             m_state = m_stateBeforeMulti;
-
-            if (m_state == STATE_BUILDING)
-                LockCamera();
-            else
-                UnlockCamera();
+            if (m_state == STATE_BUILDING) LockCamera();
+            else UnlockCamera();
         }
 
-        m_multiStarted = false;
-        m_multiMoved = false;
+        m_multiA = m_multiB = -1;
         m_multiStartTicks = 0;
-        m_multiA = -1;
-        m_multiB = -1;
-        m_lastPinchDistancePixels = 0.0f;
+        m_multiMoved = false;
+        m_lastPinchDistance = 0.0f;
         m_lastPairAngle = 0.0f;
         m_multiAccumulatedRotation = 0.0f;
         m_multiRotationActive = false;
@@ -963,32 +698,21 @@ private:
 
     void FingerDown(const SDL_Event &event)
     {
-        if (FindFinger(event.tfinger.fingerID) >= 0)
-            return;
+        if (FindFinger(event.tfinger.fingerID) >= 0) return;
+        const int slot = FindFreeFinger();
+        if (slot < 0) return;
 
-        const int slot = FindFreeFingerSlot();
-
-        if (slot < 0)
-            return;
-
-        Finger &finger = m_fingers[slot];
-
-        finger = Finger();
-        finger.id = event.tfinger.fingerID;
-        finger.active = true;
-
-        // SDL3 x/y are normalized. Convert exactly once at the boundary.
-        finger.xPixels = XPixels(event.tfinger.x);
-        finger.yPixels = YPixels(event.tfinger.y);
-
-        finger.downXPixels = finger.xPixels;
-        finger.downYPixels = finger.yPixels;
-
-        finger.lastXPixels = finger.xPixels;
-        finger.lastYPixels = finger.yPixels;
-
-        finger.downTicks = SDL_GetTicks();
-        finger.travelPixels = 0.0f;
+        Finger &f = m_fingers[slot];
+        f = Finger();
+        f.id = event.tfinger.fingerID;
+        f.active = true;
+        f.xPixels = XPixels(event.tfinger.x);
+        f.yPixels = YPixels(event.tfinger.y);
+        f.downXPixels = f.xPixels;
+        f.downYPixels = f.yPixels;
+        f.lastXPixels = f.xPixels;
+        f.lastYPixels = f.yPixels;
+        f.downTicks = SDL_GetTicks();
 
         if (ActiveFingerCount() >= 2)
         {
@@ -996,34 +720,20 @@ private:
             return;
         }
 
-        // The first finger begins the appropriate one-finger state.
         if (BuildingPending())
         {
             if (m_buildFixed)
             {
-                // Step 2 only starts when the second tap is actually on
-                // the fixed preview.
-                if (IsNearFixedBuilding(
-                        finger.xPixels,
-                        finger.yPixels))
-                {
+                if (IsNearFixedBuilding(f.xPixels, f.yPixels))
                     StartBuildingConfirmation();
-                }
                 else
                 {
-                    // The fixed building remains untouched. Camera remains
-                    // locked because construction mode is still active.
                     m_state = STATE_BUILDING;
                     LockCamera();
                 }
             }
             else
-            {
-                StartBuildingPreview(
-                    finger.xPixels,
-                    finger.yPixels);
-            }
-
+                StartBuildingPreview(f.xPixels, f.yPixels);
             return;
         }
 
@@ -1040,182 +750,94 @@ private:
         }
 
         const int index = FindFinger(event.tfinger.fingerID);
+        if (index < 0) return;
 
-        if (index < 0)
-            return;
+        Finger &f = m_fingers[index];
+        const float dx = DXPixels(event.tfinger.dx);
+        const float dy = DYPixels(event.tfinger.dy);
+        const float x = XPixels(event.tfinger.x);
+        const float y = YPixels(event.tfinger.y);
 
-        Finger &finger = m_fingers[index];
-
-        const float dxPixels =
-            DXPixels(event.tfinger.dx);
-
-        const float dyPixels =
-            DYPixels(event.tfinger.dy);
-
-        const float xPixels =
-            XPixels(event.tfinger.x);
-
-        const float yPixels =
-            YPixels(event.tfinger.y);
-
-        // Travel is always accumulated from actual physical screen pixels.
-        finger.travelPixels +=
-            DistancePixels(
-                0.0f,
-                0.0f,
-                dxPixels,
-                dyPixels);
-
-        finger.xPixels = xPixels;
-        finger.yPixels = yPixels;
+        f.xPixels = x;
+        f.yPixels = y;
+        f.travelPixels += DistancePixels(0.0f, 0.0f, dx, dy);
 
         if (m_state == STATE_BUILDING)
         {
             if (!m_buildFixed)
             {
-                // STEP 1: exact absolute screen-pixel position.
-                m_buildX = xPixels;
-                m_buildY = yPixels;
-
+                m_buildX = x;
+                m_buildY = y;
                 LockCamera();
-
-                SendMouseMotionPixels(
-                    m_buildX,
-                    m_buildY,
-                    dxPixels,
-                    dyPixels);
+                SendMouseMotion(x, y, dx, dy);
             }
             else if (m_buildConfirm && m_buildRotating)
             {
-                // STEP 2: current horizontal pixel speed directly controls
-                // the angular change for this event.
-                UpdateBuildingRotationPixels(dxPixels);
+                UpdateBuildingRotation(dx);
             }
 
-            finger.lastXPixels = xPixels;
-            finger.lastYPixels = yPixels;
+            f.lastXPixels = x;
+            f.lastYPixels = y;
             return;
         }
 
         if (m_state == STATE_SELECTION)
         {
-            // Camera stays locked while the native selection rectangle
-            // follows the current finger position exactly.
             LockCamera();
-
-            SendMouseMotionPixels(
-                xPixels,
-                yPixels,
-                dxPixels,
-                dyPixels);
-
-            finger.lastXPixels = xPixels;
-            finger.lastYPixels = yPixels;
+            SendMouseMotion(x, y, dx, dy);
+            f.lastXPixels = x;
+            f.lastYPixels = y;
             return;
         }
 
         if (m_state == STATE_CAMERA_PAN)
         {
-            const Uint64 held =
-                SDL_GetTicks() - finger.downTicks;
-
-            // Selection requires BOTH conditions:
-            // strictly more than 150 ms AND strictly more than 60 pixels.
-            if (held > SELECTION_HOLD_MS &&
-                finger.travelPixels > SELECTION_TRAVEL_PX)
+            // Before the 0.1s hold is established, movement is a pure
+            // finger-driven camera swipe.
+            if (SDL_GetTicks() - f.downTicks <= SELECTION_HOLD_MS ||
+                f.travelPixels > SELECTION_START_TRAVEL_PX)
             {
-                BeginSelection(index);
-
-                SendMouseMotionPixels(
-                    xPixels,
-                    yPixels,
-                    dxPixels,
-                    dyPixels);
-            }
-            else
-            {
-                // Direct finger-speed camera response.
-                ApplyCameraPanPixels(
-                    dxPixels,
-                    dyPixels);
+                ApplyCameraPan(dx, dy);
             }
         }
 
-        finger.lastXPixels = xPixels;
-        finger.lastYPixels = yPixels;
+        f.lastXPixels = x;
+        f.lastYPixels = y;
     }
 
     void FingerUp(const SDL_Event &event, bool canceled)
     {
+        const int index = FindFinger(event.tfinger.fingerID);
+        if (index < 0) return;
+
+        Finger &f = m_fingers[index];
+        const float x = XPixels(event.tfinger.x);
+        const float y = YPixels(event.tfinger.y);
+        const float dx = x - f.lastXPixels;
+        const float dy = y - f.lastYPixels;
+        const Uint64 held = SDL_GetTicks() - f.downTicks;
+
+        f.xPixels = x;
+        f.yPixels = y;
+
         if (m_state == STATE_MULTI_TOUCH)
         {
-            const int index = FindFinger(event.tfinger.fingerID);
-
-            if (index < 0)
-                return;
-
-            Finger &finger = m_fingers[index];
-
-            // FINGER_UP still carries the exact final x/y.
-            finger.xPixels = XPixels(event.tfinger.x);
-            finger.yPixels = YPixels(event.tfinger.y);
-
-            if (canceled)
-                m_multiMoved = true;
-
-            finger.active = false;
-
+            if (canceled) m_multiMoved = true;
+            f.active = false;
             FinishMultiTouch();
             return;
         }
 
-        const int index = FindFinger(event.tfinger.fingerID);
-
-        if (index < 0)
-            return;
-
-        Finger &finger = m_fingers[index];
-
-        const float xPixels =
-            XPixels(event.tfinger.x);
-
-        const float yPixels =
-            YPixels(event.tfinger.y);
-
-        const float finalDX =
-            xPixels - finger.lastXPixels;
-
-        const float finalDY =
-            yPixels - finger.lastYPixels;
-
-        const Uint64 held =
-            SDL_GetTicks() - finger.downTicks;
-
-        if (m_state == STATE_SELECTION)
+        if (m_state == STATE_SELECTION && m_selectionFinger == index)
         {
-            // Finish the native selection box at the exact release position.
-            LockCamera();
-
-            SendMouseMotionPixels(
-                xPixels,
-                yPixels,
-                finalDX,
-                finalDY);
-
-            SendMouseButtonPixels(
-                SDL_EVENT_MOUSE_BUTTON_UP,
-                xPixels,
-                yPixels);
-
+            SendMouseMotion(x, y, dx, dy);
+            SendMouseButton(SDL_EVENT_MOUSE_BUTTON_UP, x, y);
             m_selectionMouseDown = false;
-
-            if (TheInGameUI)
-                TheInGameUI->setSelecting(FALSE);
-
-            UnlockCamera();
-
-            finger.active = false;
+            m_selectionFinger = -1;
+            if (TheInGameUI) TheInGameUI->setSelecting(FALSE);
+            f.active = false;
             m_state = STATE_CAMERA_PAN;
+            UnlockCamera();
             return;
         }
 
@@ -1223,60 +845,27 @@ private:
         {
             if (!m_buildFixed)
             {
-                // STEP 1 ends here. Capture the exact release pixel.
-                m_buildX = xPixels;
-                m_buildY = yPixels;
-
-                SendMouseMotionPixels(
-                    m_buildX,
-                    m_buildY,
-                    finalDX,
-                    finalDY);
-
-                // Release fixes the preview only. It does NOT build.
-                FixBuildingPreview();
+                FixBuildingPreview(x, y);
             }
             else if (m_buildConfirm)
             {
-                // Short tap (< 0.2s) builds immediately.
-                // A hold >= 0.2s enables rotation, then release builds.
-                if (!m_buildRotating &&
-                    held >= BUILD_ROTATE_HOLD_MS)
-                {
-                    BeginBuildingRotation();
-                }
-
                 BuildNow();
             }
-
-            finger.active = false;
+            f.active = false;
             return;
         }
 
-        // Ordinary single tap:
-        // no delay and no movement means one immediate native click/raycast.
+        // Short, stationary one-finger touch is a normal native click/raycast.
         if (!canceled &&
-            finger.travelPixels <= TAP_MAX_TRAVEL_PX &&
-            held < TAP_MAX_HOLD_MS)
+            held < SELECTION_HOLD_MS &&
+            f.travelPixels <= TAP_MAX_TRAVEL_PX)
         {
-            SendMouseMotionPixels(
-                xPixels,
-                yPixels,
-                finalDX,
-                finalDY);
-
-            SendMouseButtonPixels(
-                SDL_EVENT_MOUSE_BUTTON_DOWN,
-                xPixels,
-                yPixels);
-
-            SendMouseButtonPixels(
-                SDL_EVENT_MOUSE_BUTTON_UP,
-                xPixels,
-                yPixels);
+            SendMouseMotion(x, y, dx, dy);
+            SendMouseButton(SDL_EVENT_MOUSE_BUTTON_DOWN, x, y);
+            SendMouseButton(SDL_EVENT_MOUSE_BUTTON_UP, x, y);
         }
 
-        finger.active = false;
+        f.active = false;
         m_state = STATE_CAMERA_PAN;
     }
 };
