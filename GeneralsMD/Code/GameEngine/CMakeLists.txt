@@ -1,4 +1,5 @@
 set(GAMEENGINE_SRC
+    Include/Common/GXSafeArea.h
     Include/Common/AcademyStats.h
     Include/Common/ActionManager.h
 #    Include/Common/ArchiveFile.h
@@ -1129,6 +1130,7 @@ set(GAMEENGINE_SRC
 #    Source/GameNetwork/udp.cpp
 #    Source/GameNetwork/User.cpp
 #    Source/GameNetwork/WOLBrowser/WebBrowser.cpp
+    Source/Common/GXSafeArea.cpp
     Source/Precompiled/PreRTS.cpp
 )
 
