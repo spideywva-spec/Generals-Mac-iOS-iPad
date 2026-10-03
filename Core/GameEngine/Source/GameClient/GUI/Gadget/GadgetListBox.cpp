@@ -53,6 +53,7 @@
 #include "Common/Language.h"
 #include "Common/Debug.h"
 #include "Common/GameAudio.h"
+#include "GameClient/Display.h"
 #include "GameClient/DisplayStringManager.h"
 #include "GameClient/GameWindow.h"
 #include "GameClient/Gadget.h"
@@ -540,6 +541,61 @@ static Int addEntry( UnicodeString *string, Int color, Int row, Int column, Game
 ///////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+
+// GadgetListBoxTouchScroll ===================================================
+/** GeneralsX @feature Android port 27/09/2026 Scroll a list box by dragging a finger through
+	it. A mouse player has the wheel; on a phone the only way was the small arrows or the thumb
+	at the list's edge. The touch layer (SDL3GameEngine.cpp) recognises a drag that started on a
+	list and calls these directly -- a finger on a list is not a mouse, and the window manager's
+	drag messages never reach a list for a touch that has not yet been classified as a press.
+	The list follows the finger pixel by pixel, clamped to the bound the scroll bar's own
+	tracking uses (GSM_SLIDER_TRACK), and the thumb moves with it. */
+//=============================================================================
+static GameWindow *s_touchScrollWindow = nullptr;
+static Int s_touchScrollAnchorY = 0;
+static Int s_touchScrollAnchorPos = 0;
+
+void GadgetListBoxTouchScrollBegin( GameWindow *listbox, Int y )
+{
+	ListboxData *list = listbox ? (ListboxData *)listbox->winGetUserData() : nullptr;
+	s_touchScrollWindow = list ? listbox : nullptr;
+	s_touchScrollAnchorY = y;
+	s_touchScrollAnchorPos = list ? list->displayPos : 0;
+}
+
+void GadgetListBoxTouchScrollMove( GameWindow *listbox, Int y )
+{
+	if( listbox == nullptr || listbox != s_touchScrollWindow )
+		return;
+	ListboxData *list = (ListboxData *)listbox->winGetUserData();
+	if( list == nullptr || list->endPos <= 0 )
+		return;
+
+	Int maxPos = list->totalHeight - list->displayHeight + 1;
+	if( maxPos < 0 )
+		maxPos = 0;
+	Int pos = s_touchScrollAnchorPos - ( y - s_touchScrollAnchorY );
+	if( pos < 0 )
+		pos = 0;
+	if( pos > maxPos )
+		pos = maxPos;
+	if( pos == list->displayPos )
+		return;
+	list->displayPos = pos;
+
+	// Refresh the scroll bar's range, then move its thumb to the new position.
+	adjustDisplay( listbox, 0, FALSE );
+	if( list->slider != nullptr )
+	{
+		SliderData *sData = (SliderData *)list->slider->winGetUserData();
+		TheWindowManager->winSendSystemMsg( list->slider, GSM_SET_SLIDER, ( sData->maxVal - list->displayPos ), 0 );
+	}
+}
+
+void GadgetListBoxTouchScrollEnd()
+{
+	s_touchScrollWindow = nullptr;
+}
 
 // GadgetListBoxInput =========================================================
 /** Handle input for list box */
@@ -1791,11 +1847,21 @@ WindowMsgHandledType GadgetListBoxSystem( GameWindow *window, UnsignedInt msg,
 		case GLM_GET_SELECTION:
 		{
 
+			// GeneralsX @bugfix Android port 11/07/2026 the 12/02/2026 "64-bit
+			// compatibility" fix above was wrong: list->selections is NOT a
+			// scalar handle being smuggled through an Int (that pattern is for
+			// item *data*, e.g. GadgetListBoxSetItemData/GetItemData) -- per
+			// GadgetListBoxGetSelected()'s own doc comment, for a multi-select
+			// listbox the caller passes a buffer and expects the ARRAY of
+			// selected indices copied into it (-1 terminated, never larger
+			// than list->listLength). Truncating the array pointer itself to
+			// 32 bits and writing that as a single Int handed every caller a
+			// wild pointer instead of real indices -- confirmed as the root
+			// cause of a real-device crash in WOLLobbyMenu.cpp's Custom Match
+			// player list (PopulateLobbyPlayerListbox), which read through
+			// that wild pointer immediately after this call.
 			if( list->multiSelect )
-				// GeneralsX @bugfix BenderAI 12/02/2026 - Cast via intptr_t for 64-bit compatibility
-				// list->selections is a pointer being stored as Int (common pattern for GUI message passing).
-				// On 64-bit Linux, pointers are 8 bytes but Int is 4 bytes. Cast through intptr_t first.
-				*(Int*)mData2 = static_cast<Int>(reinterpret_cast<intptr_t>(list->selections));
+				memcpy( (Int*)mData2, list->selections, list->listLength * sizeof(Int) );
 			else
 				*(Int*)mData2 = list->selectPos;
 
@@ -2592,6 +2658,16 @@ Int GadgetListBoxGetListLength( GameWindow *listbox )
 //=============================================================================
 Int GadgetListBoxGetMaxSelectedLength( GameWindow *listbox )
 {
+	// GeneralsX @bugfix Android port 11/07/2026 unlike every other
+	// GadgetListBoxXxx() accessor in this file, this one dereferenced
+	// `listbox` with no null check -- a caller whose window was torn down
+	// (e.g. the user backing out of a screen while an async callback that
+	// captured the listbox is still in flight) would crash here instead of
+	// getting the same safe "listbox doesn't exist" no-op the other
+	// accessors give.
+	if (!listbox)
+		return 0;
+
 	ListboxData *listboxData = (ListboxData *)listbox->winGetUserData();
 	if (listboxData)
 		return listboxData->multiSelect ? listboxData->listLength : 1;
