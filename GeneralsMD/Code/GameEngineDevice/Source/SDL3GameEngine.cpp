@@ -1240,6 +1240,26 @@ void SDL3GameEngine::pollSDL3Events(void)
 
 			case SDL_EVENT_KEY_DOWN:
 			case SDL_EVENT_KEY_UP:
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+				// iOS Return/Enter must dismiss the software keyboard. SDL can keep
+				// the entry widget focused, so suppress an immediate IME restart.
+				// This is independent of the mobile battlefield touch manager.
+				if (event.type == SDL_EVENT_KEY_DOWN &&
+				    (event.key.key == SDLK_RETURN || event.key.key == SDLK_KP_ENTER)) {
+					GameWindow *returnFocus = m_TextInputFocusWindow;
+					if (!returnFocus && TheWindowManager) {
+						returnFocus = TheWindowManager->winGetFocus();
+					}
+					if (returnFocus &&
+					    BitIsSet(returnFocus->winGetStyle(), GWS_ENTRY_FIELD)) {
+						SDL_StopTextInput(m_SDLWindow);
+						m_IsTextInputActive = false;
+						m_TextInputFocusWindow = returnFocus;
+						m_TextInputSuppressedFocusWindow = returnFocus;
+						fprintf(stderr, "INFO: iOS text input: Return dismissed keyboard; IME suppressed until entry focus changes\\n");
+					}
+				}
+#endif
 				if (TheKeyboard) {
 					SDL3Keyboard *keyboard = dynamic_cast<SDL3Keyboard *>(TheKeyboard);
 					if (keyboard) {
