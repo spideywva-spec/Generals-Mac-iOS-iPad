@@ -2131,16 +2131,16 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
     NSString *iosOverrides =
         [NSString stringWithFormat:
-            @"GameData\\n"
-             "  MaxCameraHeight = %.1f\\n"
-             "  MinCameraHeight = %.1f\\n"
-             "  CameraPitch = %.1f\\n"
-             "  EnforceMaxCameraHeight = %@\\n"
-             "  KeyboardScrollSpeedFactor = %.2f\\n"
-             "  TerrainDrawDistanceScale = %.2f\\n"
-             "  UseFPSLimit = %@\\n"
-             "  FramesPerSecondLimit = %.0f\\n"
-             "End\\n",
+            @"GameData\n"
+             "  MaxCameraHeight = %.1f\n"
+             "  MinCameraHeight = %.1f\n"
+             "  CameraPitch = %.1f\n"
+             "  EnforceMaxCameraHeight = %@\n"
+             "  KeyboardScrollSpeedFactor = %.2f\n"
+             "  TerrainDrawDistanceScale = %.2f\n"
+             "  UseFPSLimit = %@\n"
+             "  FramesPerSecondLimit = %.0f\n"
+             "End\n",
             self.maxCameraSlider.value,
             self.minCameraSlider.value,
             self.cameraPitchSlider.value,
@@ -2231,7 +2231,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     {
         self.settingsStatus.text = @"✓ Настройки сохранены. Изменения применятся при следующем запуске игры.";
         self.settingsStatus.textColor = [UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0];
-        fprintf(stderr, "INFO: iOS launcher settings saved successfully\\n");
+        fprintf(stderr, "INFO: iOS launcher settings saved successfully\n");
     }
     else
     {
@@ -2239,7 +2239,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         self.settingsStatus.text = [NSString stringWithFormat:@"✕ Не удалось сохранить настройки: %@",
                                     error.localizedDescription ?: @"неизвестная ошибка"];
         self.settingsStatus.textColor = [UIColor colorWithRed:1.0 green:0.42 blue:0.32 alpha:1.0];
-        fprintf(stderr, "ERROR: iOS launcher settings save failed: %s\\n",
+        fprintf(stderr, "ERROR: iOS launcher settings save failed: %s\n",
                 error != nil ? error.localizedDescription.UTF8String : "unknown error");
     }
 }
@@ -2389,7 +2389,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     [self saveНастройки];
     self.settingsStatus.text = @"✓ Настройки сброшены и сохранены. Изменения применятся при следующем запуске игры.";
     self.settingsStatus.textColor = [UIColor colorWithRed:0.18 green:0.88 blue:0.48 alpha:1.0];
-    fprintf(stderr, "INFO: iOS launcher settings reset to defaults and saved to Options.ini\\n");
+    fprintf(stderr, "INFO: iOS launcher settings reset to defaults and saved to Options.ini\n");
 }
 
 - (void)resetНастройкиControls
