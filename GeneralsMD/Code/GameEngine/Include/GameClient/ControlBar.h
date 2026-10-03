@@ -980,8 +980,11 @@ protected:
 	Player *m_observedPlayer;														///< The current player we're observing, Null if we're not observing anyone.
 
 	WindowLayout *m_buildToolTipLayout;										///< The window that will slide on/display tooltips
-	Bool m_showBuildToolTipLayout;											///< every frame we test to see if we are going to continue showing this or not.
+	Bool m_showBuildToolTipLayout;
+	Bool m_touchHoldActive;
+	ICoord2D m_touchHoldPoint;											///< every frame we test to see if we are going to continue showing this or not.
 public:
+	void setTouchHoldPoint( Int x, Int y, Bool held ) { m_touchHoldActive = held; m_touchHoldPoint.x = x; m_touchHoldPoint.y = y; }
 	void showBuildTooltipLayout( GameWindow *cmdButton );
 	void hideBuildTooltipLayout();
 	void deleteBuildTooltipLayout();
