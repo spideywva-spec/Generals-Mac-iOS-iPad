@@ -893,6 +893,8 @@ ControlBar::ControlBar()
 	m_observedPlayer = nullptr;
 	m_buildToolTipLayout = nullptr;
 	m_showBuildToolTipLayout = FALSE;
+	m_touchHoldActive = FALSE;
+	m_touchHoldPoint.x = m_touchHoldPoint.y = 0;
 
 	m_animateDownWin1Pos.x = m_animateDownWin1Pos.y = 0;
 	m_animateDownWin1Size.x = m_animateDownWin1Size.y = 0;
