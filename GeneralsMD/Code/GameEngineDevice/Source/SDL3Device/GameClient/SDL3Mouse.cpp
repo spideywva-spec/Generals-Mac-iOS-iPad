@@ -528,6 +528,31 @@ void SDL3Mouse::regainFocus()
 	// Capture may be re-enabled by game logic
 }
 
+#if (defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE) || defined(__ANDROID__)
+
+// GeneralsX @bugfix Android port 06/09/2026 See the declaration comment: this
+// updates the position preview drawing reads, and nothing else. No message is
+// appended to the stream here, so no translator sees an event and nothing about
+// hover, scrolling, selection or clicking changes.
+void SDL3Mouse::setTouchCursorPos(Int x, Int y)
+{
+	m_currMouse.pos.x = x;
+	m_currMouse.pos.y = y;
+}
+
+/**
+ * GeneralsX @feature Android port 01/08/2026 See the declaration comment in
+ * SDL3Mouse.h: touch input on this platform drives the message stream
+ * directly from SDL3GameEngine.cpp, so this object never receives real
+ * events (nothing calls addSDLEvent() on it here) and its inherited
+ * per-frame MSG_RAW_MOUSE_POSITION heartbeat would only inject a second,
+ * stale position source. No-op.
+ */
+void SDL3Mouse::createStreamMessages()
+{
+}
+#endif
+
 /**
  * Capture mouse (confine to window)
  */
