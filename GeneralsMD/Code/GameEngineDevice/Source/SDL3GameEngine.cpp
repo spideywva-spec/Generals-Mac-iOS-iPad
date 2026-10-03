@@ -54,7 +54,6 @@
 #include "StdDevice/Common/StdLocalFileSystem.h"
 #include "StdDevice/Common/StdBIGFileSystem.h"
 #include "Common/GlobalData.h"
-#include "GXTrace.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 #include <cstdio>
