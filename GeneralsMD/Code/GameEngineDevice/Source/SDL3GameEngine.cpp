@@ -56,6 +56,7 @@
 #include "StdDevice/Common/StdLocalFileSystem.h"
 #include "StdDevice/Common/StdBIGFileSystem.h"
 #include "Common/GlobalData.h"
+#include "GXTrace.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 #include <cstdio>
@@ -580,16 +581,8 @@ void applyCameraPan(float fromPxX, float fromPxY, float toPxX, float toPxY)
 	toScreen.y = (Int)toPxY;
 
 	Coord3D worldFrom, worldTo;
-	const Bool fromOk = TheTacticalView->screenToTerrain(&fromScreen, &worldFrom);
-	const Bool toOk = TheTacticalView->screenToTerrain(&toScreen, &worldTo);
-	if (!fromOk || !toOk) {
-		// Finger is pointing off the playable terrain (past the map edge,
-		// or above the horizon at a steep camera angle) -- skip this one
-		// increment rather than pan by a bogus/undefined amount.
-		GX_TRACE("applyCameraPan: screenToTerrain failed fromOk=%d toOk=%d screen(%d,%d)->(%d,%d)\n",
-		         (int)fromOk, (int)toOk, fromScreen.x, fromScreen.y, toScreen.x, toScreen.y);
-		return;
-	}
+	TheTacticalView->screenToTerrain(&fromScreen, &worldFrom);
+	TheTacticalView->screenToTerrain(&toScreen, &worldTo);
 
 	// GeneralsX @bugfix Android port 02/08/2026 CONFIRMED root cause of the
 	// "freezes unpredictably anywhere on the map, resumes later" reports
