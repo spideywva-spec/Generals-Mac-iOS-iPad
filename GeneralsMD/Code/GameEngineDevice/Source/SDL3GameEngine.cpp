@@ -260,7 +260,7 @@ private:
     static constexpr float PINCH_ZOOM_SCALE = 0.050f;
     static constexpr float BUILD_ROTATION_SCALE = 0.012f;
     static constexpr float ROTATION_DEAD_ZONE = 0.6981317008f;
-    static constexpr float TWO_PI = 6.28318530717958647692f;
+    static constexpr float MOBILE_TWO_PI = 6.28318530717958647692f;
 
     State m_state = STATE_CAMERA_PAN;
     State m_stateBeforeMulti = STATE_CAMERA_PAN;
@@ -312,9 +312,9 @@ private:
     static float NormalizeAngle(float a)
     {
         while (a > 3.14159265358979323846f)
-            a -= TWO_PI;
+            a -= MOBILE_TWO_PI;
         while (a < -3.14159265358979323846f)
-            a += TWO_PI;
+            a += MOBILE_TWO_PI;
         return a;
     }
 
