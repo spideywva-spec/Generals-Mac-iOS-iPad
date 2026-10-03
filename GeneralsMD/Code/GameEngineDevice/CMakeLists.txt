@@ -206,7 +206,7 @@ else()
         Source/SDL3GameEngine.cpp
         Source/SDL3Device/GameClient/SDL3Mouse.cpp
         Source/SDL3Device/GameClient/SDL3Keyboard.cpp
-        Source/SDL3Device/GameClient/TouchInput.cpp
+        Source/SDL3Device/GameClient/SDL3TouchInput.cpp
         Source/VideoDevice/BinkVideoPlayerStub.cpp
     )
 
@@ -226,6 +226,7 @@ target_sources(z_gameenginedevice PRIVATE ${GAMEENGINEDEVICE_SRC})
 
 target_include_directories(z_gameenginedevice PUBLIC
     Include
+    Include/SDL3Device/GameClient
 )
 
 target_precompile_headers(z_gameenginedevice PRIVATE
