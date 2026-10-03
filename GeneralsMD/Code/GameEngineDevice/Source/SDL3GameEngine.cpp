@@ -741,7 +741,7 @@ Bool isRealUiHit(GameWindow *hit)
 Bool touchPointBelongsToUi(Real px, Real py)
 {
 	return TheWindowManager != nullptr &&
-	       TheWindowManager->getWindowForInputAt((Int)px, (Int)py) != nullptr;
+	       TheWindowManager->getWindowUnderCursor((Int)px, (Int)py) != nullptr;
 }
 
 // GeneralsX @feature Android port 27/09/2026 The list box (map list, replays, a combo box's
