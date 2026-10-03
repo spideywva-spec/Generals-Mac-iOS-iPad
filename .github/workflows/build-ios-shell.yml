@@ -18,6 +18,7 @@ on:
   push:
     branches:
       - ios-clean
+      - V2-CLEAN
     paths:
       - 'GeneralsMD/**'
       - 'Core/**'
