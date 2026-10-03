@@ -2,6 +2,7 @@
 # CI restart
 # CI restart 6
 # NEW RUN 2026-10-03
+# MobileInputManager rewrite CI validation
 # NEW FIX — CI restart 5
 # Trigger build on workflow updates to ios-clean
 name: Build iOS Shell
