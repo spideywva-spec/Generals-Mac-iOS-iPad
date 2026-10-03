@@ -817,18 +817,11 @@ private:
             }
             else
             {
-                // Before rotation, the finger moves the 3D building preview.
+                // Before rotation, the same finger only moves the building preview.
+                // The 0.2s hold timer starts at initial touch and is NOT reset by movement.
                 SendMouse(SDL_EVENT_MOUSE_MOTION, x, y);
                 m_buildX = x;
                 m_buildY = y;
-
-                // Reset the hold timer on every meaningful motion. The 0.2s
-                // timer therefore starts only after the finger stops moving.
-                if (SDL_sqrtf(dxPixels * dxPixels + dyPixels * dyPixels) >
-                    BUILD_STATIONARY_DISTANCE_PX)
-                {
-                    m_buildHoldStartTicks = SDL_GetTicks();
-                }
             }
 
             m_lastX = x;
@@ -907,53 +900,34 @@ private:
 
         if (m_state == STATE_BUILDING)
         {
-            if (m_buildConfirmTapActive)
-            {
-                const Uint64 heldMs = SDL_GetTicks() - m_downTicks;
-                const float dx = x - m_buildX;
-                const float dy = y - m_buildY;
-                const float travel = SDL_sqrtf(dx * dx + dy * dy);
+            const Uint64 heldMs = SDL_GetTicks() - m_downTicks;
+            const float dx = x - m_buildX;
+            const float dy = y - m_buildY;
+            const float travel = SDL_sqrtf(dx * dx + dy * dy);
 
-                if (heldMs <= TAP_MAX_DURATION_MS && travel <= TAP_MAX_DISTANCE_PX)
-                    ConfirmBuilding();
-
-                m_buildConfirmTapActive = false;
-                m_primaryActive = false;
-                m_state = STATE_CAMERA_PAN;
-                return;
-            }
-
-            if (m_useHoldToRotate && m_buildRotating)
+            if (m_useHoldToRotate)
             {
-                // Mode B: release after rotation immediately builds.
-                ConfirmBuilding();
-            }
-            else if (!m_useHoldToRotate)
-            {
-                // Mode A: first release fixes the preview. It does not build.
-                // A later tap on the same preview confirms construction.
-                if (m_buildConfirmationPending)
+                // Mode B: hold 0.2s -> rotate; release after rotation -> build.
+                if (m_buildRotating)
                 {
-                    const float totalDx = x - m_downX;
-                    const float totalDy = y - m_downY;
-                    const float travel =
-                        SDL_sqrtf(totalDx * totalDx + totalDy * totalDy);
-
-                    if (travel <= TAP_MAX_DISTANCE_PX &&
-                        SDL_GetTicks() - m_downTicks <= TAP_MAX_DURATION_MS)
-                    {
-                        ConfirmBuilding();
-                    }
+                    ConfirmBuilding();
+                }
+                else if (heldMs <= TAP_MAX_DURATION_MS &&
+                         travel <= TAP_MAX_DISTANCE_PX)
+                {
+                    // Short tap still builds immediately.
+                    ConfirmBuilding();
                 }
                 else
                 {
+                    // Released before 0.2s: keep the preview.
                     m_buildConfirmationPending = true;
                 }
             }
             else
             {
-                // Mode B release before the hold completes: keep preview fixed.
-                m_buildConfirmationPending = true;
+                // Mode A: simple tap/release immediately builds.
+                ConfirmBuilding();
             }
 
             m_primaryActive = false;
