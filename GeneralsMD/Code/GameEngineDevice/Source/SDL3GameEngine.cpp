@@ -1390,7 +1390,7 @@ NetworkInterface *SDL3GameEngine::createNetwork(void)
 	return NetworkInterface::createNetwork();
 }
 
-Radar *SDL3GameEngine::createRadar(void)
+Radar *SDL3GameEngine::createRadar(Bool dummy)
 {
 	return NEW W3DRadar;
 }
@@ -1400,12 +1400,12 @@ WebBrowser *SDL3GameEngine::createWebBrowser(void)
 	return NEW W3DWebBrowser;
 }
 
-ParticleSystemManager *SDL3GameEngine::createParticleSystemManager(void)
+ParticleSystemManager *SDL3GameEngine::createParticleSystemManager(Bool dummy)
 {
 	return NEW W3DParticleSystemManager;
 }
 
-AudioManager *SDL3GameEngine::createAudioManager(void)
+AudioManager *SDL3GameEngine::createAudioManager(Bool dummy)
 {
 	return NEW OpenALAudioManager;
 }
