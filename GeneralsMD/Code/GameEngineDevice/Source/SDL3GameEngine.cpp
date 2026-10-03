@@ -632,7 +632,11 @@ private:
 
         m_buildRotating = true;
         m_buildHoldStart = 0;
-        m_buildRotation = 0.0f;
+
+        // Preserve the preview's current orientation as the rotation origin.
+        m_buildRotation = TheInGameUI
+            ? TheInGameUI->getPlacementAngle()
+            : 0.0f;
 
         LockCamera();
 
