@@ -188,7 +188,7 @@ public:
         m_multiStartTicks = 0;
         m_multiAccumulatedRotation = 0.0f;
         m_multiRotationActive = false;
-        m_lastPinchDistance = 0.0f;
+        m_lastPinchDistancePixels = 0.0f;
         m_lastPairAngle = 0.0f;
     }
 
@@ -199,11 +199,20 @@ public:
 
         switch (event.type)
         {
-            case SDL_EVENT_FINGER_DOWN:     FingerDown(event); break;
-            case SDL_EVENT_FINGER_MOTION:   FingerMotion(event); break;
-            case SDL_EVENT_FINGER_UP:       FingerUp(event, false); break;
-            case SDL_EVENT_FINGER_CANCELED: FingerUp(event, true); break;
-            default: break;
+            case SDL_EVENT_FINGER_DOWN:
+                FingerDown(event);
+                break;
+            case SDL_EVENT_FINGER_MOTION:
+                FingerMotion(event);
+                break;
+            case SDL_EVENT_FINGER_UP:
+                FingerUp(event, false);
+                break;
+            case SDL_EVENT_FINGER_CANCELED:
+                FingerUp(event, true);
+                break;
+            default:
+                break;
         }
     }
 
@@ -225,36 +234,32 @@ private:
         SDL_FingerID id = 0;
         bool active = false;
 
-        // SDL3 touch coordinates are normalized. They are converted to physical
-        // window pixels immediately; all gesture math below is pixel-based.
-        float x = 0.0f;
-        float y = 0.0f;
-        float downX = 0.0f;
-        float downY = 0.0f;
-        float lastX = 0.0f;
-        float lastY = 0.0f;
+        // SDL3 gives finger coordinates/deltas normalized to [0,1].
+        // They are converted to window pixels immediately at the event boundary.
+        float xPixels = 0.0f;
+        float yPixels = 0.0f;
+        float downXPixels = 0.0f;
+        float downYPixels = 0.0f;
+        float lastXPixels = 0.0f;
+        float lastYPixels = 0.0f;
 
         Uint64 downTicks = 0;
         float travelPixels = 0.0f;
     };
 
-    // These are mode switches, not movement speeds.
+    // Gesture classification thresholds only. They never scale motion.
     static constexpr Uint64 BUILD_ROTATE_HOLD_MS = 200;
     static constexpr Uint64 TWO_FINGER_TAP_MS = 150;
     static constexpr Uint64 SELECTION_HOLD_MS = 100;
 
-    // Only gesture classification thresholds. They never scale movement.
-    static constexpr float SELECTION_START_DISTANCE_PX = 12.0f;
+    static constexpr float FRAME_START_DIST_PX = 24.0f;
     static constexpr float TAP_MAX_DISTANCE_PX = 10.0f;
     static constexpr float ROTATION_DEAD_ZONE = 0.6981317008f; // 40 degrees
 
-    // Sensitivity converts physical pixels/radians into Generals camera/input
-    // units. It does not create a minimum speed, acceleration, step or cap.
-    static constexpr float CAMERA_PIXELS_TO_WORLD = 0.020f;
-    static constexpr float PINCH_PIXELS_TO_ZOOM = 0.050f;
-
+    // Building rotation is the only requested sensitivity conversion.
+    // Camera, pinch zoom and camera rotation use raw pixel/radian deltas.
     static constexpr float BUILD_ROTATION_RADIANS_PER_PIXEL = 0.012f;
-    static constexpr float BUILD_ROTATION_RADIUS_PX = 64.0f;
+
     static constexpr float MOBILE_PI = 3.14159265358979323846f;
     static constexpr float MOBILE_TWO_PI = 6.28318530717958647692f;
 
@@ -268,9 +273,7 @@ private:
 
     bool m_selectionMouseDown = false;
 
-    // Building placement is stored in SCREEN PIXELS. Never overwrite this
-    // position with the raw finger position on release: that was the source of
-    // the previous preview teleport.
+    // STEP 1 building preview position is always an absolute screen-pixel point.
     bool m_buildFixed = false;
     bool m_buildConfirm = false;
     bool m_buildRotating = false;
@@ -296,39 +299,48 @@ private:
     {
         w = 1;
         h = 1;
-        if (m_window)
-            SDL_GetWindowSize(m_window, &w, &h);
 
-        if (w <= 0) w = 1;
-        if (h <= 0) h = 1;
+        if (m_window)
+            SDL_GetWindowSizeInPixels(m_window, &w, &h);
+
+        if (w <= 0)
+            w = 1;
+        if (h <= 0)
+            h = 1;
+    }
+
+    int WindowW() const
+    {
+        int w, h;
+        WindowSizePixels(w, h);
+        return w;
+    }
+
+    int WindowH() const
+    {
+        int w, h;
+        WindowSizePixels(w, h);
+        return h;
     }
 
     float FingerXToPixels(float normalized) const
     {
-        int w, h;
-        WindowSizePixels(w, h);
-        return normalized * static_cast<float>(w);
+        return normalized * static_cast<float>(WindowW());
     }
 
     float FingerYToPixels(float normalized) const
     {
-        int w, h;
-        WindowSizePixels(w, h);
-        return normalized * static_cast<float>(h);
+        return normalized * static_cast<float>(WindowH());
     }
 
     float FingerDXToPixels(float normalizedDelta) const
     {
-        int w, h;
-        WindowSizePixels(w, h);
-        return normalizedDelta * static_cast<float>(w);
+        return normalizedDelta * static_cast<float>(WindowW());
     }
 
     float FingerDYToPixels(float normalizedDelta) const
     {
-        int w, h;
-        WindowSizePixels(w, h);
-        return normalizedDelta * static_cast<float>(h);
+        return normalizedDelta * static_cast<float>(WindowH());
     }
 
     static float NormalizeAngle(float angle)
@@ -407,25 +419,25 @@ private:
             return;
 
         SendMouseButtonPixels(SDL_EVENT_MOUSE_BUTTON_UP,
-                               m_primary.lastX,
-                               m_primary.lastY);
+                               m_primary.lastXPixels,
+                               m_primary.lastYPixels);
         m_selectionMouseDown = false;
 
         if (TheInGameUI)
             TheInGameUI->setSelecting(FALSE);
     }
 
-    // One-finger camera pan:
-    // finger velocity is represented by the per-event dx/dy. No acceleration,
-    // interpolation, velocity cap, minimum step or fixed-rate movement exists.
+    // One-finger camera pan.
+    // The exact SDL3 event pixel delta is passed through without acceleration,
+    // smoothing, minimum steps, fixed velocity or velocity cap.
     void ApplyCameraPanPixels(float dxPixels, float dyPixels)
     {
         if (m_state != STATE_CAMERA_PAN || !TheTacticalView)
             return;
 
         Coord2D delta;
-        delta.x = -dxPixels * CAMERA_PIXELS_TO_WORLD;
-        delta.y = -dyPixels * CAMERA_PIXELS_TO_WORLD;
+        delta.x = -dxPixels;
+        delta.y = -dyPixels;
         TheTacticalView->userScrollBy(&delta);
     }
 
@@ -440,11 +452,10 @@ private:
         if (TheInGameUI)
             TheInGameUI->setSelecting(TRUE);
 
-        // Start the native selection at the exact original screen-pixel point.
-        SendMouseMotionPixels(m_primary.downX, m_primary.downY);
+        SendMouseMotionPixels(m_primary.downXPixels, m_primary.downYPixels);
         SendMouseButtonPixels(SDL_EVENT_MOUSE_BUTTON_DOWN,
-                              m_primary.downX,
-                              m_primary.downY);
+                              m_primary.downXPixels,
+                              m_primary.downYPixels);
         m_selectionMouseDown = true;
     }
 
@@ -457,7 +468,6 @@ private:
         m_buildHoldStart = 0;
         m_buildRotation = 0.0f;
 
-        // Absolute screen-pixel anchor. Subsequent motion is dx/dy only.
         m_buildX = xPixels;
         m_buildY = yPixels;
 
@@ -505,32 +515,44 @@ private:
         m_buildHoldStart = 0;
         m_buildRotation = 0.0f;
         LockCamera();
+
+        // Keep the current fixed building point. Rotation changes only the
+        // placement direction, never the building's screen position.
+        if (TheInGameUI)
+        {
+            ICoord2D start;
+            start.x = static_cast<Int>(m_buildX);
+            start.y = static_cast<Int>(m_buildY);
+            TheInGameUI->setPlacementStart(&start);
+            TheInGameUI->setPlacementEnd(&start);
+        }
     }
 
-    // Rotation is directly proportional to physical finger movement in pixels.
-    // Horizontal and vertical motion both contribute; there is no dominant-axis
-    // switch that would make diagonal movement behave discontinuously.
-    void UpdateBuildingRotationPixels(float dxPixels, float dyPixels)
+    void UpdateBuildingRotationPixels(float dxPixels)
     {
         if (!m_buildRotating || !TheInGameUI)
             return;
 
-        // A signed screen-space tangential input. Its magnitude is exactly tied
-        // to the finger's pixel displacement for this SDL3 event.
-        const float signedPixels = dxPixels - dyPixels;
+        // STEP 2: horizontal screen-pixel speed directly drives rotation.
+        // There is no dead zone, step, acceleration or velocity cap here.
         m_buildRotation = NormalizeAngle(
             m_buildRotation +
-            signedPixels * BUILD_ROTATION_RADIANS_PER_PIXEL);
+            dxPixels * BUILD_ROTATION_RADIANS_PER_PIXEL);
 
         ICoord2D start;
         start.x = static_cast<Int>(m_buildX);
         start.y = static_cast<Int>(m_buildY);
 
+        // Only the placement direction moves around the fixed building point.
+        const float directionRadius =
+            DistancePixels(0.0f, 0.0f, static_cast<float>(WindowW()),
+                           static_cast<float>(WindowH())) * 0.02f;
+
         ICoord2D end;
         end.x = start.x + static_cast<Int>(
-            SDL_cosf(m_buildRotation) * BUILD_ROTATION_RADIUS_PX);
+            SDL_cosf(m_buildRotation) * directionRadius);
         end.y = start.y + static_cast<Int>(
-            SDL_sinf(m_buildRotation) * BUILD_ROTATION_RADIUS_PX);
+            SDL_sinf(m_buildRotation) * directionRadius);
 
         TheInGameUI->setPlacementStart(&start);
         TheInGameUI->setPlacementEnd(&end);
@@ -541,8 +563,7 @@ private:
         if (m_state != STATE_BUILDING || !m_buildFixed)
             return;
 
-        // IMPORTANT: use the stored preview position, never the finger's raw
-        // release coordinate. This prevents the old teleport.
+        // Always commit exactly the stored screen-pixel preview point.
         SendMouseMotionPixels(m_buildX, m_buildY);
         SendMouseButtonPixels(SDL_EVENT_MOUSE_BUTTON_DOWN, m_buildX, m_buildY);
         SendMouseButtonPixels(SDL_EVENT_MOUSE_BUTTON_UP, m_buildX, m_buildY);
@@ -577,19 +598,19 @@ private:
 
         m_secondary.id = event.tfinger.fingerID;
         m_secondary.active = true;
-        m_secondary.x = event.tfinger.x;
-        m_secondary.y = event.tfinger.y;
-        m_secondary.downX = event.tfinger.x;
-        m_secondary.downY = event.tfinger.y;
-        m_secondary.lastX = event.tfinger.x;
-        m_secondary.lastY = event.tfinger.y;
+        m_secondary.xPixels = FingerXToPixels(event.tfinger.x);
+        m_secondary.yPixels = FingerYToPixels(event.tfinger.y);
+        m_secondary.downXPixels = m_secondary.xPixels;
+        m_secondary.downYPixels = m_secondary.yPixels;
+        m_secondary.lastXPixels = m_secondary.xPixels;
+        m_secondary.lastYPixels = m_secondary.yPixels;
         m_secondary.downTicks = SDL_GetTicks();
         m_secondary.travelPixels = 0.0f;
 
-        const float x1 = FingerXToPixels(m_primary.x);
-        const float y1 = FingerYToPixels(m_primary.y);
-        const float x2 = FingerXToPixels(m_secondary.x);
-        const float y2 = FingerYToPixels(m_secondary.y);
+        const float x1 = m_primary.xPixels;
+        const float y1 = m_primary.yPixels;
+        const float x2 = m_secondary.xPixels;
+        const float y2 = m_secondary.yPixels;
 
         const float pairDX = x2 - x1;
         const float pairDY = y2 - y1;
@@ -614,63 +635,65 @@ private:
 
         if (event.tfinger.fingerID == m_primary.id)
         {
-            m_primary.x = event.tfinger.x;
-            m_primary.y = event.tfinger.y;
+            m_primary.xPixels = FingerXToPixels(event.tfinger.x);
+            m_primary.yPixels = FingerYToPixels(event.tfinger.y);
         }
         else if (event.tfinger.fingerID == m_secondary.id)
         {
-            m_secondary.x = event.tfinger.x;
-            m_secondary.y = event.tfinger.y;
+            m_secondary.xPixels = FingerXToPixels(event.tfinger.x);
+            m_secondary.yPixels = FingerYToPixels(event.tfinger.y);
         }
         else
         {
             return;
         }
 
-        const float x1 = FingerXToPixels(m_primary.x);
-        const float y1 = FingerYToPixels(m_primary.y);
-        const float x2 = FingerXToPixels(m_secondary.x);
-        const float y2 = FingerYToPixels(m_secondary.y);
+        const float x1 = m_primary.xPixels;
+        const float y1 = m_primary.yPixels;
+        const float x2 = m_secondary.xPixels;
+        const float y2 = m_secondary.yPixels;
 
         const float pairDX = x2 - x1;
         const float pairDY = y2 - y1;
-        const float distancePixels =
+        const float currentDistance =
             SDL_sqrtf(pairDX * pairDX + pairDY * pairDY);
-        const float pairAngle = SDL_atan2f(pairDY, pairDX);
+        const float currentAngle = SDL_atan2f(pairDY, pairDX);
 
+        // This is the exact change in finger separation in screen pixels
+        // between two SDL3 touch events. It is passed directly to userZoom.
         const float pinchDeltaPixels =
-            distancePixels - m_lastPinchDistancePixels;
+            currentDistance - m_lastPinchDistancePixels;
+
+        // This is the exact angular speed per event.
         const float angleDelta =
-            NormalizeAngle(pairAngle - m_lastPairAngle);
+            NormalizeAngle(currentAngle - m_lastPairAngle);
 
         const float primaryTravel = DistancePixels(
-            FingerXToPixels(m_primary.downX),
-            FingerYToPixels(m_primary.downY),
-            x1, y1);
+            m_primary.downXPixels,
+            m_primary.downYPixels,
+            x1,
+            y1);
         const float secondaryTravel = DistancePixels(
-            FingerXToPixels(m_secondary.downX),
-            FingerYToPixels(m_secondary.downY),
-            x2, y2);
+            m_secondary.downXPixels,
+            m_secondary.downYPixels,
+            x2,
+            y2);
 
         if (primaryTravel > TAP_MAX_DISTANCE_PX ||
             secondaryTravel > TAP_MAX_DISTANCE_PX ||
-            SDL_fabsf(pinchDeltaPixels) > 0.0f ||
-            SDL_fabsf(angleDelta) > 0.0f)
+            pinchDeltaPixels != 0.0f ||
+            angleDelta != 0.0f)
         {
             m_multiMoved = true;
         }
 
-        // Pinch: the zoom amount for this event is exactly the change in
-        // finger separation in physical pixels. Fast pinch => larger delta.
         if (pinchDeltaPixels != 0.0f && TheTacticalView)
         {
-            TheTacticalView->userZoom(
-                -pinchDeltaPixels * PINCH_PIXELS_TO_ZOOM);
+            // No small fixed zoom coefficient: zoom magnitude is the pixel
+            // separation speed for this event.
+            TheTacticalView->userZoom(-pinchDeltaPixels);
         }
 
-        // Twist: accumulate only to detect the required 40° activation point.
-        // Once active, every angular delta is applied immediately, with no
-        // angular step or velocity cap.
         m_multiAccumulatedRotation += angleDelta;
 
         if (!m_multiRotationActive)
@@ -679,7 +702,8 @@ private:
             {
                 m_multiRotationActive = true;
 
-                // Apply only the angular movement beyond the activation point.
+                // Only the portion beyond the mandatory 40-degree activation
+                // threshold is applied on the activation event.
                 const float sign =
                     m_multiAccumulatedRotation >= 0.0f ? 1.0f : -1.0f;
                 const float excess =
@@ -697,13 +721,20 @@ private:
         }
         else if (angleDelta != 0.0f && TheTacticalView)
         {
+            // After 40 degrees, camera rotation follows raw angular finger
+            // speed directly, with no fixed movement-rate coefficient.
             TheTacticalView->userSetAngle(
                 NormalizeAngle(
                     TheTacticalView->getAngle() + angleDelta));
         }
 
-        m_lastPinchDistancePixels = distancePixels;
-        m_lastPairAngle = pairAngle;
+        m_primary.lastXPixels = x1;
+        m_primary.lastYPixels = y1;
+        m_secondary.lastXPixels = x2;
+        m_secondary.lastYPixels = y2;
+
+        m_lastPinchDistancePixels = currentDistance;
+        m_lastPairAngle = currentAngle;
     }
 
     void FinishMultiTouch()
@@ -741,20 +772,17 @@ private:
 
     void FingerDown(const SDL_Event &event)
     {
-        const float x = event.tfinger.x;
-        const float y = event.tfinger.y;
-
         if (!m_primary.active)
         {
             m_primary = Finger();
             m_primary.id = event.tfinger.fingerID;
             m_primary.active = true;
-            m_primary.x = x;
-            m_primary.y = y;
-            m_primary.downX = x;
-            m_primary.downY = y;
-            m_primary.lastX = x;
-            m_primary.lastY = y;
+            m_primary.xPixels = FingerXToPixels(event.tfinger.x);
+            m_primary.yPixels = FingerYToPixels(event.tfinger.y);
+            m_primary.downXPixels = m_primary.xPixels;
+            m_primary.downYPixels = m_primary.yPixels;
+            m_primary.lastXPixels = m_primary.xPixels;
+            m_primary.lastYPixels = m_primary.yPixels;
             m_primary.downTicks = SDL_GetTicks();
 
             if (m_state == STATE_MULTI_TOUCH)
@@ -762,19 +790,18 @@ private:
 
             if (BuildingPending())
             {
-                const float sx = FingerXToPixels(x);
-                const float sy = FingerYToPixels(y);
-
                 if (m_buildFixed)
                 {
-                    // The building is already fixed on screen. The next
-                    // finger-down confirms the second phase; no artificial
-                    // radius test can cause a jump or reject a valid touch.
+                    // Second press on the fixed preview starts the 0.2s
+                    // confirmation/rotation phase. The building point is never
+                    // replaced by this finger-down coordinate.
                     StartBuildingConfirmation();
                 }
                 else
                 {
-                    StartBuildingPreview(sx, sy);
+                    StartBuildingPreview(
+                        m_primary.xPixels,
+                        m_primary.yPixels);
                 }
 
                 return;
@@ -806,43 +833,43 @@ private:
 
         const float dxPixels = FingerDXToPixels(event.tfinger.dx);
         const float dyPixels = FingerDYToPixels(event.tfinger.dy);
-
         const float xPixels = FingerXToPixels(event.tfinger.x);
         const float yPixels = FingerYToPixels(event.tfinger.y);
 
+        // Travel is accumulated strictly in physical screen pixels.
         m_primary.travelPixels +=
             SDL_sqrtf(dxPixels * dxPixels + dyPixels * dyPixels);
-        m_primary.x = event.tfinger.x;
-        m_primary.y = event.tfinger.y;
+
+        m_primary.xPixels = xPixels;
+        m_primary.yPixels = yPixels;
 
         if (m_state == STATE_BUILDING)
         {
             if (!m_buildFixed)
             {
-                // STEP 1: pure pixel delta. No conversion back to normalized
-                // coordinates and no snapping. The preview follows the finger
-                // one SDL3 pixel-delta event at a time.
-                m_buildX += dxPixels;
-                m_buildY += dyPixels;
+                // STEP 1: absolute finger position in screen pixels.
+                // No +=, no offset, no normalized value is stored.
+                m_buildX = xPixels;
+                m_buildY = yPixels;
+
                 SendMouseMotionPixels(m_buildX, m_buildY);
             }
             else if (m_buildConfirm && m_buildRotating)
             {
-                // STEP 2: pure pixel delta -> angular delta.
-                UpdateBuildingRotationPixels(dxPixels, dyPixels);
+                // STEP 2: rotation uses only the real horizontal pixel speed.
+                UpdateBuildingRotationPixels(dxPixels);
             }
 
-            m_primary.lastX = xPixels;
-            m_primary.lastY = yPixels;
+            m_primary.lastXPixels = xPixels;
+            m_primary.lastYPixels = yPixels;
             return;
         }
 
         if (m_state == STATE_SELECTION)
         {
-            // Selection rectangle receives the exact current pixel position.
             SendMouseMotionPixels(xPixels, yPixels);
-            m_primary.lastX = xPixels;
-            m_primary.lastY = yPixels;
+            m_primary.lastXPixels = xPixels;
+            m_primary.lastYPixels = yPixels;
             return;
         }
 
@@ -850,22 +877,22 @@ private:
         {
             const Uint64 held = SDL_GetTicks() - m_primary.downTicks;
 
-            if (held >= SELECTION_HOLD_MS &&
-                m_primary.travelPixels >= SELECTION_START_DISTANCE_PX)
+            // Selection starts ONLY after >100ms AND >24 physical screen pixels.
+            if (held > SELECTION_HOLD_MS &&
+                m_primary.travelPixels > FRAME_START_DIST_PX)
             {
                 BeginSelection();
                 SendMouseMotionPixels(xPixels, yPixels);
             }
             else
             {
-                // Camera movement is directly proportional to this event's
-                // pixel displacement.
+                // Ordinary camera swipe: exact SDL3 dx/dy converted to pixels.
                 ApplyCameraPanPixels(dxPixels, dyPixels);
             }
         }
 
-        m_primary.lastX = xPixels;
-        m_primary.lastY = yPixels;
+        m_primary.lastXPixels = xPixels;
+        m_primary.lastYPixels = yPixels;
     }
 
     void FingerUp(const SDL_Event &event, bool canceled)
@@ -874,6 +901,7 @@ private:
         {
             if (event.tfinger.fingerID == m_primary.id)
                 m_primary.active = false;
+
             if (event.tfinger.fingerID == m_secondary.id)
                 m_secondary.active = false;
 
@@ -896,7 +924,8 @@ private:
         {
             SendMouseMotionPixels(xPixels, yPixels);
             SendMouseButtonPixels(SDL_EVENT_MOUSE_BUTTON_UP,
-                                  xPixels, yPixels);
+                                  xPixels,
+                                  yPixels);
             m_selectionMouseDown = false;
 
             if (TheInGameUI)
@@ -912,14 +941,15 @@ private:
         {
             if (!m_buildFixed)
             {
-                // Fix at the accumulated preview position. NEVER replace
-                // m_buildX/Y with the finger-up coordinate.
+                // FINGER_UP itself is an absolute pixel position. Capture it
+                // before fixing so the preview and final point are identical.
+                m_buildX = xPixels;
+                m_buildY = yPixels;
+                SendMouseMotionPixels(m_buildX, m_buildY);
                 FixBuildingPreview();
             }
             else if (m_buildConfirm)
             {
-                // A short confirmation tap builds. After the 200ms hold the
-                // rotation mode is active and the release commits the building.
                 if (!m_buildRotating && held >= BUILD_ROTATE_HOLD_MS)
                     BeginBuildingRotation();
 
@@ -936,16 +966,17 @@ private:
         {
             SendMouseMotionPixels(xPixels, yPixels);
             SendMouseButtonPixels(SDL_EVENT_MOUSE_BUTTON_DOWN,
-                                  xPixels, yPixels);
+                                  xPixels,
+                                  yPixels);
             SendMouseButtonPixels(SDL_EVENT_MOUSE_BUTTON_UP,
-                                  xPixels, yPixels);
+                                  xPixels,
+                                  yPixels);
         }
 
         m_primary.active = false;
         m_state = STATE_CAMERA_PAN;
     }
 };
-
     static MobileInputManager s_mobileInput;
 
 } // anonymous namespace
