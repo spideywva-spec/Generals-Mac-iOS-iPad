@@ -1,5 +1,9 @@
 #pragma once
 
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
+
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 
 #include <SDL3/SDL.h>
