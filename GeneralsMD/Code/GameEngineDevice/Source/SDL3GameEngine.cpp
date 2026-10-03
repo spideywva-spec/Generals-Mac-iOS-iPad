@@ -1092,7 +1092,7 @@ void SDL3GameEngine::init(void)
 
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 	s_mobileInput.SetWindow(m_SDLWindow);
-	s_mobileInput.SetBuildConfirmationMode(false);   // false = variant A (tap preview to build)
+	s_mobileInput.SetBuildConfirmationMode(true);    // Automatic A/B: tap builds, 0.2s hold rotates then release builds
 	// Lifecycle events can fire outside the poll cycle on iOS; catch them
 	// immediately so rendering halts before the process is suspended.
 	SDL_AddEventWatch(iosLifecycleWatcher, nullptr);
