@@ -802,7 +802,11 @@ private:
             {
                 if (m_buildRotating)
                 {
-                    UpdateBuildingRotation(event.tfinger.dx);
+                    const float rotationInput =
+                        (SDL_fabsf(event.tfinger.dx) >= SDL_fabsf(event.tfinger.dy))
+                            ? event.tfinger.dx
+                            : -event.tfinger.dy;
+                    UpdateBuildingRotation(rotationInput);
                 }
                 else
                 {
@@ -812,10 +816,11 @@ private:
             }
             else
             {
-                // STEP 1: preview follows the finger. Camera is completely locked.
-                SendMouse(SDL_EVENT_MOUSE_MOTION, x, y, 0, true);
-                m_buildX = x;
-                m_buildY = y;
+                // STEP 1: preview follows the actual SDL3 finger deltas.
+                // The camera is completely locked while the preview is being moved.
+                m_buildX += event.tfinger.dx * static_cast<float>(WindowW());
+                m_buildY += event.tfinger.dy * static_cast<float>(WindowH());
+                SendMouse(SDL_EVENT_MOUSE_MOTION, m_buildX, m_buildY, 0, true);
             }
 
             m_lastX = x;
@@ -1078,7 +1083,6 @@ void SDL3GameEngine::init(void)
 
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 	s_mobileInput.SetWindow(m_SDLWindow);
-	s_mobileInput.SetBuildConfirmationMode(true);    // Automatic A/B: tap builds, 0.2s hold rotates then release builds
 	// Lifecycle events can fire outside the poll cycle on iOS; catch them
 	// immediately so rendering halts before the process is suspended.
 	SDL_AddEventWatch(iosLifecycleWatcher, nullptr);
