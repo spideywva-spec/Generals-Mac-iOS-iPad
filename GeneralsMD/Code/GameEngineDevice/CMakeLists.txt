@@ -92,6 +92,7 @@ set(GAMEENGINEDEVICE_SRC
     # Linux SDL3 input devices (Phase 1.5 - TheSuperHackers @build 10/02/2026 Bender)
     Include/SDL3Device/GameClient/SDL3Mouse.h
     Include/SDL3Device/GameClient/SDL3Keyboard.h
+    Include/SDL3Device/GameClient/SDL3TouchInput.h
 #    Source/MilesAudioDevice/MilesAudioManager.cpp
 #    Source/VideoDevice/Bink/BinkVideoPlayer.cpp
     Source/W3DDevice/Common/System/W3DFunctionLexicon.cpp
@@ -206,7 +207,7 @@ else()
         Source/SDL3GameEngine.cpp
         Source/SDL3Device/GameClient/SDL3Mouse.cpp
         Source/SDL3Device/GameClient/SDL3Keyboard.cpp
-        Source/SDL3Device/GameClient/TouchInput.cpp
+        Source/SDL3Device/GameClient/SDL3TouchInput.cpp
         Source/VideoDevice/BinkVideoPlayerStub.cpp
     )
 
