@@ -55,6 +55,7 @@
 #include "GameClient/GlobalLanguage.h"
 #include "GameClient/GameWindowTransitions.h"
 #include "Common/NameKeyGenerator.h"
+#include "GXTrace.h"
 
 // PUBLIC DATA ////////////////////////////////////////////////////////////////////////////////////
 GameWindowManager *TheWindowManager = nullptr;
@@ -77,6 +78,67 @@ static Bool sendMousePosMessages = TRUE;
 //-------------------------------------------------------------------------------------------------
 /** Process windows waiting to be destroyed */
 //-------------------------------------------------------------------------------------------------
+// GeneralsX @bugfix Android port 12/07/2026 - ring buffer of recently
+// destroyed windows, recorded at the moment of the actual free (names copied
+// out while the window is still valid). The null-m_input/m_system guards in
+// winSendInputMsg/winSendSystemMsg consult it so a device log names the exact
+// stale window (e.g. "GameSpyGameOptionsMenu.wnd:ButtonStart") instead of a
+// bare pointer -- that name is what will pin down which destroy path leaves a
+// dangling reference in the window tree.
+static const int RECENT_DESTROY_RING_SIZE = 64;
+struct RecentDestroyEntry
+{
+	GameWindow *window;
+	char name[96];
+};
+static RecentDestroyEntry s_recentDestroys[RECENT_DESTROY_RING_SIZE] = {};
+static int s_recentDestroyNext = 0;
+
+static void recordDestroyedWindow( GameWindow *window )
+{
+	RecentDestroyEntry &entry = s_recentDestroys[s_recentDestroyNext];
+	entry.window = window;
+	const char *name = window->winGetInstanceData()->m_decoratedNameString.str();
+	snprintf(entry.name, sizeof(entry.name), "%s", (name && name[0]) ? name : "(unnamed)");
+	s_recentDestroyNext = (s_recentDestroyNext + 1) % RECENT_DESTROY_RING_SIZE;
+}
+
+static const char *findRecentlyDestroyedWindowName( GameWindow *window )
+{
+	for (int i = 0; i < RECENT_DESTROY_RING_SIZE; ++i)
+	{
+		if (s_recentDestroys[i].window == window)
+			return s_recentDestroys[i].name;
+	}
+	return nullptr;
+}
+
+// GeneralsX @bugfix Android port 12/07/2026 - see the declaration comment in
+// GameWindowManager.h for why this exists.
+void GameWindowManager::purgeModalStackEntry( GameWindow *window )
+{
+	ModalWindow *cur = m_modalHead;
+	ModalWindow *prev = nullptr;
+
+	while (cur != nullptr)
+	{
+		ModalWindow *next = cur->next;
+		if (cur->window == window)
+		{
+			if (prev != nullptr)
+				prev->next = next;
+			else
+				m_modalHead = next;
+			deleteInstance(cur);
+		}
+		else
+		{
+			prev = cur;
+		}
+		cur = next;
+	}
+}
+
 void GameWindowManager::processDestroyList()
 {
 	GameWindow *next;
@@ -105,8 +167,7 @@ void GameWindowManager::processDestroyList()
 		if( m_keyboardFocus == doDestroy )
 			winSetFocus( nullptr );
 
-		if( (m_modalHead != nullptr) && (doDestroy == m_modalHead->window) )
-			winUnsetModal( m_modalHead->window );
+		purgeModalStackEntry( doDestroy );
 
 		if( m_currMouseRgn == doDestroy )
 			m_currMouseRgn = nullptr;
@@ -114,10 +175,30 @@ void GameWindowManager::processDestroyList()
 		if( m_grabWindow == doDestroy )
 			m_grabWindow = nullptr;
 
+		// GeneralsX @bugfix Android port 12/07/2026 - m_loneWindow (the open
+		// combo-box/dropdown overlay) was the one tracked-window pointer NOT
+		// cleared here, unlike m_mouseCaptor/m_currMouseRgn/m_grabWindow/
+		// m_keyboardFocus right above. A destroyed-but-still-referenced
+		// m_loneWindow is a genuine dangling GameWindow* -- winProcessMouseEvent
+		// dereferences it directly (m_loneWindow->winIsChild(...)) with no
+		// liveness check beyond null. On this Android build RTS_GAMEMEMORY_ENABLE
+		// is OFF (see CMakePresets.json's android-vulkan preset comment: the
+		// pool allocator conflicts with OpenAL/libc++ freeing through it), so
+		// GameWindow objects come from plain malloc/free instead of a same-size
+		// pool -- a freed slot is reused by whatever unrelated allocation comes
+		// next, so a stale m_loneWindow now reads back as genuine garbage
+		// instead of "probably still another GameWindow". This matches a real
+		// device crash: a wild `this` inside GameWindow::winSetUserData(),
+		// reached from deep in the mouse-event dispatch chain.
+		if( m_loneWindow == doDestroy )
+			m_loneWindow = nullptr;
+
 		// send the destroy message to the window we're about to kill
 		winSendSystemMsg( doDestroy, GWM_DESTROY, 0, 0 );
 
 		DEBUG_ASSERTCRASH(doDestroy->winGetUserData() == nullptr, ("Win user data is expected to be deleted now"));
+
+		recordDestroyedWindow( doDestroy );
 
 		// free the memory
 		deleteInstance(doDestroy);
@@ -704,6 +785,29 @@ WindowMsgHandledType GameWindowManager::winSendSystemMsg( GameWindow *window,
 	if( msg != GWM_DESTROY && BitIsSet( window->m_status, WIN_STATUS_DESTROYED ) )
 		return MSG_IGNORED;
 
+	// GeneralsX @bugfix Android port 12/07/2026 - a device crash resolved
+	// (via addr2line against the exact build's libmain.so) to a call through
+	// window->m_input with PC==0, i.e. a genuinely null callback, even though
+	// GameWindow's constructor unconditionally sets it via
+	// winSetInputFunc(TheWindowManager->getDefaultInput()), which itself can
+	// never return null (GameWinDefaultInput is a plain extern function, not
+	// a resettable variable). That only leaves a GameWindow whose memory was
+	// already freed back to its MemoryPoolObject pool and not yet
+	// reallocated -- a stale pointer still reachable from the window tree
+	// (hit-tested by findWindowUnderMouse) racing a destroy that didn't fully
+	// unlink it first. Root cause needs a live debugger session to pin down;
+	// this guard stops the crash in the meantime.
+	if( window->m_system == nullptr )
+	{
+		// fprintf, not DEBUG_LOG: DEBUG_LOG is compiled out of release builds,
+		// and this diagnostic exists precisely for release device logs.
+		const char *destroyedName = findRecentlyDestroyedWindowName( window );
+		fprintf(stderr, "winSendSystemMsg: window %p has null m_system (stale/freed window, recently destroyed as: %s), ignoring msg %u\n",
+			(void*)window, destroyedName ? destroyedName : "(not in recent-destroy ring)", msg);
+		fflush(stderr);
+		return MSG_IGNORED;
+	}
+
 	return window->m_system( window, msg, mData1, mData2 );
 
 }
@@ -722,6 +826,20 @@ WindowMsgHandledType GameWindowManager::winSendInputMsg( GameWindow *window,
 
 	if( msg != GWM_DESTROY && BitIsSet( window->m_status, WIN_STATUS_DESTROYED ) )
 		return MSG_IGNORED;
+
+	// GeneralsX @bugfix Android port 12/07/2026 - see the matching guard in
+	// winSendSystemMsg() above for why this can legitimately be null on a
+	// live device (stale pointer to a freed, pooled GameWindow).
+	if( window->m_input == nullptr )
+	{
+		// fprintf, not DEBUG_LOG: DEBUG_LOG is compiled out of release builds,
+		// and this diagnostic exists precisely for release device logs.
+		const char *destroyedName = findRecentlyDestroyedWindowName( window );
+		fprintf(stderr, "winSendInputMsg: window %p has null m_input (stale/freed window, recently destroyed as: %s), ignoring msg %u\n",
+			(void*)window, destroyedName ? destroyedName : "(not in recent-destroy ring)", msg);
+		fflush(stderr);
+		return MSG_IGNORED;
+	}
 
 	return window->m_input( window, msg, mData1, mData2 );
 
@@ -824,6 +942,75 @@ WinInputReturnCode GameWindowManager::winProcessKey( UnsignedByte key,
 
 	return returnCode;
 
+}
+
+//-------------------------------------------------------------------------------------------------
+/** Pick the window that mouse input at 'mousePos' belongs to, for the case where neither a mouse
+	* captor nor a grab window is claiming input. This is the selection half of
+	* winProcessMouseEvent() -- factored out so that a caller can ask "where would a press here
+	* go?" without actually sending anything (see getWindowForInputAt).
+	* 'toolTipWindow' is threaded through because findWindowUnderMouse() fills it in as a
+	* side effect of the search; pass a throwaway when the answer is not wanted. */
+//-------------------------------------------------------------------------------------------------
+GameWindow* GameWindowManager::findInputTargetWindow( const ICoord2D* mousePos, GameWindow*& toolTipWindow )
+{
+	GameWindow *window = nullptr;
+
+	if( m_modalHead && m_modalHead->window )
+	{
+		window = m_modalHead->window->winPointInChild( mousePos->x, mousePos->y );
+	}
+	else
+	{
+		// search for top-level window which contains pointer
+		window = findWindowUnderMouse(toolTipWindow, mousePos, WIN_STATUS_ABOVE, WIN_STATUS_HIDDEN);
+
+		// check !above, below and hidden
+		if( window == nullptr )
+			window = findWindowUnderMouse(toolTipWindow, mousePos, WIN_STATUS_NONE, WIN_STATUS_ABOVE | WIN_STATUS_BELOW | WIN_STATUS_HIDDEN);
+
+		// check below and !hidden
+		if( window == nullptr )
+			window = findWindowUnderMouse(toolTipWindow, mousePos, WIN_STATUS_BELOW, WIN_STATUS_HIDDEN);
+	}
+
+	if( window )
+		if( BitIsSet( window->m_status, WIN_STATUS_NO_INPUT ) )
+		{
+			if(window->winGetParent() && BitIsSet( window->winGetParent()->winGetInstanceData()->getStyle(), GWS_COMBO_BOX ))
+				window = window->winGetParent();
+			else
+				window = nullptr;
+		}
+
+	return window;
+}
+
+//-------------------------------------------------------------------------------------------------
+/** GeneralsX @bugfix Android port 07/09/2026 Answer, without sending anything, the question
+	* winProcessMouseEvent() answers for itself every time it runs: which window does a mouse
+	* press at these coordinates belong to? A NULL result means the press belongs to the game
+	* world. Touch input needs this to decide whether a finger position is a point on the
+	* battlefield at all -- the previous test looked for a leaf GWS_PUSH_BUTTON, which is true
+	* of the command bar but false of every dialog that is not made of buttons, so a tap inside
+	* the generals-promotions dialog was still being reported as an aim point and dragged the
+	* armed command's radius decal around the map behind it. */
+//-------------------------------------------------------------------------------------------------
+GameWindow *GameWindowManager::getWindowForInputAt( Int x, Int y )
+{
+	ICoord2D mousePos;
+	mousePos.x = x;
+	mousePos.y = y;
+
+	if( m_mouseCaptor )
+		return m_mouseCaptor->winPointInChild( x, y );
+
+	if( m_grabWindow )
+		return m_grabWindow;
+
+	// not wanted here, but findWindowUnderMouse() insists on somewhere to put it
+	GameWindow *toolTipWindow = nullptr;
+	return findInputTargetWindow( &mousePos, toolTipWindow );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1000,32 +1187,7 @@ WinInputReturnCode GameWindowManager::winProcessMouseEvent( GameWindowMessage ms
 		else
 		{
 
-			if( m_modalHead && m_modalHead->window )
-			{
-				window = m_modalHead->window->winPointInChild( mousePos->x, mousePos->y );
-			}
-			else
-			{
-				// search for top-level window which contains pointer
-				window = findWindowUnderMouse(toolTipWindow, mousePos, WIN_STATUS_ABOVE, WIN_STATUS_HIDDEN);
-
-				// check !above, below and hidden
-				if( window == nullptr )
-					window = findWindowUnderMouse(toolTipWindow, mousePos, WIN_STATUS_NONE, WIN_STATUS_ABOVE | WIN_STATUS_BELOW | WIN_STATUS_HIDDEN);
-
-				// check below and !hidden
-				if( window == nullptr )
-					window = findWindowUnderMouse(toolTipWindow, mousePos, WIN_STATUS_BELOW, WIN_STATUS_HIDDEN);
-			}
-
-			if( window )
-				if( BitIsSet( window->m_status, WIN_STATUS_NO_INPUT ) )
-				{
-					if(window->winGetParent() && BitIsSet( window->winGetParent()->winGetInstanceData()->getStyle(), GWS_COMBO_BOX ))
-						window = window->winGetParent();
-					else
-						window = nullptr;
-				}
+			window = findInputTargetWindow( mousePos, toolTipWindow );
 
 			if( window )
 			{
@@ -1381,29 +1543,36 @@ GameWindow *GameWindowManager::winCreate( GameWindow *parent,
 		window->winSetInstanceData( instData );
 
 	// set default font
-	// GeneralsX @tweak GitHubCopilot 27/05/2026 Trace window default font resolution to diagnose localized font propagation.
+	// GeneralsX @cleanup Android port 12/07/2026 the per-window [GX-ISSUE144]
+	// font-trace lines were removed: they fired for every window created
+	// (hundreds per menu screen) and dominated device logs, pushing real
+	// diagnostics out of the log viewer's truncation window. The font issue
+	// they traced is resolved.
 	if (TheGlobalLanguageData && TheGlobalLanguageData->m_defaultWindowFont.name.isNotEmpty())
 	{
-		char log_buffer[512];
-		sprintf(log_buffer,
-			"[GX-ISSUE144] WinCreate default font localized name=%s size=%d bold=%d window=%p",
-			TheGlobalLanguageData->m_defaultWindowFont.name.str(),
-			TheGlobalLanguageData->m_defaultWindowFont.size,
-			TheGlobalLanguageData->m_defaultWindowFont.bold,
-			window);
-		fprintf(stderr, "%s\n", log_buffer);
-
-		window->winSetFont( winFindFont(
+		// TheSuperHackers @bugfix Route the default window font through the
+		// same resolution-based adjustFontSize() scaling that HeaderTemplate
+		// fonts and in-game captions already use. Without this, most menu
+		// button/label text (anything not using an explicit HeaderTemplate
+		// font) stayed at its unscaled point size while everything else
+		// scaled up for the display, so plain UI text looked tiny and
+		// inconsistent on high-resolution phone screens.
+		GX_TRACE("winCreate: about to winFindFont window=%p name=%s size=%d bold=%d\n",
+			(void*)window, TheGlobalLanguageData->m_defaultWindowFont.name.str(),
+			TheGlobalLanguageData->adjustFontSize(TheGlobalLanguageData->m_defaultWindowFont.size),
+			TheGlobalLanguageData->m_defaultWindowFont.bold);
+		GameFont *defFont = winFindFont(
 			TheGlobalLanguageData->m_defaultWindowFont.name,
-			TheGlobalLanguageData->m_defaultWindowFont.size,
-			TheGlobalLanguageData->m_defaultWindowFont.bold) );
+			TheGlobalLanguageData->adjustFontSize(TheGlobalLanguageData->m_defaultWindowFont.size),
+			TheGlobalLanguageData->m_defaultWindowFont.bold);
+		GX_TRACE("winCreate: winFindFont returned font=%p, about to winSetFont window=%p\n", (void*)defFont, (void*)window);
+		window->winSetFont( defFont );
+		GX_TRACE("winCreate: winSetFont returned window=%p\n", (void*)window);
 	}
 	else
 	{
-		char log_buffer[512];
-		sprintf(log_buffer, "[GX-ISSUE144] WinCreate default font fallback Times New Roman size=14 bold=0 window=%p", window);
-		fprintf(stderr, "%s\n", log_buffer);
-		window->winSetFont( winFindFont( "Times New Roman", 14, FALSE ) );
+		const Int fallbackSize = TheGlobalLanguageData ? TheGlobalLanguageData->adjustFontSize(14) : 14;
+		window->winSetFont( winFindFont( "Times New Roman", fallbackSize, FALSE ) );
 	}
 
 	return window;
@@ -1440,14 +1609,19 @@ Int GameWindowManager::winDestroy( GameWindow *window )
 	if( m_keyboardFocus == window )
 		winSetFocus( nullptr );
 
-	if( (m_modalHead != nullptr) && (window == m_modalHead->window) )
-		winUnsetModal( m_modalHead->window );
+	purgeModalStackEntry( window );
 
 	if( m_currMouseRgn == window )
 		m_currMouseRgn = nullptr;
 
 	if( m_grabWindow == window )
 		m_grabWindow = nullptr;
+
+	// GeneralsX @bugfix Android port 12/07/2026 - see the matching fix in
+	// processDestroyList() above for why m_loneWindow needs the same
+	// liveness clear as the four pointers just above.
+	if( m_loneWindow == window )
+		m_loneWindow = nullptr;
 
 	for( child = window->m_child; child; child = next )
 	{
@@ -2865,28 +3039,29 @@ void GameWindowManager::assignDefaultGadgetLook( GameWindow *gadget,
 		gadget->winSetFont( defaultFont );
 	else
 	{
+		// GeneralsX @cleanup Android port 12/07/2026 per-gadget [GX-ISSUE144]
+		// trace lines removed, see winCreate's default-font path above.
 		if (TheGlobalLanguageData && TheGlobalLanguageData->m_defaultWindowFont.name.isNotEmpty())
 		{
-			char log_buffer[512];
-			sprintf(log_buffer,
-				"[GX-ISSUE144] assignDefaultGadgetLook localized font name=%s size=%d bold=%d gadget=%p",
-				TheGlobalLanguageData->m_defaultWindowFont.name.str(),
-				TheGlobalLanguageData->m_defaultWindowFont.size,
-				TheGlobalLanguageData->m_defaultWindowFont.bold,
-				gadget);
-			fprintf(stderr, "%s\n", log_buffer);
-
-			gadget->winSetFont( winFindFont(
+			// TheSuperHackers @bugfix Same adjustFontSize() fix as winCreate's
+			// default-font path above -- gadget captions (button/checkbox/
+			// listbox text etc.) were the same unscaled outlier.
+			GX_TRACE("assignDefaultGadgetLook: about to winFindFont gadget=%p name=%s size=%d bold=%d\n",
+				(void*)gadget, TheGlobalLanguageData->m_defaultWindowFont.name.str(),
+				TheGlobalLanguageData->adjustFontSize(TheGlobalLanguageData->m_defaultWindowFont.size),
+				TheGlobalLanguageData->m_defaultWindowFont.bold);
+			GameFont *defWinFont = winFindFont(
 				TheGlobalLanguageData->m_defaultWindowFont.name,
-				TheGlobalLanguageData->m_defaultWindowFont.size,
-				TheGlobalLanguageData->m_defaultWindowFont.bold) );
+				TheGlobalLanguageData->adjustFontSize(TheGlobalLanguageData->m_defaultWindowFont.size),
+				TheGlobalLanguageData->m_defaultWindowFont.bold);
+			GX_TRACE("assignDefaultGadgetLook: winFindFont returned font=%p, about to winSetFont gadget=%p\n", (void*)defWinFont, (void*)gadget);
+			gadget->winSetFont( defWinFont );
+			GX_TRACE("assignDefaultGadgetLook: winSetFont returned gadget=%p\n", (void*)gadget);
 		}
 		else
 		{
-			char log_buffer[512];
-			sprintf(log_buffer, "[GX-ISSUE144] assignDefaultGadgetLook fallback font Times New Roman size=14 bold=0 gadget=%p", gadget);
-			fprintf(stderr, "%s\n", log_buffer);
-			gadget->winSetFont( winFindFont( "Times New Roman", 14, FALSE ) );
+			const Int fallbackSize = TheGlobalLanguageData ? TheGlobalLanguageData->adjustFontSize(14) : 14;
+			gadget->winSetFont( winFindFont( "Times New Roman", fallbackSize, FALSE ) );
 		}
 	}
 
