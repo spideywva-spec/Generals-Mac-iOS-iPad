@@ -258,7 +258,7 @@ private:
     static constexpr float CAMERA_PAN_WORLD_PER_PIXEL = 0.020f;
     static constexpr float PINCH_ZOOM_WORLD_PER_PIXEL = 0.05f;
     static constexpr float ROTATION_DEAD_ZONE_RAD = 0.6981317008f;
-    static constexpr float TWO_PI = 6.28318530717958647692f;
+    static constexpr float MOBILE_TWO_PI = 6.28318530717958647692f;
     static constexpr float BUILD_ROTATE_RAD_PER_PIXEL = 0.012f;
 
     State m_state = STATE_CAMERA_PAN;
@@ -350,10 +350,10 @@ private:
     static float NormalizeAngle(float angle)
     {
         while (angle > 3.14159265358979323846f)
-            angle -= TWO_PI;
+            angle -= MOBILE_TWO_PI;
 
         while (angle < -3.14159265358979323846f)
-            angle += TWO_PI;
+            angle += MOBILE_TWO_PI;
 
         return angle;
     }
