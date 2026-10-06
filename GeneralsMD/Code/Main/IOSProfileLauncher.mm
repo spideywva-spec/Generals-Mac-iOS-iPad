@@ -95,7 +95,7 @@ NSArray<NSString *> *DiagnosticReplayPaths()
 
 NSString *DiagnosticsExportDirectoryPath()
 {
-    return DocumentsFilePath(@"Diagnostics");
+    return DocumentsFilePath(@"Диагностика");
 }
 
 NSArray<NSURL *> *ExportDiagnosticsSnapshot(NSString *reportText)
@@ -597,8 +597,7 @@ UIButton *MakeButton(NSString *title, id target, SEL action)
 @property(nonatomic, strong) UIStackView *menuStack;
 @property(nonatomic, strong) UIButton *modsButton;
 @property(nonatomic, strong) UIView *modsView;
-@property(nonatomic, strong) UIStackView *modsListStack;
-@property(nonatomic, strong) UILabel *modsStatus;
+@property(nonatomic, strong) UIStackView *modsListStack;@property(nonatomic, strong) UILabel *modsStatus;
 @property(nonatomic, strong) UISegmentedControl *modsChannelSegment;
 @property(nonatomic, strong) UIView *settingsView;
 @property(nonatomic, strong) UILabel *settingsStatus;
@@ -720,7 +719,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
     // Keep a Files-visible snapshot even when the Web Launcher bridge/share UI fails.
     // This runs every time the launcher becomes visible after a crash/relaunch.
-    NSString *report = [self diagnosticsTextWithGameDataSize:@"Open Diagnostics to refresh size"];
+    NSString *report = [self diagnosticsTextWithGameDataSize:@"Откройте «Диагностика», чтобы обновить размер"];
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
         ExportDiagnosticsSnapshot(report);
     });
@@ -922,7 +921,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         fprintf(stderr, "[HUB-WEB] remote launcher bridge schema is incompatible; using bundled launcher\n");
         return nil;
     }
-    NSString *urlText = [release[@"indexURL"] isKindOfClass:[NSString class]] ? release[@"indexURL"] : nil;
+    NSString *urlText = @"https://generals-zh-launcher.onrender.com";
 
     if (urlText.length == 0)
     {
@@ -1090,12 +1089,12 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         else
         {
             NSString *message = !baseInstalled
-                ? @"Zero Hour + Online base content is not installed."
+                ? @"Базовые файлы Zero Hour + Online не установлены."
                 : (!baseHealthy
-                    ? @"Zero Hour + Online files are damaged. Open Mod Hub and repair the base profile."
+                    ? @"Файлы Zero Hour + Online повреждены. Откройте «Моды и обновления» и восстановите базовый профиль."
                     : (!selectedInstalled
-                        ? @"Profile is not installed."
-                        : @"Profile files are damaged. Open Mod Hub and choose Repair."));
+                        ? @"Профиль не установлен."
+                        : @"Файлы профиля повреждены. Откройте «Моды и обновления» и выберите «Восстановить»."));
             [self sendWebResponse:requestId result:nil error:message];
         }
         return;
@@ -1107,7 +1106,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         NSDictionary *entry = HubEntryForProfile(profileId);
         if (entry == nil)
         {
-            [self sendWebResponse:requestId result:nil error:@"Profile is not available in the current catalog channel."];
+            [self sendWebResponse:requestId result:nil error:@"Профиль недоступен в текущем канале каталога."];
             return;
         }
         if (GXHubDownloadBusy())
@@ -1140,7 +1139,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
                     BOOL cancelled = [error.domain isEqualToString:@"GeneralsXHub"] && error.code == 189;
                     [strongSelf sendWebEvent:cancelled ? @"downloadCancelled" : @"installError" payload:@{
                         @"profileId": profileId ?: @"",
-                        @"error": error.localizedDescription ?: (cancelled ? @"Download cancelled" : @"Install failed"),
+                        @"error": error.localizedDescription ?: (cancelled ? @"Загрузка отменена" : @"Не удалось установить"),
                     }];
                 }
                 else
@@ -1173,7 +1172,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         if (!ok)
         {
             [self sendWebResponse:requestId result:nil
-                           error:downloadError.localizedDescription ?: @"Download action failed."];
+                           error:downloadError.localizedDescription ?: @"Не удалось выполнить действие загрузки."];
             return;
         }
         NSDictionary *state = [self webLauncherState];
@@ -1188,7 +1187,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         NSError *error = nil;
         if (!GXHubRemoveMod(profileId, &error))
         {
-            [self sendWebResponse:requestId result:nil error:error.localizedDescription ?: @"Remove failed."];
+            [self sendWebResponse:requestId result:nil error:error.localizedDescription ?: @"Не удалось удалить."];
             return;
         }
         [self sendWebResponse:requestId result:[self webLauncherState] error:nil];
@@ -1197,8 +1196,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     }
 
     if ([action isEqualToString:@"refreshCatalog"] || [action isEqualToString:@"setChannel"])
-    {
-        if ([action isEqualToString:@"setChannel"])
+    {        if ([action isEqualToString:@"setChannel"])
         {
             NSString *channel = payload[@"channel"];
             GXHubSetCatalogChannel(channel);
@@ -1245,7 +1243,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
     if ([action isEqualToString:@"exportDiagnostics"])
     {
-        NSString *report = [self diagnosticsTextWithGameDataSize:@"Open Diagnostics to refresh size"] ?: @"";
+        NSString *report = [self diagnosticsTextWithGameDataSize:@"Откройте «Диагностика», чтобы обновить размер"] ?: @"";
         self.diagnosticsText.text = report;
         NSArray<NSURL *> *files = ExportDiagnosticsSnapshot(report);
         [self sendWebResponse:requestId
@@ -1426,7 +1424,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         }
         if (!ok)
         {
-            [self sendWebResponse:requestId result:nil error:saveError.localizedDescription ?: @"Settings save failed."];
+            [self sendWebResponse:requestId result:nil error:saveError.localizedDescription ?: @"Не удалось сохранить настройки."];
             return;
         }
         fprintf(stderr, "[HUB-SETTINGS] web saved profile='%s'\n", profileId.UTF8String);
@@ -1469,12 +1467,12 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         }
         else
         {
-            [self sendWebResponse:requestId result:nil error:@"Only HTTPS links are allowed."];
+            [self sendWebResponse:requestId result:nil error:@"Разрешены только HTTPS-ссылки."];
         }
         return;
     }
 
-    [self sendWebResponse:requestId result:nil error:[NSString stringWithFormat:@"Unknown bridge action: %@", action]];
+    [self sendWebResponse:requestId result:nil error:[NSString stringWithFormat:@"Неизвестное действие моста: %@", action]];
 }
 
 - (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error
@@ -1526,16 +1524,16 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         ? @"ZERO HOUR ENHANCED"
         : (dedicatedContra ? @"CONTRA X" : @"GENERALS HUB");
     NSString *subtitleText = dedicatedEnhanced
-        ? @"v1.0 + 28/03/2024 patch · iPad"
-        : (dedicatedContra ? @"Beta 2 + Patch 1 · iPad" : @"Generals Online · Mods · iPad");
+        ? @"v1.0 + патч 28/03/2024 · iPad"
+        : (dedicatedContra ? @"Beta 2 + Патч 1 · iPad" : @"Generals Online · Моды · iPad");
 
     UILabel *title = MakeLabel(titleText, 34.0, UIFontWeightBold);
     UILabel *subtitle = MakeLabel(subtitleText, 14.0, UIFontWeightRegular);
     subtitle.textColor = [UIColor colorWithWhite:0.62 alpha:1.0];
 
-    UIButton *settings = MakeButton(@"Hub Settings", self, @selector(showSettings));
-    UIButton *diagnostics = MakeButton(@"Diagnostics", self, @selector(showDiagnostics));
-    UIButton *mods = MakeButton(@"Mods & Updates", self, @selector(showMods));
+    UIButton *settings = MakeButton(@"Настройки Hub", self, @selector(showSettings));
+    UIButton *diagnostics = MakeButton(@"Диагностика", self, @selector(showDiagnostics));
+    UIButton *mods = MakeButton(@"Моды и обновления", self, @selector(showMods));
     self.modsButton = mods;
     settings.backgroundColor = [UIColor colorWithWhite:0.06 alpha:1.0];
     diagnostics.backgroundColor = [UIColor colorWithWhite:0.06 alpha:1.0];
@@ -1546,14 +1544,14 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
 
     if (dedicatedEnhanced)
     {
-        UIButton *enhanced = MakeButton(@"Play Zero Hour Enhanced", self, @selector(launchEnhanced));
+        UIButton *enhanced = MakeButton(@"Запустить Zero Hour Enhanced", self, @selector(launchEnhanced));
         [views addObject:enhanced];
         [buttons addObject:enhanced];
         fprintf(stderr, "INFO: iOS launcher running in dedicated Enhanced mode\n");
     }
     else if (dedicatedContra)
     {
-        UIButton *contra = MakeButton(@"Play Contra X", self, @selector(launchContra));
+        UIButton *contra = MakeButton(@"Запустить Contra X", self, @selector(launchContra));
         [views addObject:contra];
         [buttons addObject:contra];
         fprintf(stderr, "INFO: iOS launcher running in dedicated Contra X mode\n");
@@ -1606,23 +1604,23 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         [self.modsView.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:-18.0],
     ]];
 
-    UILabel *title = MakeLabel(@"MODS", 28.0, UIFontWeightBold);
+    UILabel *title = MakeLabel(@"МОДЫ", 28.0, UIFontWeightBold);
     title.textAlignment = NSTextAlignmentLeft;
     UILabel *note = MakeLabel(
-        @"Install and update mods without reinstalling Generals Hub. Choose Stable for normal use or Beta for test releases.",
+        @"Устанавливайте и обновляйте моды без переустановки Generals Hub. Выберите стабильный канал или Beta для тестовых выпусков.",
         13.0,
         UIFontWeightRegular);
     note.textAlignment = NSTextAlignmentLeft;
     note.textColor = [UIColor colorWithWhite:0.62 alpha:1.0];
 
-    UILabel *channelLabel = MakeLabel(@"Update channel", 14.0, UIFontWeightSemibold);
+    UILabel *channelLabel = MakeLabel(@"Канал обновлений", 14.0, UIFontWeightSemibold);
     channelLabel.textAlignment = NSTextAlignmentLeft;
-    self.modsChannelSegment = [[UISegmentedControl alloc] initWithItems:@[@"Stable", @"Beta"]];
+    self.modsChannelSegment = [[UISegmentedControl alloc] initWithItems:@[@"Стабильный", @"Beta"]];
     self.modsChannelSegment.translatesAutoresizingMaskIntoConstraints = NO;
     self.modsChannelSegment.selectedSegmentIndex = [GXHubCatalogChannel() isEqualToString:@"beta"] ? 1 : 0;
     [self.modsChannelSegment addTarget:self action:@selector(modsChannelChanged:) forControlEvents:UIControlEventValueChanged];
 
-    UIButton *refreshButton = MakeButton(@"Refresh", self, @selector(refreshHubCatalog));
+    UIButton *refreshButton = MakeButton(@"Обновить", self, @selector(refreshHubCatalog));
     [refreshButton.widthAnchor constraintEqualToConstant:140.0].active = YES;
 
     UIStackView *channelRow = [[UIStackView alloc] initWithArrangedSubviews:@[
@@ -1646,8 +1644,8 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     scroll.showsVerticalScrollIndicator = YES;
     [scroll addSubview:self.modsListStack];
 
-    UIButton *importButton = MakeButton(@"Import .gxmod", self, @selector(importModPackage));
-    UIButton *back = MakeButton(@"Back", self, @selector(hideMods));
+    UIButton *importButton = MakeButton(@"Импортировать .gxmod", self, @selector(importModPackage));
+    UIButton *back = MakeButton(@"Назад", self, @selector(hideMods));
     [importButton.widthAnchor constraintEqualToConstant:220.0].active = YES;
     [back.widthAnchor constraintEqualToConstant:180.0].active = YES;
     UIStackView *buttons = [[UIStackView alloc] initWithArrangedSubviews:@[importButton, back]];
@@ -1740,12 +1738,12 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         return;
     NSInteger count = [self availableHubUpdateCount];
     NSString *title = count > 0
-        ? [NSString stringWithFormat:@"Mods & Updates · %ld", (long)count]
-        : @"Mods & Updates";
+        ? [NSString stringWithFormat:@"Моды и обновления · %ld", (long)count]
+        : @"Моды и обновления";
     [self.modsButton setTitle:title forState:UIControlStateNormal];
     self.modsButton.accessibilityLabel = count > 0
-        ? [NSString stringWithFormat:@"Mods and Updates, %ld updates available", (long)count]
-        : @"Mods and Updates";
+        ? [NSString stringWithFormat:@"Моды и обновления, доступно обновлений: %ld", (long)count]
+        : @"Моды и обновления";
 }
 
 - (void)reloadModsList
@@ -1773,10 +1771,10 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         UILabel *hubName = MakeLabel(@"Generals Hub", 17.0, UIFontWeightSemibold);
         hubName.textAlignment = NSTextAlignmentLeft;
         NSString *hubStatusText = hubUpdateAvailable
-            ? [NSString stringWithFormat:@"Installed %@ (%ld) · %@ %@ (%ld) available",
+            ? [NSString stringWithFormat:@"Установлен %@ (%ld) · %@ %@ (доступно: %ld)",
                 currentHubVersion, (long)currentHubBuild, [channel uppercaseString],
                 availableHubVersion, (long)availableHubBuild]
-            : [NSString stringWithFormat:@"Installed %@ (%ld) · %@ · up to date",
+            : [NSString stringWithFormat:@"Установлен %@ (%ld) · %@ · обновлений нет",
                 currentHubVersion, (long)currentHubBuild, [channel uppercaseString]];
         UILabel *hubDetail = MakeLabel(hubStatusText, 12.0, UIFontWeightRegular);
         hubDetail.textAlignment = NSTextAlignmentLeft;
@@ -1795,10 +1793,9 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         NSString *hubURL = hubRelease[@"packageURL"];
         if (hubUpdateAvailable && hubURL.length > 0)
         {
-            UIButton *updateHub = MakeButton(@"Get Hub Update", self, @selector(openHubUpdate:));
+            UIButton *updateHub = MakeButton(@"Обновить Hub", self, @selector(openHubUpdate:));
             updateHub.accessibilityIdentifier = hubURL;
-            [updateHub.widthAnchor constraintEqualToConstant:190.0].active = YES;
-            UIStackView *hubActions = [[UIStackView alloc] initWithArrangedSubviews:@[updateHub]];
+            [updateHub.widthAnchor constraintEqualToConstant:190.0].active = YES;            UIStackView *hubActions = [[UIStackView alloc] initWithArrangedSubviews:@[updateHub]];
             hubActions.axis = UILayoutConstraintAxisHorizontal;
             hubActions.alignment = UIStackViewAlignmentCenter;
             [hubViews addObject:hubActions];
@@ -1818,7 +1815,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     NSArray<NSDictionary<NSString *, id> *> *entries = HubCombinedEntries();
     if (entries.count == 0)
     {
-        UILabel *empty = MakeLabel(@"No mod catalog entries yet. Import a .gxmod package from Files.", 15.0, UIFontWeightRegular);
+        UILabel *empty = MakeLabel(@"В каталоге пока нет модов. Импортируйте пакет .gxmod из приложения «Файлы».", 15.0, UIFontWeightRegular);
         empty.textColor = [UIColor colorWithWhite:0.65 alpha:1.0];
         [self.modsListStack addArrangedSubview:empty];
         return;
@@ -1844,17 +1841,17 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         NSString *statusText = nil;
         if (externalInstalled)
             statusText = updateAvailable
-                ? [NSString stringWithFormat:@"Installed %@ · Update %@ available", installedVersion, catalogVersion]
-                : [NSString stringWithFormat:@"Installed %@", installedVersion ?: catalogVersion];
+                ? [NSString stringWithFormat:@"Установлен %@ · доступно обновление %@", installedVersion, catalogVersion]
+                : [NSString stringWithFormat:@"Установлен %@", installedVersion ?: catalogVersion];
         else if (available)
-            statusText = [NSString stringWithFormat:@"Built in · %@", catalogVersion];
+            statusText = [NSString stringWithFormat:@"Встроен · %@", catalogVersion];
         else
-            statusText = [NSString stringWithFormat:@"Not installed · %@", catalogVersion];
+            statusText = [NSString stringWithFormat:@"Не установлен · %@", catalogVersion];
 
         statusText = [statusText stringByAppendingFormat:@" · %@",
             [channel uppercaseString]];
         if (!compatible)
-            statusText = [statusText stringByAppendingFormat:@" · Requires Hub %@", minimumHub];
+            statusText = [statusText stringByAppendingFormat:@" · Требуется Hub %@", minimumHub];
 
         NSNumber *sizeBytes = entry[@"packageBytes"];
         if (sizeBytes.unsignedLongLongValue > 0)
@@ -1871,7 +1868,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
 
         if (available)
         {
-            UIButton *play = MakeButton(@"Play", self, @selector(playHubMod:));
+            UIButton *play = MakeButton(@"Запустить", self, @selector(playHubMod:));
             play.accessibilityIdentifier = profileId;
             [play.widthAnchor constraintEqualToConstant:130.0].active = YES;
             [actions addArrangedSubview:play];
@@ -1881,7 +1878,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
                                     [profileId isEqualToString:@"contra-x"];
         if (available && hasDedicatedSettings)
         {
-            UIButton *settings = MakeButton(@"Settings", self, @selector(showHubModSettings:));
+            UIButton *settings = MakeButton(@"Настройки", self, @selector(showHubModSettings:));
             settings.accessibilityIdentifier = profileId;
             [settings.widthAnchor constraintEqualToConstant:140.0].active = YES;
             [actions addArrangedSubview:settings];
@@ -1892,8 +1889,8 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         {
             BOOL thisDownloadActive = downloadBusy && [activeDownloadProfile isEqualToString:profileId];
             NSString *installTitle = thisDownloadActive
-                ? @"Downloading…"
-                : (externalInstalled ? @"Update" : @"Install");
+                ? @"Загрузка…"
+                : (externalInstalled ? @"Обновить" : @"Установить");
             UIButton *install = MakeButton(installTitle, self, @selector(downloadHubMod:));
             install.accessibilityIdentifier = profileId;
             install.enabled = !downloadBusy;
@@ -1903,7 +1900,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
 
         if (externalInstalled)
         {
-            UIButton *remove = MakeButton(@"Remove", self, @selector(removeHubMod:));
+            UIButton *remove = MakeButton(@"Удалить", self, @selector(removeHubMod:));
             remove.accessibilityIdentifier = profileId;
             [remove.widthAnchor constraintEqualToConstant:130.0].active = YES;
             [actions addArrangedSubview:remove];
@@ -1960,13 +1957,13 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     {
         sender.selectedSegmentIndex = [GXHubCatalogChannel() isEqualToString:@"beta"] ? 1 : 0;
         self.modsStatus.textColor = [UIColor systemYellowColor];
-        self.modsStatus.text = @"Wait for the active mod download to finish before switching channels.";
+        self.modsStatus.text = @"Дождитесь завершения текущей загрузки мода перед сменой канала.";
         return;
     }
     NSString *channel = sender.selectedSegmentIndex == 1 ? @"beta" : @"stable";
     GXHubSetCatalogChannel(channel);
     self.modsStatus.textColor = [UIColor colorWithWhite:0.72 alpha:1.0];
-    self.modsStatus.text = [NSString stringWithFormat:@"Using %@ channel.", [channel uppercaseString]];
+    self.modsStatus.text = [NSString stringWithFormat:@"Используется канал %@.", [channel uppercaseString]];
     [self reloadModsList];
     [self refreshHubCatalog];
 }
@@ -1978,7 +1975,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         if (!self.modsView.hidden)
         {
             self.modsStatus.textColor = [UIColor systemYellowColor];
-            self.modsStatus.text = [NSString stringWithFormat:@"Downloading %@…",
+            self.modsStatus.text = [NSString stringWithFormat:@"Загрузка %@…",
                 GXHubActiveDownloadProfile() ?: @"mod"];
         }
         return;
@@ -1987,12 +1984,12 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     if (url.length == 0)
     {
         self.modsStatus.textColor = [UIColor colorWithWhite:0.62 alpha:1.0];
-        self.modsStatus.text = @"Remote catalog is not configured yet. Bundled catalog is active.";
+        self.modsStatus.text = @"Удалённый каталог ещё не настроен. Используется встроенный каталог.";
         return;
     }
 
     self.modsStatus.textColor = [UIColor systemYellowColor];
-    self.modsStatus.text = [NSString stringWithFormat:@"Checking %@ updates…", [GXHubCatalogChannel() uppercaseString]];
+    self.modsStatus.text = [NSString stringWithFormat:@"Проверка обновлений %@…", [GXHubCatalogChannel() uppercaseString]];
     __weak GXProfileLauncherViewController *weakSelf = self;
     GXHubRefreshRemoteCatalog(^(BOOL updated, NSError *error) {
         GXProfileLauncherViewController *strongSelf = weakSelf;
@@ -2001,7 +1998,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         if (error != nil)
         {
             strongSelf.modsStatus.textColor = [UIColor colorWithWhite:0.62 alpha:1.0];
-            strongSelf.modsStatus.text = [NSString stringWithFormat:@"Catalog refresh failed; using cached data: %@",
+            strongSelf.modsStatus.text = [NSString stringWithFormat:@"Не удалось обновить каталог; используются сохранённые данные: %@",
                 error.localizedDescription];
             [strongSelf reloadModsList];
             return;
@@ -2009,7 +2006,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         strongSelf.modsStatus.textColor = [UIColor systemGreenColor];
         strongSelf.modsStatus.text = updated
             ? [NSString stringWithFormat:@"%@ catalog updated.", [GXHubCatalogChannel() uppercaseString]]
-            : @"Catalog is up to date.";
+            : @"Каталог уже обновлён.";
         [strongSelf reloadModsList];
     });
 }
@@ -2056,14 +2053,14 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     if (GXHubDownloadBusy())
     {
         self.modsStatus.textColor = [UIColor systemYellowColor];
-        self.modsStatus.text = [NSString stringWithFormat:@"Another download is already running: %@.",
+        self.modsStatus.text = [NSString stringWithFormat:@"Уже выполняется другая загрузка: %@.",
             GXHubActiveDownloadProfile() ?: @"mod"];
         return;
     }
 
     NSString *displayName = entry[@"name"] ?: profileId;
     self.modsStatus.textColor = [UIColor systemYellowColor];
-    self.modsStatus.text = [NSString stringWithFormat:@"Preparing %@ download…", displayName];
+    self.modsStatus.text = [NSString stringWithFormat:@"Подготовка загрузки %@…", displayName];
     sender.enabled = NO;
 
     __weak GXProfileLauncherViewController *weakSelf = self;
@@ -2078,14 +2075,14 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
             if (fractionCompleted >= 0.999 && totalBytes > 0)
             {
                 strongSelf.modsStatus.text = [NSString stringWithFormat:
-                    @"Downloaded %@. Verifying SHA-256 and installing…", displayName];
+                    @"%@ загружен. Проверка SHA-256 и установка…", displayName];
                 return;
             }
 
             if (totalBytes > 0)
             {
                 strongSelf.modsStatus.text = [NSString stringWithFormat:
-                    @"Downloading %@… %ld%% · %.2f / %.2f GB",
+                    @"Загрузка %@… %ld%% · %.2f / %.2f ГБ",
                     displayName,
                     (long)(fractionCompleted * 100.0 + 0.5),
                     (double)bytesReceived / 1024.0 / 1024.0 / 1024.0,
@@ -2094,7 +2091,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
             else
             {
                 strongSelf.modsStatus.text = [NSString stringWithFormat:
-                    @"Downloading %@… %.1f MB",
+                    @"Загрузка %@… %.1f МБ",
                     displayName,
                     (double)bytesReceived / 1024.0 / 1024.0];
             }
@@ -2106,12 +2103,12 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
             if (error != nil)
             {
                 strongSelf.modsStatus.textColor = [UIColor systemRedColor];
-                strongSelf.modsStatus.text = [NSString stringWithFormat:@"Install failed: %@", error.localizedDescription];
+                strongSelf.modsStatus.text = [NSString stringWithFormat:@"Не удалось установить: %@", error.localizedDescription];
                 [strongSelf reloadModsList];
                 return;
             }
             strongSelf.modsStatus.textColor = [UIColor systemGreenColor];
-            strongSelf.modsStatus.text = [NSString stringWithFormat:@"Installed %@ %@.", manifest[@"name"], manifest[@"version"]];
+            strongSelf.modsStatus.text = [NSString stringWithFormat:@"Установлен %@ %@.", manifest[@"name"], manifest[@"version"]];
             [strongSelf rebuildHubMenuAfterMutation];
         });
 
@@ -2125,11 +2122,11 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     if (!GXHubRemoveMod(profileId, &error))
     {
         self.modsStatus.textColor = [UIColor systemRedColor];
-        self.modsStatus.text = [NSString stringWithFormat:@"Remove failed: %@", error.localizedDescription];
+        self.modsStatus.text = [NSString stringWithFormat:@"Не удалось удалить: %@", error.localizedDescription];
         return;
     }
     self.modsStatus.textColor = [UIColor systemGreenColor];
-    self.modsStatus.text = @"Mod removed.";
+    self.modsStatus.text = @"Мод удалён.";
     [self rebuildHubMenuAfterMutation];
 }
 
@@ -2151,7 +2148,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         return;
 
     self.modsStatus.textColor = [UIColor systemYellowColor];
-    self.modsStatus.text = @"Installing .gxmod…";
+    self.modsStatus.text = @"Установка .gxmod…";
     __weak GXProfileLauncherViewController *weakSelf = self;
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
         BOOL scoped = [url startAccessingSecurityScopedResource];
@@ -2168,13 +2165,13 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
             if (!ok)
             {
                 strongSelf.modsStatus.textColor = [UIColor systemRedColor];
-                strongSelf.modsStatus.text = [NSString stringWithFormat:@"Import failed: %@", error.localizedDescription];
+                strongSelf.modsStatus.text = [NSString stringWithFormat:@"Не удалось импортировать: %@", error.localizedDescription];
                 if (strongSelf.webLauncherActive)
-                    [strongSelf sendWebEvent:@"installError" payload:@{ @"profileId": @"file", @"error": error.localizedDescription ?: @"Import failed" }];
+                    [strongSelf sendWebEvent:@"installError" payload:@{ @"profileId": @"file", @"error": error.localizedDescription ?: @"Не удалось импортировать" }];
                 return;
             }
             strongSelf.modsStatus.textColor = [UIColor systemGreenColor];
-            strongSelf.modsStatus.text = [NSString stringWithFormat:@"Installed %@ %@.", manifest[@"name"], manifest[@"version"]];
+            strongSelf.modsStatus.text = [NSString stringWithFormat:@"Установлен %@ %@.", manifest[@"name"], manifest[@"version"]];
             [strongSelf rebuildHubMenuAfterMutation];
             if (strongSelf.webLauncherActive)
             {
@@ -2308,13 +2305,13 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     BOOL hubModSettings = hubEnhancedSettings || hubContraSettings;
 
     NSString *settingsTitle = (dedicatedEnhanced || hubEnhancedSettings)
-        ? @"Enhanced settings"
-        : ((dedicatedContra || hubContraSettings) ? @"Contra X settings" : @"Hub settings");
+        ? @"Настройки Enhanced"
+        : ((dedicatedContra || hubContraSettings) ? @"Настройки Contra X" : @"Настройки Hub");
     NSString *settingsNote = (dedicatedEnhanced || hubEnhancedSettings)
-        ? @"Enhanced-only options. Stored separately from Hub and other mods. Changes apply on the next launch."
+        ? @"Настройки только для Enhanced. Хранятся отдельно от Hub и других модов. Изменения применяются при следующем запуске."
         : ((dedicatedContra || hubContraSettings)
-            ? @"Contra X-only options. Stored separately from Hub and other mods. Changes apply on the next launch."
-            : @"Shared engine, graphics, camera and performance settings for Online and installed mods.");
+            ? @"Настройки только для Contra X. Хранятся отдельно от Hub и других модов. Изменения применяются при следующем запуске."
+            : @"Общие настройки движка, графики, камеры и производительности для Online и установленных модов.");
 
     UILabel *title = MakeLabel(settingsTitle, 26.0, UIFontWeightBold);
     title.textAlignment = NSTextAlignmentLeft;
@@ -2384,11 +2381,11 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     {
         [controlViews addObjectsFromArray:@[
             [self sectionLabel:@"ENHANCED"],
-            [self segmentedRow:@"Faction textures" control:self.enhancedTextureResolutionSegment],
-            [self segmentedRow:@"UI quality" control:self.enhancedUIQualitySegment],
-            [self segmentedRow:@"Infantry icons" control:self.enhancedInfantryIconScaleSegment],
+            [self segmentedRow:@"Текстуры фракций" control:self.enhancedTextureResolutionSegment],
+            [self segmentedRow:@"Качество интерфейса" control:self.enhancedUIQualitySegment],
+            [self segmentedRow:@"Значки пехоты" control:self.enhancedInfantryIconScaleSegment],
             [self segmentedRow:@"Cameos" control:self.enhancedCameosSegment],
-            [self segmentedRow:@"AI scripts" control:self.enhancedAIScriptsSegment],
+            [self segmentedRow:@"Скрипты ИИ" control:self.enhancedAIScriptsSegment],
         ]];
     }
 
@@ -2396,48 +2393,47 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     {
         [controlViews addObjectsFromArray:@[
             [self sectionLabel:@"CONTRA X"],
-            [self segmentedRow:@"Control Bar" control:self.contraControlBarSegment],
-            [self segmentedRow:@"Icon / cameo quality" control:self.contraCameosSegment],
-            [self segmentedRow:@"Music" control:self.contraMusicSegment],
-            [self segmentedRow:@"Unit voices" control:self.contraVoicesSegment],
+            [self segmentedRow:@"Панель управления" control:self.contraControlBarSegment],
+            [self segmentedRow:@"Качество иконок / камео" control:self.contraCameosSegment],            [self segmentedRow:@"Music" control:self.contraMusicSegment],
+            [self segmentedRow:@"Голоса юнитов" control:self.contraVoicesSegment],
             [self segmentedRow:@"Hotkeys" control:self.contraHotkeysSegment],
-            [self segmentedRow:@"Hotkey language" control:self.contraHotkeyLanguageSegment],
-            [self segmentedRow:@"General portraits" control:self.contraPortraitsSegment],
-            [self switchRow:@"Fog effects" control:self.contraFogSwitch],
-            [self switchRow:@"Water effects" control:self.contraWaterSwitch],
-            [self switchRow:@"Extra building props" control:self.contraExtraBuildingPropsSwitch],
+            [self segmentedRow:@"Язык горячих клавиш" control:self.contraHotkeyLanguageSegment],
+            [self segmentedRow:@"Портреты генералов" control:self.contraPortraitsSegment],
+            [self switchRow:@"Эффекты тумана" control:self.contraFogSwitch],
+            [self switchRow:@"Эффекты воды" control:self.contraWaterSwitch],
+            [self switchRow:@"Дополнительные элементы зданий" control:self.contraExtraBuildingPropsSwitch],
         ]];
     }
 
     if (showCommonSettings)
     {
         [controlViews addObjectsFromArray:@[
-            [self sectionLabel:@"GRAPHICS"],
-            [self switchRow:@"3D shadows" control:self.shadow3DSwitch],
-            [self switchRow:@"2D shadows" control:self.shadow2DSwitch],
-            [self switchRow:@"Cloud shadows" control:self.cloudShadowsSwitch],
-            [self switchRow:@"Ground lighting" control:self.groundLightingSwitch],
-            [self switchRow:@"Smooth water borders" control:self.softWaterSwitch],
-            [self switchRow:@"Units behind buildings" control:self.buildingOcclusionSwitch],
-            [self switchRow:@"Small props / trees" control:self.showPropsSwitch],
-            [self switchRow:@"Extra animations" control:self.extraAnimationsSwitch],
-            [self switchRow:@"Dynamic LOD" control:self.dynamicLODSwitch],
-            [self switchRow:@"Heat effects" control:self.heatEffectsSwitch],
-            [self segmentedRow:@"Engine texture quality" control:self.textureQualitySegment],
-            [self segmentedRow:@"Particles" control:self.particleQualitySegment],
-            [self segmentedRow:@"Texture filtering" control:self.textureFilterSegment],
-            [self segmentedRow:@"Anisotropy" control:self.anisotropySegment],
+            [self sectionLabel:@"ГРАФИКА"],
+            [self switchRow:@"3D-тени" control:self.shadow3DSwitch],
+            [self switchRow:@"2D-тени" control:self.shadow2DSwitch],
+            [self switchRow:@"Тени облаков" control:self.cloudShadowsSwitch],
+            [self switchRow:@"Освещение поверхности" control:self.groundLightingSwitch],
+            [self switchRow:@"Плавные границы воды" control:self.softWaterSwitch],
+            [self switchRow:@"Юниты за зданиями" control:self.buildingOcclusionSwitch],
+            [self switchRow:@"Мелкие объекты / деревья" control:self.showPropsSwitch],
+            [self switchRow:@"Дополнительные анимации" control:self.extraAnimationsSwitch],
+            [self switchRow:@"Динамический LOD" control:self.dynamicLODSwitch],
+            [self switchRow:@"Эффекты нагрева" control:self.heatEffectsSwitch],
+            [self segmentedRow:@"Качество текстур движка" control:self.textureQualitySegment],
+            [self segmentedRow:@"Частицы" control:self.particleQualitySegment],
+            [self segmentedRow:@"Фильтрация текстур" control:self.textureFilterSegment],
+            [self segmentedRow:@"Анизотропия" control:self.anisotropySegment],
             [self segmentedRow:@"MSAA" control:self.msaaSegment],
 
-            [self sectionLabel:@"CAMERA / PERFORMANCE"],
-            [self sliderRow:@"Maximum camera height" slider:self.maxCameraSlider value:self.maxCameraValue],
-            [self sliderRow:@"Minimum camera height" slider:self.minCameraSlider value:self.minCameraValue],
-            [self sliderRow:@"Camera pitch" slider:self.cameraPitchSlider value:self.cameraPitchValue],
-            [self switchRow:@"Enforce maximum camera height" control:self.enforceMaxSwitch],
-            [self sliderRow:@"Keyboard / edge scroll speed" slider:self.scrollSpeedSlider value:self.scrollSpeedValue],
-            [self sliderRow:@"Terrain draw distance" slider:self.drawDistanceSlider value:self.drawDistanceValue],
-            [self switchRow:@"FPS limit" control:self.fpsLimitSwitch],
-            [self sliderRow:@"Frames per second" slider:self.fpsSlider value:self.fpsValue],
+            [self sectionLabel:@"КАМЕРА / ПРОИЗВОДИТЕЛЬНОСТЬ"],
+            [self sliderRow:@"Максимальная высота камеры" slider:self.maxCameraSlider value:self.maxCameraValue],
+            [self sliderRow:@"Минимальная высота камеры" slider:self.minCameraSlider value:self.minCameraValue],
+            [self sliderRow:@"Наклон камеры" slider:self.cameraPitchSlider value:self.cameraPitchValue],
+            [self switchRow:@"Ограничивать максимальную высоту камеры" control:self.enforceMaxSwitch],
+            [self sliderRow:@"Скорость прокрутки клавишами / у края" slider:self.scrollSpeedSlider value:self.scrollSpeedValue],
+            [self sliderRow:@"Дальность прорисовки ландшафта" slider:self.drawDistanceSlider value:self.drawDistanceValue],
+            [self switchRow:@"Лимит FPS" control:self.fpsLimitSwitch],
+            [self sliderRow:@"Кадров в секунду" slider:self.fpsSlider value:self.fpsValue],
         ]];
     }
 
@@ -2453,9 +2449,9 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     scroll.showsVerticalScrollIndicator = YES;
     [scroll addSubview:controls];
 
-    UIButton *save = MakeButton(@"Save", self, @selector(saveSettings));
-    UIButton *reset = MakeButton(@"Reset defaults", self, @selector(resetSettings));
-    UIButton *back = MakeButton(@"Back", self, @selector(hideSettings));
+    UIButton *save = MakeButton(@"Сохранить", self, @selector(saveSettings));
+    UIButton *reset = MakeButton(@"Сбросить по умолчанию", self, @selector(resetSettings));
+    UIButton *back = MakeButton(@"Назад", self, @selector(hideSettings));
 
     [save.widthAnchor constraintEqualToConstant:180.0].active = YES;
     [reset.widthAnchor constraintEqualToConstant:180.0].active = YES;
@@ -2527,16 +2523,16 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     BOOL enhancedSettingsExists = [[NSFileManager defaultManager] fileExistsAtPath:enhancedSettingsPath];
     BOOL contraSettingsExists = [[NSFileManager defaultManager] fileExistsAtPath:contraSettingsPath];
     NSString *enhancedSettingsText = enhancedInstalled
-        ? (enhancedSettingsExists ? @"Present" : @"Missing")
+        ? (enhancedSettingsExists ? @"Показать" : @"Отсутствует")
         : @"N/A";
     NSString *contraSettingsText = contraInstalled
-        ? (contraSettingsExists ? @"Present" : @"Missing")
+        ? (contraSettingsExists ? @"Показать" : @"Отсутствует")
         : @"N/A";
 
     NSString *currentLog = DocumentsFilePath(@"generals-stderr.log");
     BOOL currentLogExists = [[NSFileManager defaultManager] fileExistsAtPath:currentLog];
     NSString *currentLogText = currentLogExists
-        ? [NSString stringWithFormat:@"Yes (%@)", HumanReadableBytes(FileSizeAtPath(currentLog))]
+        ? [NSString stringWithFormat:@"Да (%@)", HumanReadableBytes(FileSizeAtPath(currentLog))]
         : @"No";
 
     NSUInteger sessionLogCount = 0;
@@ -2570,7 +2566,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     }
     NSString *installedModsText = installedModDescriptions.count > 0
         ? [installedModDescriptions componentsJoinedByString:@", "]
-        : @"None";
+        : @"Нет";
 
     return [NSString stringWithFormat:
         @"APP\n"
@@ -2606,12 +2602,12 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         GX_ENGINE_VERSION,
         ShortBuildIdentifier(GX_ENGINE_COMMIT),
         ShortBuildIdentifier(GX_BASE_SHELL_RUN),
-        gameDataExists ? @"Installed" : @"Missing",
+        gameDataExists ? @"Installed" : @"Отсутствует",
         gameDataSize,
         enhancedInstalled ? @"Installed" : @"Not installed",
         contraInstalled ? @"Installed" : @"Not installed",
         installedModsText,
-        settingsExists ? @"Present" : @"Missing",
+        settingsExists ? @"Показать" : @"Отсутствует",
         enhancedSettingsText,
         contraSettingsText,
         currentLogText,
@@ -2633,7 +2629,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         [self.diagnosticsView.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:-18.0],
     ]];
 
-    UILabel *title = MakeLabel(@"Diagnostics", 26.0, UIFontWeightBold);
+    UILabel *title = MakeLabel(@"Диагностика", 26.0, UIFontWeightBold);
     title.textAlignment = NSTextAlignmentLeft;
 
     UILabel *note = MakeLabel(@"Build, installed content and crash logs. The last 10 app sessions are kept automatically.", 13.0, UIFontWeightRegular);
@@ -2650,10 +2646,10 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     self.diagnosticsText.font = [UIFont monospacedSystemFontOfSize:15.0 weight:UIFontWeightRegular];
     [scroll addSubview:self.diagnosticsText];
 
-    UIButton *refresh = MakeButton(@"Refresh", self, @selector(refreshDiagnostics));
+    UIButton *refresh = MakeButton(@"Обновить", self, @selector(refreshDiagnostics));
     self.shareDiagnosticsButton = MakeButton(@"Share report + logs", self, @selector(shareDiagnostics));
     UIButton *clearLogs = MakeButton(@"Clear logs", self, @selector(clearDiagnosticsLogs));
-    UIButton *back = MakeButton(@"Back", self, @selector(hideDiagnostics));
+    UIButton *back = MakeButton(@"Назад", self, @selector(hideDiagnostics));
 
     clearLogs.backgroundColor = [UIColor colorWithRed:0.24 green:0.06 blue:0.06 alpha:1.0];
 
@@ -2798,7 +2794,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
 {
     NSString *report = self.diagnosticsText.text;
     if (report.length == 0)
-        report = [self diagnosticsTextWithGameDataSize:@"Open Diagnostics to refresh size"] ?: @"";
+        report = [self diagnosticsTextWithGameDataSize:@"Откройте «Диагностика», чтобы обновить размер"] ?: @"";
 
     NSArray<NSURL *> *exportedFiles = ExportDiagnosticsSnapshot(report);
     NSMutableArray *items = [NSMutableArray arrayWithArray:exportedFiles];
@@ -2997,8 +2993,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     self.dynamicLODSwitch.on = SettingBoolValue(defaults, @"DynamicLOD", NO);
     self.heatEffectsSwitch.on = SettingBoolValue(defaults, @"HeatEffects", NO);
     self.textureQualitySegment.selectedSegmentIndex = 0;
-    self.particleQualitySegment.selectedSegmentIndex = 1;
-    self.textureFilterSegment.selectedSegmentIndex = 2;
+    self.particleQualitySegment.selectedSegmentIndex = 1;    self.textureFilterSegment.selectedSegmentIndex = 2;
     self.anisotropySegment.selectedSegmentIndex = 2;
     self.msaaSegment.selectedSegmentIndex = 0;
     [self textureFilterChanged:self.textureFilterSegment];
@@ -3110,7 +3105,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         self.drawDistanceSlider.value = 1.20f;
         self.fpsLimitSwitch.on = YES;
         self.fpsSlider.value = 60.0f;
-        self.settingsStatus.text = @"Using camera defaults.";
+        self.settingsStatus.text = @"Используются настройки камеры по умолчанию.";
         if (error != nil)
         {
             fprintf(stderr, "WARNING: iOS launcher could not read iPadOverrides.ini: %s\n",
@@ -3297,7 +3292,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
             : [self saveContraSettingsAndOptions:&error];
         if (ok)
         {
-            self.settingsStatus.text = @"Mod settings saved. Changes apply on the next launch.";
+            self.settingsStatus.text = @"Настройки мода сохранены. Изменения применятся при следующем запуске.";
             self.settingsStatus.textColor = [UIColor systemGreenColor];
             fprintf(stderr,
                     "[HUB-SETTINGS] saved profile='%s' path='%s'\n",
@@ -3308,7 +3303,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         }
         else
         {
-            self.settingsStatus.text = @"Save failed. See generals-stderr.log.";
+            self.settingsStatus.text = @"Не удалось сохранить. Подробности в generals-stderr.log.";
             self.settingsStatus.textColor = [UIColor systemRedColor];
         }
         return;
@@ -3347,7 +3342,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
 
     if (cameraOK && profileOK)
     {
-        self.settingsStatus.text = @"Saved. Changes apply on the next game launch.";
+        self.settingsStatus.text = @"Сохранено. Изменения применятся при следующем запуске игры.";
         self.settingsStatus.textColor = [UIColor systemGreenColor];
         fprintf(stderr,
                 "[HUB-SETTINGS] saved shared options=%s camera=%s\n",
@@ -3356,7 +3351,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     }
     else
     {
-        self.settingsStatus.text = @"Save failed. See generals-stderr.log.";
+        self.settingsStatus.text = @"Не удалось сохранить. Подробности в generals-stderr.log.";
         self.settingsStatus.textColor = [UIColor systemRedColor];
         fprintf(stderr, "ERROR: iOS launcher failed to save settings: %s\n",
                 error != nil ? [[error description] UTF8String] : "unknown");
@@ -3366,7 +3361,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
 - (void)resetSettings
 {
     [self resetSettingsControls];
-    self.settingsStatus.text = @"Default values loaded. Tap Save to apply.";
+    self.settingsStatus.text = @"Значения по умолчанию загружены. Нажмите «Сохранить», чтобы применить.";
     self.settingsStatus.textColor = [UIColor colorWithWhite:0.65 alpha:1.0];
 }
 
