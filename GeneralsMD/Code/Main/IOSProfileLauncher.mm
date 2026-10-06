@@ -564,11 +564,55 @@ UIWindowScene *FindActiveWindowScene()
     return nil;
 }
 
+NSString *LauncherRussianText(NSString *text)
+{
+    static NSDictionary<NSString *, NSString *> *translations;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        translations = @{
+            @"Hub Settings": @"Настройки", @"Diagnostics": @"Диагностика", @"Mods & Updates": @"Моды и обновления",
+            @"Play Zero Hour Enhanced": @"Запустить Zero Hour Enhanced", @"Play Contra X": @"Запустить Contra X",
+            @"Generals Online": @"Generals Online", @"MODS": @"МОДЫ",
+            @"Install and update mods without reinstalling Generals Hub. Choose Stable for normal use or Beta for test releases.": @"Устанавливайте и обновляйте моды без переустановки Generals Hub. Выберите стабильный канал для обычного использования или Beta для тестовых версий.",
+            @"Update channel": @"Канал обновлений", @"Stable": @"Стабильная", @"Beta": @"Бета", @"Refresh": @"Обновить",
+            @"Import .gxmod": @"Импорт .gxmod", @"Back": @"Назад", @"Get Hub Update": @"Обновить Hub",
+            @"No mod catalog entries yet. Import a .gxmod package from Files.": @"В каталоге пока нет модов. Импортируйте пакет .gxmod из приложения «Файлы».",
+            @"Play": @"Запустить", @"Settings": @"Настройки", @"Remove": @"Удалить", @"Save": @"Сохранить", @"Reset defaults": @"Сбросить настройки",
+            @"ENHANCED": @"ENHANCED", @"CONTRA X": @"CONTRA X", @"GRAPHICS": @"ГРАФИКА", @"CAMERA / PERFORMANCE": @"КАМЕРА / ПРОИЗВОДИТЕЛЬНОСТЬ",
+            @"Faction textures": @"Текстуры фракций", @"UI quality": @"Качество интерфейса", @"Infantry icons": @"Иконки пехоты",
+            @"Cameos": @"Камео", @"AI scripts": @"Скрипты ИИ", @"Control Bar": @"Панель управления", @"Icon / cameo quality": @"Качество иконок / камео",
+            @"Music": @"Музыка", @"Unit voices": @"Голоса юнитов", @"Hotkeys": @"Горячие клавиши", @"Hotkey language": @"Язык горячих клавиш",
+            @"General portraits": @"Портреты генералов", @"Fog effects": @"Эффекты тумана", @"Water effects": @"Эффекты воды",
+            @"Extra building props": @"Дополнительные объекты зданий", @"3D shadows": @"Тени 3D", @"2D shadows": @"Тени 2D",
+            @"Cloud shadows": @"Тени облаков", @"Ground lighting": @"Освещение земли", @"Smooth water borders": @"Сглаженные границы воды",
+            @"Units behind buildings": @"Юниты за зданиями", @"Small props / trees": @"Мелкие объекты / деревья", @"Extra animations": @"Дополнительные анимации",
+            @"Dynamic LOD": @"Динамический LOD", @"Heat effects": @"Эффекты жары", @"Engine texture quality": @"Качество текстур",
+            @"Particles": @"Частицы", @"Texture filtering": @"Фильтрация текстур", @"Anisotropy": @"Анизотропия", @"MSAA": @"MSAA",
+            @"Maximum camera height": @"Максимальная высота камеры", @"Minimum camera height": @"Минимальная высота камеры", @"Camera pitch": @"Наклон камеры",
+            @"Enforce maximum camera height": @"Ограничить максимальную высоту камеры", @"Keyboard / edge scroll speed": @"Скорость прокрутки клавиатурой / у края",
+            @"Terrain draw distance": @"Дальность прорисовки местности", @"FPS limit": @"Ограничение FPS", @"Frames per second": @"Кадров в секунду",
+            @"Build, installed content and crash logs. The last 10 app sessions are kept automatically.": @"Сборка, установленные файлы и журналы сбоев. Последние 10 сессий приложения сохраняются автоматически.",
+            @"Share report + logs": @"Поделиться отчётом и логами", @"Clear logs": @"Очистить логи",
+            @"Saved. Changes apply on the next game launch.": @"Сохранено. Изменения применятся при следующем запуске игры.",
+            @"Save failed. See generals-stderr.log.": @"Не удалось сохранить. См. generals-stderr.log.",
+            @"Default values loaded. Tap Save to apply.": @"Значения по умолчанию загружены. Нажмите «Сохранить» для применения.",
+            @"Using camera defaults.": @"Используются параметры камеры по умолчанию.", @"Mod settings saved. Changes apply on the next launch.": @"Настройки мода сохранены. Изменения применятся при следующем запуске.",
+            @"Default": @"По умолчанию", @"High": @"Высокое", @"Medium": @"Среднее", @"Low": @"Низкое", @"Bilinear": @"Билинейная",
+            @"Trilinear": @"Трилинейная", @"Anisotropic": @"Анизотропная", @"Off": @"Выкл.", @"Original": @"Оригинал",
+            @"English": @"Английский", @"Native": @"Родной", @"Funny": @"Забавные", @"Standard": @"Стандарт",
+            @"Enhanced": @"Улучшенный", @"The Score": @"Саундтрек", @"Vanilla": @"Оригинал", @"Restrained": @"Ограниченный",
+            @"Skynet": @"Скайнет", @"Pro": @"Профессиональный", @"Russian": @"Русский"
+        };
+    });
+    NSString *translated = translations[text];
+    return translated.length > 0 ? translated : text;
+}
+
 UILabel *MakeLabel(NSString *text, CGFloat size, UIFontWeight weight)
 {
     UILabel *label = [[UILabel alloc] init];
     label.translatesAutoresizingMaskIntoConstraints = NO;
-    label.text = text;
+    label.text = LauncherRussianText(text);
     label.textColor = UIColor.whiteColor;
     label.textAlignment = NSTextAlignmentCenter;
     label.font = [UIFont systemFontOfSize:size weight:weight];
@@ -580,7 +624,7 @@ UIButton *MakeButton(NSString *title, id target, SEL action)
 {
     UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
     button.translatesAutoresizingMaskIntoConstraints = NO;
-    [button setTitle:title forState:UIControlStateNormal];
+    [button setTitle:LauncherRussianText(title) forState:UIControlStateNormal];
     [button setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
     button.titleLabel.font = [UIFont systemFontOfSize:19.0 weight:UIFontWeightSemibold];
     button.backgroundColor = [UIColor colorWithWhite:0.12 alpha:1.0];
@@ -2247,7 +2291,10 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
 
 - (UISegmentedControl *)makeSegmented:(NSArray<NSString *> *)items
 {
+    // Keep engine values unchanged; localize only what the player sees.
     UISegmentedControl *control = [[UISegmentedControl alloc] initWithItems:items];
+    for (NSUInteger index = 0; index < items.count; ++index)
+        [control setTitle:LauncherRussianText(items[index]) forSegmentAtIndex:index];
     control.translatesAutoresizingMaskIntoConstraints = NO;
     control.selectedSegmentIndex = 0;
     return control;
