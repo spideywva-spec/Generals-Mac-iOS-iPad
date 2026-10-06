@@ -249,8 +249,8 @@ void IOSGameOverlayInit(SDL_Window *window)
         s_overlayWindow.hidden = NO;
         s_overlayWindow.alpha = 1.0;
 
-        [s_overlayWindow makeKeyAndVisible];
-        [s_overlayWindow resignKeyWindow];
+        // Never make the overlay the key window: keyboard/IME focus must stay with the game.
+        s_overlayWindow.hidden = NO;
 
         [s_overlayController showAndRestartIdleTimer];
     });
