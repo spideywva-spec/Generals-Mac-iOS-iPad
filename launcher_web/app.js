@@ -8,9 +8,9 @@ const downloadMetrics = new Map();
 
 window.GeneralsXРодной = {
   request(action, payload = {}, timeoutMs = 20000) {
-    if (!hasРоднойBridge) return Профессиональныйmise.reject(new Error("Родной bridge is unavailable"));
+    if (!hasРоднойBridge) return Promise.reject(new Error("Родной bridge is unavailable"));
     const id = `gx-${Date.now()}-${++nativeRequestCounter}`;
-    return new Профессиональныйmise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const timer = window.setTimeout(() => {
         nativePending.delete(id);
         reject(new Error(`Родной action timed out: ${action}`));
@@ -51,7 +51,7 @@ function nativeRequest(action, payload = {}) {
   return window.GeneralsXРодной.request(action, payload);
 }
 
-function nativeПрофессиональныйfileIdForCard(card = activeCard) {
+function nativeProfileIdForCard(card = activeCard) {
   const id = card?.dataset?.id || "zero-hour-online";
   if (id === "zero-hour-online") return "online";
   return id;
@@ -61,7 +61,7 @@ function nativeModState(modId) {
   return nativeState?.mods?.find(item => item.profileId === modId) || null;
 }
 
-function nativeПрофессиональныйfileState(profileId) {
+function nativeProfileState(profileId) {
   if (profileId === "online") return nativeState?.online || null;
   return nativeModState(profileId);
 }
@@ -97,7 +97,7 @@ function applyРоднойState(state) {
       ...downloadMetrics.get(profileId),
       ...state.download
     });
-    setHomeСкачатьПрофессиональныйgress(profileId, Number(state.download.fraction || 0), true);
+    setHomeСкачатьProgress(profileId, Number(state.download.fraction || 0), true);
   }
 
   syncУстановитьedModCards();
@@ -113,8 +113,8 @@ function syncРоднойSystemСтатус() {
   if (!nativeState) return;
   const engine = document.querySelector("#systemEngine");
   const launcher = document.querySelector("#systemLauncher");
-  const gameData = document.querySelector("#systemGameData");
-  const profiles = document.querySelector("#systemПрофессиональныйfiles");
+  const gameData = document.querySelector("#systemФайлы игры");
+  const profiles = document.querySelector("#systemProfiles");
   const footerBuild = document.querySelector("#footerBuild");
 
   if (engine) engine.textContent = nativeState.engineВерсия || "unknown";
@@ -131,8 +131,8 @@ function syncРоднойSystemСтатус() {
   }
   if (footerBuild) footerBuild.textContent = `BUILD ${nativeState.build || "unknown"}`;
 
-  const currentПрофессиональныйfileId = nativeПрофессиональныйfileIdForCard();
-  const profile = nativeПрофессиональныйfileState(currentПрофессиональныйfileId);
+  const currentProfileId = nativeProfileIdForCard();
+  const profile = nativeProfileState(currentProfileId);
   const installed = Boolean(profile?.installed);
   const updateAvailable = Boolean(profile?.updateAvailable);
   statusLabel.textContent = installed ? (updateAvailable ? "ОБНОВИТЬ" : "ГОТОВО") : "NOT УСТАНОВИТЬED";
@@ -150,7 +150,7 @@ async function syncРоднойState() {
   }
 }
 
-function updateРоднойПрофессиональныйgress(payload) {
+function updateРоднойProgress(payload) {
   const profileId = payload.profileId;
   if (!profileId) return;
   const metrics = {
@@ -159,7 +159,7 @@ function updateРоднойПрофессиональныйgress(payload) {
     busy: true
   };
   downloadMetrics.set(profileId, metrics);
-  setHomeСкачатьПрофессиональныйgress(profileId, Number(metrics.fraction || 0), true);
+  setHomeСкачатьProgress(profileId, Number(metrics.fraction || 0), true);
   updateСкачатьPanel(profileId);
 }
 
@@ -168,8 +168,8 @@ function handleРоднойEvent(name, payload) {
     applyРоднойState(payload);
     return;
   }
-  if (name === "downloadПрофессиональныйgress") {
-    updateРоднойПрофессиональныйgress(payload);
+  if (name === "downloadProgress") {
+    updateРоднойProgress(payload);
     return;
   }
   if (name === "installComplete") {
@@ -180,7 +180,7 @@ function handleРоднойEvent(name, payload) {
     triggerHaptic("success");
     showToast(`${title} installed`);
     syncРоднойState().then(() => {
-      const installedCard = cardForПрофессиональныйfileId(payload.profileId);
+      const installedCard = cardForProfileId(payload.profileId);
       if (installedCard) setActiveCard(installedCard);
     });
     return;
@@ -249,7 +249,7 @@ let uiSoundEnabled = (() => {
   catch { return true; }
 })();
 
-const uiSoundПрофессиональныйfiles = {
+const uiSoundProfiles = {
   tap: [[310, 250, 0.045, 0.020]],
   select: [[390, 520, 0.070, 0.026], [690, 760, 0.045, 0.012]],
   open: [[260, 390, 0.085, 0.020], [520, 650, 0.070, 0.010]],
@@ -278,7 +278,7 @@ function playUISound(name = "tap") {
   if (!uiSoundEnabled) return;
   const context = ensureUIAudio();
   if (!context) return;
-  const profile = uiSoundПрофессиональныйfiles[name] || uiSoundПрофессиональныйfiles.tap;
+  const profile = uiSoundProfiles[name] || uiSoundProfiles.tap;
   const now = context.currentTime;
   profile.forEach(([from, to, duration, volume], index) => {
     const oscillator = context.createOscillator();
@@ -359,7 +359,7 @@ function isModУстановитьed(modId) {
   return installedMods.includes(modId);
 }
 
-function cardForПрофессиональныйfileId(profileId) {
+function cardForProfileId(profileId) {
   const cardId = profileId === "online" ? "zero-hour-online" : profileId;
   return cards.find(card => card.dataset.id === cardId) || null;
 }
@@ -376,10 +376,10 @@ function ensureHomeСкачатьPercent(card) {
   return indicator;
 }
 
-function setHomeСкачатьПрофессиональныйgress(profileId, fraction = 0, active = true) {
+function setHomeСкачатьProgress(profileId, fraction = 0, active = true) {
   const value = Math.max(0, Math.min(1, Number(fraction || 0)));
   homeСкачатьState.set(profileId, { active, fraction: value });
-  const card = cardForПрофессиональныйfileId(profileId);
+  const card = cardForProfileId(profileId);
   if (!card) return;
 
   const pendingУстановить = profileId === "online"
@@ -399,7 +399,7 @@ function setHomeСкачатьПрофессиональныйgress(profileId, f
 }
 
 function finishHomeСкачать(profileId, outcome) {
-  const card = cardForПрофессиональныйfileId(profileId);
+  const card = cardForProfileId(profileId);
   homeСкачатьState.delete(profileId);
   if (!card) return;
 
@@ -474,10 +474,10 @@ function syncActiveModSourceLink() {
   }
 
   modSourceLink.href = mod.moddbUrl;
-  modSourceLink.title = `Original mod on ModDB — ${mod.author}`;
+  modSourceLink.title = `Оригинальный мод на ModDB — ${mod.author}`;
 }
 
-const settingsПо умолчаниюs = {
+const settingsDefaults = {
   game: {
     shadow3D: false,
     shadow2D: true,
@@ -485,15 +485,15 @@ const settingsПо умолчаниюs = {
     groundLighting: true,
     softWater: true,
     buildingOcclusion: true,
-    showПрофессиональныйps: true,
+    showProps: true,
     extraAnimations: true,
     dynamicLOD: false,
     heatEffects: false,
-    textureQuality: "High",
-    particles: "Medium",
+    textureQuality: "Высокое",
+    particles: "Среднее",
     textureFilter: "Анизотропная",
     anisotropy: "8x",
-    msaa: "Off",
+    msaa: "Выкл.",
     maxCamera: 550,
     minCamera: 70,
     cameraPitch: 37,
@@ -504,7 +504,7 @@ const settingsПо умолчаниюs = {
     fps: 60
   },
   enhanced: {
-    textureResolution: "High",
+    textureResolution: "Высокое",
     uiQuality: "FHD",
     infantryIconScale: "100%",
     cameos: "HD",
@@ -515,31 +515,31 @@ const settingsПо умолчаниюs = {
     cameos: "Стандарт",
     music: "Стандарт",
     voices: "Английский",
-    hotkeys: "Original",
+    hotkeys: "Оригинал",
     hotkeyLanguage: "Английский",
     portraits: "Стандарт",
     fogEffects: false,
     waterEffects: true,
-    extraBuildingПрофессиональныйps: true
+    extraBuildingProps: true
   }
 };
 
-function cloneНастройкиПо умолчаниюs() {
-  return JSON.parse(JSON.stringify(settingsПо умолчаниюs));
+function cloneНастройкиDefaults() {
+  return JSON.parse(JSON.stringify(settingsDefaults));
 }
 
 function loadDemoНастройки() {
   try {
     const saved = localStorage.getItem("generals-x-launcher-demo-settings");
-    if (!saved) return cloneНастройкиПо умолчаниюs();
+    if (!saved) return cloneНастройкиDefaults();
     const parsed = JSON.parse(saved);
     return {
-      game: { ...settingsПо умолчаниюs.game, ...(parsed.game || {}) },
-      enhanced: { ...settingsПо умолчаниюs.enhanced, ...(parsed.enhanced || {}) },
-      contra: { ...settingsПо умолчаниюs.contra, ...(parsed.contra || {}) }
+      game: { ...settingsDefaults.game, ...(parsed.game || {}) },
+      enhanced: { ...settingsDefaults.enhanced, ...(parsed.enhanced || {}) },
+      contra: { ...settingsDefaults.contra, ...(parsed.contra || {}) }
     };
   } catch {
-    return cloneНастройкиПо умолчаниюs();
+    return cloneНастройкиDefaults();
   }
 }
 
@@ -588,13 +588,13 @@ cards.forEach(card => {
 });
 
 playButton.addEventListener("click", async () => {
-  const profileId = nativeПрофессиональныйfileIdForCard();
+  const profileId = nativeProfileIdForCard();
   if (!hasРоднойBridge) {
     showToast("Demo: launch request for " + activeCard.dataset.title);
     return;
   }
 
-  const profile = nativeПрофессиональныйfileState(profileId);
+  const profile = nativeProfileState(profileId);
   const installed = Boolean(profile?.installed);
   const updateAvailable = Boolean(profile?.updateAvailable);
 
@@ -609,7 +609,7 @@ playButton.addEventListener("click", async () => {
           total: Number(profile.packageBytes || 0),
           fraction: 0
         });
-        setHomeСкачатьПрофессиональныйgress(profileId, 0, true);
+        setHomeСкачатьProgress(profileId, 0, true);
         showToast(`${updateAvailable ? "Обновление" : "Скачатьing"} ${activeCard.dataset.title}…`);
         await nativeRequest("install", { profileId });
         await syncРоднойState();
@@ -661,7 +661,7 @@ function openPanel(type) {
   window.requestAnimationFrame(() => modalBackdrop.classList.add("is-visible"));
 
   if (type === "settings") {
-    const profileId = nativeПрофессиональныйfileIdForCard();
+    const profileId = nativeProfileIdForCard();
 
     modalEyebrow.textContent = activeCard.dataset.profile;
     modalTitle.textContent =
@@ -676,7 +676,7 @@ function openPanel(type) {
       try {
         const nativeНастройки = await nativeRequest("settingsGet", { profileId });
         const scope = profileId === "enhanced" ? "enhanced" : profileId === "contra-x" ? "contra" : "game";
-        settingsState[scope] = { ...settingsПо умолчаниюs[scope], ...(nativeНастройки?.values || {}) };
+        settingsState[scope] = { ...settingsDefaults[scope], ...(nativeНастройки?.values || {}) };
       } catch (error) {
         showToast(error.message || "Не удалось загрузить настройки");
       }
@@ -893,7 +893,7 @@ function renderModLibrary() {
                   <path d="M10 14 21 3"/>
                   <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
                 </svg>
-                Original mod by ${mod.author} · ModDB
+                Оригинальный мод от ${mod.author} · ModDB
               </a>
             </div>
             <div class="mod-library-card__actions">
@@ -1005,7 +1005,7 @@ async function installРоднойMod(modId, button) {
 
   button.disabled = true;
   downloadMetrics.set(modId, { busy: true, profileId: modId, paused: false, received: 0, total: mod.packageBytes || 0, fraction: 0 });
-  setHomeСкачатьПрофессиональныйgress(modId, 0, true);
+  setHomeСкачатьProgress(modId, 0, true);
   const fallbackNote = mod.fallbackChannel ? ` · using ${mod.fallbackChannel.toUpperCase()} package` : "";
   showToast(`Загрузка ${mod.title}${fallbackNote}…`);
   try {
@@ -1054,25 +1054,25 @@ function installMod(modId, source) {
   const card = cards.find(item => item.dataset.id === modId);
   if (card) setActiveCard(card);
 
-  showToast(`${mod.title} installed${source === "file" ? " из файла" : ""}`);
+  showToast(`${mod.title} installed${source === "file" ? " from file" : ""}`);
   window.setTimeout(closePanel, 220);
 }
 
 function diagnosticsReport() {
   return `APP
-Профессиональныйject: Generals X
+Project: Generals X
 Bundle: demo
 Platform: Local browser
 Device: ${navigator.platform || "Неизвестно"}
 
 BUILD
 Launcher: demo-01
-Launcher run: local
+Запуск лаунчера: local
 Engine: 0.1.0
-Base shell run: local
+Запуск базовой оболочки: local
 
 CONTENT
-GameData: Установитьed
+Файлы игры: Установитьed
 Zero Hour + Online: Установитьed
 Enhanced: ${isModУстановитьed("enhanced") ? "Установитьed" : "Не установлено"}
 Contra X: ${isModУстановитьed("contra") ? "Установитьed" : "Не установлено"}
@@ -1143,7 +1143,7 @@ function renderДиагностика() {
     const report = diagnosticsReport();
     try {
       if (navigator.share) {
-        await navigator.share({ title: "Generals X diagnostics", text: report });
+        await navigator.share({ title: "Диагностика Generals X", text: report });
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(report);
         showToast("Отчёт скопирован");
@@ -1213,15 +1213,15 @@ function renderGameНастройки() {
       ${settingRow("Освещение земли", toggleControl("game", "groundLighting"))}
       ${settingRow("Сглаженные границы воды", toggleControl("game", "softWater"))}
       ${settingRow("Юниты за зданиями", toggleControl("game", "buildingOcclusion"))}
-      ${settingRow("Мелкие объекты / деревья", toggleControl("game", "showПрофессиональныйps"))}
+      ${settingRow("Мелкие объекты / деревья", toggleControl("game", "showProps"))}
       ${settingRow("Дополнительные анимации", toggleControl("game", "extraAnimations"))}
       ${settingRow("Динамический LOD", toggleControl("game", "dynamicLOD"))}
       ${settingRow("Эффекты жары", toggleControl("game", "heatEffects"))}
-      ${settingRow("Качество текстур", segmentControl("game", "textureQuality", ["High", "Medium", "Low"]))}
-      ${settingRow("Частицы", segmentControl("game", "particles", ["Low", "Medium", "High"]))}
+      ${settingRow("Качество текстур", segmentControl("game", "textureQuality", ["Высокое", "Среднее", "Низкое"]))}
+      ${settingRow("Частицы", segmentControl("game", "particles", ["Низкое", "Среднее", "Высокое"]))}
       ${settingRow("Фильтрация текстур", segmentControl("game", "textureFilter", ["Билинейная", "Трилинейная", "Анизотропная"]))}
       ${settingRow("Анизотропия", segmentControl("game", "anisotropy", ["2x", "4x", "8x", "16x"]))}
-      ${settingRow("MSAA", segmentControl("game", "msaa", ["Off", "2x", "4x", "8x"]))}
+      ${settingRow("MSAA", segmentControl("game", "msaa", ["Выкл.", "2x", "4x", "8x"]))}
     </div>
 
     <div class="setting-section">
@@ -1242,11 +1242,11 @@ function renderEnhancedНастройки() {
   return `
     <div class="setting-section">
       <h3>Enhanced</h3>
-      ${settingRow("Текстуры фракций", segmentControl("enhanced", "textureResolution", ["Vanilla", "High"]))}
+      ${settingRow("Текстуры фракций", segmentControl("enhanced", "textureResolution", ["Vanilla", "Высокое"]))}
       ${settingRow("Качество интерфейса", segmentControl("enhanced", "uiQuality", ["HD", "FHD", "QHD"]))}
       ${settingRow("Иконки пехоты", segmentControl("enhanced", "infantryIconScale", ["100%", "75%", "50%"]))}
       ${settingRow("Cameos", segmentControl("enhanced", "cameos", ["SD", "HD"]))}
-      ${settingRow("Скрипты ИИ", segmentControl("enhanced", "aiScripts", ["По умолчанию", "Ограниченный", "Skynet"]))}
+      ${settingRow("Скрипты ИИ", segmentControl("enhanced", "aiScripts", ["По умолчанию", "Ограниченный", "Скайнет"]))}
     </div>
   `;
 }
@@ -1259,12 +1259,12 @@ function renderContraНастройки() {
       ${settingRow("Качество иконок / камео", segmentControl("contra", "cameos", ["Стандарт", "HD"]))}
       ${settingRow("Музыка", segmentControl("contra", "music", ["Стандарт", "Enhanced", "Саундтрек"]))}
       ${settingRow("Голоса юнитов", segmentControl("contra", "voices", ["Английский", "Родной"]))}
-      ${settingRow("Горячие клавиши", segmentControl("contra", "hotkeys", ["Original", "Leikeze"]))}
+      ${settingRow("Горячие клавиши", segmentControl("contra", "hotkeys", ["Оригинал", "Leikeze"]))}
       ${settingRow("Язык горячих клавиш", segmentControl("contra", "hotkeyLanguage", ["Английский", "Russian"]))}
       ${settingRow("Портреты генералов", segmentControl("contra", "portraits", ["Стандарт", "Забавные"]))}
       ${settingRow("Эффекты тумана", toggleControl("contra", "fogEffects"))}
       ${settingRow("Эффекты воды", toggleControl("contra", "waterEffects"))}
-      ${settingRow("Дополнительные объекты зданий", toggleControl("contra", "extraBuildingПрофессиональныйps"))}
+      ${settingRow("Дополнительные объекты зданий", toggleControl("contra", "extraBuildingProps"))}
     </div>
   `;
 }
@@ -1341,9 +1341,9 @@ function renderНастройки(profileId = "zero-hour-online") {
   });
 
   modalHeaderActions?.querySelector("[data-settings-reset]")?.addEventListener("click", () => {
-    settingsState[scope] = { ...settingsПо умолчаниюs[scope] };
+    settingsState[scope] = { ...settingsDefaults[scope] };
     renderНастройки(profileId);
-    showToast("По умолчанию settings loaded");
+    showToast("Настройки по умолчанию загружены");
   });
 }
 
@@ -1351,7 +1351,7 @@ const backgroundImageCache = new Map();
 
 function preloadBackgroundSlide(src) {
   if (backgroundImageCache.has(src)) return backgroundImageCache.get(src);
-  const promise = new Профессиональныйmise(resolve => {
+  const promise = new Promise(resolve => {
     const image = new Image();
     let settled = false;
     const finish = async () => {
@@ -1374,7 +1374,7 @@ function preloadBackgroundSlide(src) {
 }
 
 function preloadBackgroundSlides() {
-  return Профессиональныйmise.all(backgroundSlides.map(preloadBackgroundSlide));
+  return Promise.all(backgroundSlides.map(preloadBackgroundSlide));
 }
 
 function randomBackgroundIndex(excludeIndex = -1) {
@@ -1544,7 +1544,7 @@ if (modesRail) {
   modesRail.addEventListener("wheel", event => {
     if (!modesRail.classList.contains("is-overflowing")) return;
     if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-    event.preventПо умолчанию();
+    event.preventDefault();
     modesRail.scrollBy({ left: event.deltaY, behavior: "smooth" });
   }, { passive: false });
 
