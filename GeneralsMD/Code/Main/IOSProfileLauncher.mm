@@ -856,13 +856,13 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
     if (BundledAutoLaunchProfile().length == 0)
     {
-        // The main launcher is native and must never depend on network/WebKit.
-        // Remote catalog/web content is optional and may refresh in the background.
-        self.menuStack.hidden = NO;
+        // Main launcher is served from the live Render site.
+        // The native bridge remains available for settings, diagnostics and game launch.
+        self.menuStack.hidden = YES;
         self.modsView.hidden = YES;
         self.settingsView.hidden = YES;
         self.diagnosticsView.hidden = YES;
-        self.webLauncherActive = NO;
+        [self buildWebLauncher];
         [self updateModsUpdatesBadge];
         [self refreshHubCatalog];
     }
