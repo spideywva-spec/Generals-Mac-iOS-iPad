@@ -1052,36 +1052,19 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
 - (NSURL *)remoteWebLauncherURL
 {
-    NSDictionary *catalog = GXHubCatalogDocument();
-    NSString *channel = GXHubCatalogChannel();
-    NSDictionary *channels = [catalog[@"launcherWeb"] isKindOfClass:[NSDictionary class]]
-        ? catalog[@"launcherWeb"] : nil;
-    NSDictionary *release = [channels[channel] isKindOfClass:[NSDictionary class]]
-        ? channels[channel]
-        : ([channels[@"stable"] isKindOfClass:[NSDictionary class]] ? channels[@"stable"] : nil);
-    if ([release[@"bridgeSchema"] integerValue] != 6)
+    // The native iOS launcher always opens the live Render web launcher.
+    // The internal bridge name remains "generalsX"; only the visible launcher
+    // is served from the Render static site.
+    NSString *urlText = @"https://generals-zh-launcher.onrender.com/index.html";
+    NSURL *url = [NSURL URLWithString:urlText];
+    if (![url.scheme isEqualToString:@"https"] || url.host.length == 0)
     {
-        fprintf(stderr, "[HUB-WEB] remote launcher bridge schema is incompatible; using bundled launcher\n");
+        fprintf(stderr, "[HUB-WEB] invalid Render launcher URL\n");
         return nil;
     }
-    NSString *urlText = [release[@"indexURL"] isKindOfClass:[NSString class]] ? release[@"indexURL"] : nil;
 
-    if (urlText.length == 0)
-    {
-        NSURL *catalogURL = [NSURL URLWithString:GXHubRemoteCatalogURL() ?: @""];
-        if ([catalogURL.scheme isEqualToString:@"https"] && catalogURL.host.length > 0)
-        {
-            NSString *path = [NSString stringWithFormat:@"/launcher/%@/index.html", channel];
-            NSURLComponents *components = [[NSURLComponents alloc] init];
-            components.scheme = @"https";
-            components.host = catalogURL.host;
-            components.path = path;
-            urlText = components.URL.absoluteString;
-        }
-    }
-
-    NSURL *url = urlText.length > 0 ? [NSURL URLWithString:urlText] : nil;
-    return [url.scheme isEqualToString:@"https"] ? url : nil;
+    fprintf(stderr, "[HUB-WEB] using Render launcher: %s\n", url.absoluteString.UTF8String);
+    return url;
 }
 
 - (void)loadBundledWebLauncher
