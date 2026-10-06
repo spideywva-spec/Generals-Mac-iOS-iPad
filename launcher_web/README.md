@@ -16,3 +16,5 @@ Or open `launcher-demo\index.html` directly in a browser.
 
 - `assets/bg.png` — animated seamless tiled background.
 - `assets/logo.png` — app/browser icon only; it is intentionally not shown inside the launcher UI.
+
+<!-- iOS shell workflow trigger -->
