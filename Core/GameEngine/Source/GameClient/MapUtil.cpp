@@ -539,6 +539,26 @@ void MapCache::loadMapsFromMapCacheINI( const AsciiString &mapDir )
 	{
 		ini.load( fname, INI_LOAD_OVERWRITE, nullptr );
 	}
+
+	// Hub does not chdir when switching to a generic -mod profile. If the mod
+	// ships a loose MapCache.ini patch, resolve it explicitly from m_modDir.
+	if (TheGlobalData && TheGlobalData->m_modDir.isNotEmpty() && TheLocalFileSystem)
+	{
+		AsciiString modMapCache = TheGlobalData->m_modDir;
+		const Int length = modMapCache.getLength();
+		if (length > 0)
+		{
+			const Char tail = modMapCache.str()[length - 1];
+			if (tail != '/' && tail != '\\')
+				modMapCache.concat('/');
+		}
+		modMapCache.concat(fname);
+		if (TheLocalFileSystem->doesFileExist(modMapCache.str()))
+		{
+			fprintf(stderr, "[MAPCACHE-SOURCE] loading mod-local cache='%s'\n", modMapCache.str());
+			ini.load(modMapCache, INI_LOAD_OVERWRITE, nullptr);
+		}
+	}
 }
 
 Bool MapCache::loadMapsFromDisk( const AsciiString &mapDir, Bool isOfficial, Bool filterByAllowedMaps )
