@@ -142,39 +142,40 @@ jobs:
             }
           fi
 
-          ADAPTER="references/fbraz3-dxvk/src/dxvk/dxvk_adapter.cpp"
-          DEVICE="references/fbraz3-dxvk/src/dxvk/dxvk_device.cpp"
+          D3D9="references/fbraz3-dxvk/src/d3d9/d3d9_device.cpp"
+          D3D11="references/fbraz3-dxvk/src/d3d11/d3d11_device.cpp"
 
-          # Apple A12/A13 (GPU Family 6): the core Vulkan 1.2 bit
-          # samplerMirrorClampToEdge is not enableable even though the
+          # Apple A12/A13 (GPU Family 6): the core Vulkan 1.2 feature bit
+          # samplerMirrorClampToEdge cannot be enabled even though the
           # VK_KHR_sampler_mirror_clamp_to_edge extension is advertised.
-          # DXVK hardcodes VK_TRUE for it, which makes vkCreateDevice fail 3
-          # times in a row, after which DXVK throws and the game dies.
+          # DXVK hardcodes enabled.vk12.samplerMirrorClampToEdge = VK_TRUE,
+          # which makes vkCreateDevice fail 3 times in a row at the MoltenVK
+          # layer, after which DXVK throws and the game dies with
+          # "TheDisplay->init() threw unknown exception".
           #
-          # Force ONLY this single feature bit to VK_FALSE. Everything else
-          # in Vulkan 1.2/1.3 remains enabled, so shadows, fog, reflections
-          # and depth-based effects keep working.
-          sed -i '' -E 's/(samplerMirrorClampToEdge[[:space:]]*=[[:space:]]*)[^;]+;/\1VK_FALSE;/g' "$DEVICE"
-          sed -i '' -E 's/(samplerMirrorClampToEdge[[:space:]]*=[[:space:]]*)[^;]+;/\1VK_FALSE;/g' "$ADAPTER"
+          # Force ONLY this single feature bit to VK_FALSE at the point where
+          # the D3D9/D3D11 device builds its feature request. Everything
+          # else in Vulkan 1.2/1.3 stays enabled, so shadows, fog and
+          # reflections keep working.
+          sed -i '' -E 's/(samplerMirrorClampToEdge[[:space:]]*=[[:space:]]*)[^;]+;/\1VK_FALSE;/g' "$D3D9"
+          sed -i '' -E 's/(samplerMirrorClampToEdge[[:space:]]*=[[:space:]]*)[^;]+;/\1VK_FALSE;/g' "$D3D11"
 
           echo "=== Verify the fix landed ==="
-          FOUND=0
-          for f in "$DEVICE" "$ADAPTER"; do
-            if grep -nE 'samplerMirrorClampToEdge[[:space:]]*=' "$f"; then
-              FOUND=1
-            fi
+          for f in "$D3D9" "$D3D11"; do
+            echo "--- $f ---"
+            grep -nE 'samplerMirrorClampToEdge[[:space:]]*=' "$f" || echo "(no assignment found)"
           done
-          if [ "$FOUND" -eq 0 ]; then
-            echo "ERROR: samplerMirrorClampToEdge line not found in either file."
-            echo "--- dumping every mention in the DXVK source ---"
-            grep -rn "samplerMirrorClampToEdge" references/fbraz3-dxvk/src/ || true
+
+          # Sanity check: our sed must have produced VK_FALSE, not left VK_TRUE.
+          if grep -qE 'samplerMirrorClampToEdge[[:space:]]*=[[:space:]]*VK_TRUE' "$D3D9" "$D3D11"; then
+            echo "ERROR: sed failed to flip samplerMirrorClampToEdge to VK_FALSE"
             exit 1
           fi
 
           echo "=== Confirm Vulkan 1.2/1.3 are NOT being disabled ==="
-          grep -nE 'm_hasVulkan12|m_hasVulkan13' "$ADAPTER" || echo "(no m_hasVulkan* assignments found — good)"
+          grep -nE 'm_hasVulkan12|m_hasVulkan13' "$D3D9" || echo "(no m_hasVulkan* assignments in d3d9_device.cpp — good)"
 
-          echo "A12/A13 DXVK patch applied: samplerMirrorClampToEdge forced FALSE, Vulkan 1.2/1.3 left enabled."
+          echo "A12/A13 DXVK patch applied: samplerMirrorClampToEdge forced FALSE in d3d9/d3d11 device, Vulkan 1.2/1.3 left enabled."
 
       - name: Configure iOS Online Hub
         env:
