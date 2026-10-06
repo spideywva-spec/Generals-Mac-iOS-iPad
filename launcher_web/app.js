@@ -93,7 +93,7 @@ function applyNativeState(state) {
   syncNativeSystemStatus();
   syncModHubAttention();
 
-  if (!modalBackdrop.hidden && modalTitle.textContent === "Mod Hub") {
+  if (!modalBackdrop.hidden && modalTitle.textContent === "Центр модификаций") {
     renderModLibrary();
   }
 }
@@ -295,8 +295,8 @@ function syncAudioToggle() {
   if (!audioToggle) return;
   audioToggle.classList.toggle("is-muted", !uiSoundEnabled);
   audioToggle.setAttribute("aria-pressed", String(!uiSoundEnabled));
-  audioToggle.setAttribute("aria-label", uiSoundEnabled ? "Mute interface sounds" : "Enable interface sounds");
-  audioToggle.title = uiSoundEnabled ? "Mute interface sounds" : "Enable interface sounds";
+  audioToggle.setAttribute("aria-label", uiSoundEnabled ? "Отключить звуки интерфейса" : "Включить звуки интерфейса");
+  audioToggle.title = uiSoundEnabled ? "Отключить звуки интерфейса" : "Включить звуки интерфейса";
 }
 
 function animateInteraction(target) {
@@ -509,7 +509,7 @@ function syncModHubAttention() {
 
   addModCard.classList.toggle("has-attention", needsAttention);
   modHubBadge.hidden = !needsAttention;
-  const label = needsAttention ? "Центр модификаций — доступны новые моды или обновления" : "Mod Hub";
+  const label = needsAttention ? "Центр модификаций — доступны новые моды или обновления" : "Центр модификаций";
   addModCard.setAttribute("aria-label", label);
   addModCard.title = label;
 }
@@ -844,13 +844,13 @@ async function openPanel(type) {
         const scope = profileId === "enhanced" ? "enhanced" : profileId === "contra-x" ? "contra" : "game";
         настройкиState[scope] = { ...settingsDefaults[scope], ...(nativeSettings?.values || {}) };
       } catch (error) {
-        showToast(error.message || "Unable to load настройки");
+        showToast(error.message || "Не удалось загрузить настройки");
       }
     }
     renderSettings(profileId);
   } else if (type === "mods") {
     modalEyebrow.textContent = "GENERALS X";
-    modalTitle.textContent = "Mod Hub";
+    modalTitle.textContent = "Центр модификаций";
     renderModLibrary();
     markModHubSeen();
   } else if (type === "diagnostics") {
@@ -1023,7 +1023,7 @@ function updateDownloadPanel(profileId) {
   const metrics = currentDownloadMetrics(profileId);
   const panel = document.querySelector(`[data-mod-progress="${profileId}"]`);
   if (!panel || !metrics) {
-    if (!modalBackdrop.hidden && modalTitle.textContent === "Mod Hub") renderModLibrary();
+    if (!modalBackdrop.hidden && modalTitle.textContent === "Центр модификаций") renderModLibrary();
     return;
   }
   const bar = panel.querySelector(".mod-download-track span");
@@ -1511,7 +1511,7 @@ function renderSettings(profileId = "zero-hour-online") {
   modalHeaderActions?.querySelector("[data-settings-reset]")?.addEventListener("click", () => {
     настройкиState[scope] = { ...settingsDefaults[scope] };
     renderSettings(profileId);
-    showToast("Default настройки loaded");
+    showToast("Загружены настройки по умолчанию");
   });
 }
 
@@ -1690,8 +1690,8 @@ function updateProfileOrderToggle() {
   if (!profileOrderToggle) return;
   profileOrderToggle.classList.toggle("is-active", profileOrderEditing);
   profileOrderToggle.setAttribute("aria-pressed", String(profileOrderEditing));
-  profileOrderToggle.setAttribute("aria-label", profileOrderEditing ? "Done arranging profiles" : "Arrange profiles");
-  profileOrderToggle.title = profileOrderEditing ? "Done arranging profiles" : "Arrange profiles";
+  profileOrderToggle.setAttribute("aria-label", profileOrderEditing ? "Готово" : "Изменить порядок профилей");
+  profileOrderToggle.title = profileOrderEditing ? "Готово" : "Изменить порядок профилей";
 }
 
 function cleanupProfileDrag(commit = true) {
