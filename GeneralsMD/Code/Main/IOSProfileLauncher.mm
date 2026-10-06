@@ -856,11 +856,13 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 
     if (BundledAutoLaunchProfile().length == 0)
     {
-        self.menuStack.hidden = YES;
+        // The main launcher is native and must never depend on network/WebKit.
+        // Remote catalog/web content is optional and may refresh in the background.
+        self.menuStack.hidden = NO;
         self.modsView.hidden = YES;
         self.settingsView.hidden = YES;
         self.diagnosticsView.hidden = YES;
-        [self buildWebLauncher];
+        self.webLauncherActive = NO;
         [self updateModsUpdatesBadge];
         [self refreshHubCatalog];
     }
@@ -1664,72 +1666,126 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     BOOL dedicatedEnhanced = [bundledProfile isEqualToString:@"enhanced"];
     BOOL dedicatedContra = [bundledProfile isEqualToString:@"contra-x"];
 
-    NSString *titleText = dedicatedEnhanced
-        ? @"ZERO HOUR ENHANCED"
-        : (dedicatedContra ? @"CONTRA X" : @"GENERALS HUB");
-    NSString *subtitleText = dedicatedEnhanced
-        ? @"v1.0 + патч 28/03/2024 · iPad"
-        : (dedicatedContra ? @"Beta 2 + Patch 1 · iPad" : @"Generals Online · Моды · iPad");
+    NSString *titleText = dedicatedEnhanced ? @"ZERO HOUR ENHANCED"
+        : (dedicatedContra ? @"CONTRA X" : @"GENERALS ZH");
+    NSString *subtitleText = dedicatedEnhanced ? @"v1.0 + патч 28/03/2024 · iPad"
+        : (dedicatedContra ? @"Beta 2 + Patch 1 · iPad" : @"НАТИВНЫЙ КОМАНДНЫЙ ЦЕНТР · iOS / iPad");
 
-    UILabel *title = MakeLabel(titleText, 34.0, UIFontWeightBold);
+    UILabel *eyebrow = MakeLabel(@"КОМАНДНЫЙ ЦЕНТР", 12.0, UIFontWeightBold);
+    eyebrow.textColor = [UIColor colorWithRed:0.25 green:0.58 blue:1.0 alpha:1.0];
+
+    UILabel *title = MakeLabel(titleText, 38.0, UIFontWeightBold);
+    title.textAlignment = NSTextAlignmentLeft;
+
     UILabel *subtitle = MakeLabel(subtitleText, 14.0, UIFontWeightRegular);
+    subtitle.textAlignment = NSTextAlignmentLeft;
     subtitle.textColor = [UIColor colorWithWhite:0.62 alpha:1.0];
 
-    UIButton *settings = MakeButton(@"Hub Settings", self, @selector(showSettings));
-    UIButton *diagnostics = MakeButton(@"Diagnostics", self, @selector(showDiagnostics));
-    UIButton *mods = MakeButton(@"Mods & Updates", self, @selector(showMods));
-    self.modsButton = mods;
+    UIView *hero = [[UIView alloc] init];
+    hero.translatesAutoresizingMaskIntoConstraints = NO;
+    hero.backgroundColor = [UIColor colorWithWhite:0.055 alpha:1.0];
+    hero.layer.cornerRadius = 18.0;
+    hero.layer.borderWidth = 1.0;
+    hero.layer.borderColor = [UIColor colorWithWhite:0.18 alpha:1.0].CGColor;
+
+    UILabel *heroKicker = MakeLabel(@"ВЫБЕРИТЕ РЕЖИМ", 11.0, UIFontWeightBold);
+    heroKicker.textAlignment = NSTextAlignmentLeft;
+    heroKicker.textColor = [UIColor colorWithWhite:0.55 alpha:1.0];
+
+    UILabel *modeTitle = MakeLabel(
+        dedicatedEnhanced ? @"Zero Hour Enhanced" :
+        (dedicatedContra ? @"Contra X" : @"Zero Hour + Онлайн"),
+        27.0,
+        UIFontWeightBold);
+    modeTitle.textAlignment = NSTextAlignmentLeft;
+
+    UILabel *modeDescription = MakeLabel(
+        dedicatedEnhanced ? @"Улучшенный профиль Zero Hour."
+        : (dedicatedContra ? @"Contra X Beta 2 + Patch 1." :
+           @"Классический Zero Hour со встроенной сетевой игрой."),
+        14.0,
+        UIFontWeightRegular);
+    modeDescription.textAlignment = NSTextAlignmentLeft;
+    modeDescription.textColor = [UIColor colorWithWhite:0.68 alpha:1.0];
+
+    UILabel *statusCaption = MakeLabel(@"СТАТУС", 10.0, UIFontWeightBold);
+    statusCaption.textAlignment = NSTextAlignmentLeft;
+    statusCaption.textColor = [UIColor colorWithWhite:0.48 alpha:1.0];
+
+    BOOL baseInstalled = GXHubProfileInstalled(@"online");
+    UILabel *status = MakeLabel(baseInstalled ? @"ГОТОВО" : @"НЕ УСТАНОВЛЕНО", 14.0, UIFontWeightBold);
+    status.textAlignment = NSTextAlignmentLeft;
+    status.textColor = baseInstalled ? [UIColor systemGreenColor] : [UIColor systemOrangeColor];
+
+    UIButton *play = MakeButton(
+        dedicatedEnhanced ? @"ИГРАТЬ · ENHANCED" :
+        (dedicatedContra ? @"ИГРАТЬ · CONTRA X" : @"ИГРАТЬ"),
+        self,
+        dedicatedEnhanced ? @selector(launchEnhanced) :
+        (dedicatedContra ? @selector(launchContra) : @selector(launchOnline)));
+    play.backgroundColor = [UIColor colorWithRed:0.16 green:0.45 blue:0.88 alpha:1.0];
+    play.layer.borderColor = [UIColor colorWithRed:0.32 green:0.65 blue:1.0 alpha:1.0].CGColor;
+    [play.widthAnchor constraintEqualToConstant:320.0].active = YES;
+
+    UIButton *settings = MakeButton(@"НАСТРОЙКИ", self, @selector(showSettings));
+    UIButton *diagnostics = MakeButton(@"ДИАГНОСТИКА", self, @selector(showDiagnostics));
+    UIButton *mods = MakeButton(@"МОДЫ И ОБНОВЛЕНИЯ", self, @selector(showMods));
+    [settings.widthAnchor constraintEqualToConstant:230.0].active = YES;
+    [diagnostics.widthAnchor constraintEqualToConstant:230.0].active = YES;
+    [mods.widthAnchor constraintEqualToConstant:230.0].active = YES;
     settings.backgroundColor = [UIColor colorWithWhite:0.06 alpha:1.0];
     diagnostics.backgroundColor = [UIColor colorWithWhite:0.06 alpha:1.0];
     mods.backgroundColor = [UIColor colorWithWhite:0.06 alpha:1.0];
+    self.modsButton = mods;
 
-    NSMutableArray<UIView *> *views = [NSMutableArray arrayWithObjects:title, subtitle, nil];
-    NSMutableArray<UIButton *> *buttons = [NSMutableArray array];
+    UIStackView *statusRow = [[UIStackView alloc] initWithArrangedSubviews:@[statusCaption, status]];
+    statusRow.axis = UILayoutConstraintAxisHorizontal;
+    statusRow.alignment = UIStackViewAlignmentCenter;
+    statusRow.spacing = 10.0;
 
-    if (dedicatedEnhanced)
-    {
-        UIButton *enhanced = MakeButton(@"Play Zero Hour Enhanced", self, @selector(launchEnhanced));
-        [views addObject:enhanced];
-        [buttons addObject:enhanced];
-        fprintf(stderr, "INFO: iOS launcher running in dedicated Enhanced mode\n");
-    }
-    else if (dedicatedContra)
-    {
-        UIButton *contra = MakeButton(@"Play Contra X", self, @selector(launchContra));
-        [views addObject:contra];
-        [buttons addObject:contra];
-        fprintf(stderr, "INFO: iOS launcher running in dedicated Contra X mode\n");
-    }
-    else
-    {
-        UIButton *online = MakeButton(@"Generals Online", self, @selector(launchOnline));
-        [views addObject:online];
-        [buttons addObject:online];
+    UIStackView *heroStack = [[UIStackView alloc] initWithArrangedSubviews:@[
+        heroKicker, modeTitle, modeDescription, statusRow, play
+    ]];
+    heroStack.translatesAutoresizingMaskIntoConstraints = NO;
+    heroStack.axis = UILayoutConstraintAxisVertical;
+    heroStack.alignment = UIStackViewAlignmentFill;
+    heroStack.spacing = 9.0;
+    heroStack.layoutMargins = UIEdgeInsetsMake(20.0, 22.0, 20.0, 22.0);
+    heroStack.layoutMarginsRelativeArrangement = YES;
+    [hero addSubview:heroStack];
 
-        [views addObject:mods];
-        [buttons addObject:mods];
-    }
+    UIStackView *actions = [[UIStackView alloc] initWithArrangedSubviews:@[settings, diagnostics, mods]];
+    actions.axis = UILayoutConstraintAxisHorizontal;
+    actions.alignment = UIStackViewAlignmentCenter;
+    actions.spacing = 10.0;
 
-    [views addObject:settings];
-    [buttons addObject:settings];
-    [views addObject:diagnostics];
-    [buttons addObject:diagnostics];
+    UILabel *footer = MakeLabel(@"GENERALS ZH  ·  Нативный лаунчер  ·  Офлайн-доступен", 11.0, UIFontWeightRegular);
+    footer.textColor = [UIColor colorWithWhite:0.42 alpha:1.0];
 
-    for (UIButton *button in buttons)
-        [button.widthAnchor constraintEqualToConstant:460.0].active = YES;
-
-    self.menuStack = [[UIStackView alloc] initWithArrangedSubviews:views];
+    self.menuStack = [[UIStackView alloc] initWithArrangedSubviews:@[
+        eyebrow, title, subtitle, hero, actions, footer
+    ]];
     self.menuStack.translatesAutoresizingMaskIntoConstraints = NO;
     self.menuStack.axis = UILayoutConstraintAxisVertical;
     self.menuStack.alignment = UIStackViewAlignmentCenter;
-    self.menuStack.spacing = 12.0;
-    [self.menuStack setCustomSpacing:26.0 afterView:subtitle];
+    self.menuStack.spacing = 8.0;
+    [self.menuStack setCustomSpacing:18.0 afterView:subtitle];
+    [self.menuStack setCustomSpacing:14.0 afterView:hero];
+    [self.menuStack setCustomSpacing:16.0 afterView:actions];
 
     [self.view addSubview:self.menuStack];
 
     [NSLayoutConstraint activateConstraints:@[
+        [self.menuStack.leadingAnchor constraintGreaterThanOrEqualToAnchor:self.view.safeAreaLayoutGuide.leadingAnchor constant:28.0],
+        [self.menuStack.trailingAnchor constraintLessThanOrEqualToAnchor:self.view.safeAreaLayoutGuide.trailingAnchor constant:-28.0],
         [self.menuStack.centerXAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.centerXAnchor],
         [self.menuStack.centerYAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.centerYAnchor],
+        [hero.leadingAnchor constraintEqualToAnchor:self.menuStack.leadingAnchor],
+        [hero.trailingAnchor constraintEqualToAnchor:self.menuStack.trailingAnchor],
+        [heroStack.leadingAnchor constraintEqualToAnchor:hero.leadingAnchor],
+        [heroStack.trailingAnchor constraintEqualToAnchor:hero.trailingAnchor],
+        [heroStack.topAnchor constraintEqualToAnchor:hero.topAnchor],
+        [heroStack.bottomAnchor constraintEqualToAnchor:hero.bottomAnchor],
     ]];
 }
 
