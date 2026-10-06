@@ -110,24 +110,31 @@ function syncNativeSystemStatus() {
   if (launcher) launcher.textContent =
     `${nativeState.launcherVersion || "unknown"} · web ${nativeState.launcherWebVersion || "bundled"}`;
   const onlineInstalled = Boolean(nativeState.online?.installed);
+  const onlineHealthy = nativeState.online?.healthy !== false;
   if (gameData) {
-    gameData.textContent = onlineInstalled ? "Ready" : "Not installed";
-    gameData.classList.toggle("good", onlineInstalled);
+    gameData.textContent = !onlineInstalled ? "Not installed" : (onlineHealthy ? "Ready" : "Damaged");
+    gameData.classList.toggle("good", onlineInstalled && onlineHealthy);
   }
   if (profiles) {
-    const installedCount = (onlineInstalled ? 1 : 0) + (nativeState.mods || []).filter(item => item.installed).length;
-    profiles.textContent = `${installedCount} ready`;
+    const modStates = nativeState.mods || [];
+    const readyCount = (onlineInstalled && onlineHealthy ? 1 : 0) +
+      modStates.filter(item => item.installed && item.healthy !== false).length;
+    const damagedCount = (onlineInstalled && !onlineHealthy ? 1 : 0) +
+      modStates.filter(item => item.installed && item.healthy === false).length;
+    profiles.textContent = damagedCount ? `${readyCount} ready · ${damagedCount} repair` : `${readyCount} ready`;
   }
   if (footerBuild) footerBuild.textContent = `BUILD ${nativeState.build || "unknown"}`;
 
   const currentProfileId = nativeProfileIdForCard();
   const profile = nativeProfileState(currentProfileId);
   const installed = Boolean(profile?.installed);
+  const healthy = profile?.healthy !== false;
   const updateAvailable = Boolean(profile?.updateAvailable);
-  statusLabel.textContent = installed ? (updateAvailable ? "UPDATE" : "READY") : "NOT INSTALLED";
-  statusLabel.classList.toggle("status-text--warning", !installed || updateAvailable);
-  statusLabel.classList.toggle("status-text--ready", installed && !updateAvailable);
-  playLabel.textContent = !installed ? "INSTALL" : (updateAvailable ? "UPDATE" : "PLAY");
+  const damaged = installed && !healthy;
+  statusLabel.textContent = damaged ? "DAMAGED" : (installed ? (updateAvailable ? "UPDATE" : "READY") : "NOT INSTALLED");
+  statusLabel.classList.toggle("status-text--warning", !installed || updateAvailable || damaged);
+  statusLabel.classList.toggle("status-text--ready", installed && healthy && !updateAvailable);
+  playLabel.textContent = damaged ? "REPAIR" : (!installed ? "INSTALL" : (updateAvailable ? "UPDATE" : "PLAY"));
 }
 
 async function syncNativeState() {
@@ -206,6 +213,11 @@ const modalTitle = document.querySelector("#modalTitle");
 const modalEyebrow = document.querySelector("#modalEyebrow");
 const modalBody = document.querySelector("#modalBody");
 const modalHeaderActions = document.querySelector("#modalHeaderActions");
+const confirmBackdrop = document.querySelector("#confirmBackdrop");
+const confirmTitle = document.querySelector("#confirmTitle");
+const confirmMessage = document.querySelector("#confirmMessage");
+const confirmCancel = document.querySelector("#confirmCancel");
+const confirmAccept = document.querySelector("#confirmAccept");
 const modSourceLink = document.querySelector("#modSourceLink");
 const modesRail = document.querySelector(".modes");
 const addModCard = document.querySelector(".add-mod-card");
@@ -501,6 +513,7 @@ function syncModHubAttention() {
   if (!addModCard || !modHubBadge || !nativeState) return;
   const seen = loadModHubSeen();
   const needsAttention = (nativeState.mods || []).some(item => {
+    if (item.installed && item.healthy === false) return true;
     if (item.installed && item.updateAvailable) return true;
     if (item.installed || !item.version) return false;
     if (!seen[item.profileId] && LEGACY_MOD_IDS.has(item.profileId)) return false;
@@ -774,9 +787,11 @@ playButton.addEventListener("click", async () => {
 
   const profile = nativeProfileState(profileId);
   const installed = Boolean(profile?.installed);
+  const healthy = profile?.healthy !== false;
   const updateAvailable = Boolean(profile?.updateAvailable);
+  const damaged = installed && !healthy;
 
-  if (!installed || updateAvailable) {
+  if (!installed || updateAvailable || damaged) {
     try {
       if (profile?.packageURL) {
         downloadMetrics.set(profileId, {
@@ -788,7 +803,7 @@ playButton.addEventListener("click", async () => {
           fraction: 0
         });
         setHomeDownloadProgress(profileId, 0, true);
-        showToast(`${updateAvailable ? "Updating" : "Downloading"} ${activeCard.dataset.title}…`);
+        showToast(`${damaged ? "Repairing" : (updateAvailable ? "Updating" : "Downloading")} ${activeCard.dataset.title}…`);
         await nativeRequest("install", { profileId });
         await syncNativeState();
       } else {
@@ -957,9 +972,23 @@ function modVersionSummary(mod) {
     </div>`;
 }
 
+function modIntegrityNotice(mod) {
+  const nativeMod = nativeModState(mod.id);
+  if (!nativeMod?.installed || nativeMod.healthy !== false) return "";
+  return `
+    <div class="mod-integrity-warning">
+      <svg class="lucide lucide-triangle-alert" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/>
+        <path d="M12 9v4"/><path d="M12 17h.01"/>
+      </svg>
+      <span>${nativeMod.integrityMessage || "Profile files are incomplete or modified. Repair is required."}</span>
+    </div>`;
+}
+
 function modInstallActions(mod) {
   const nativeMod = nativeModState(mod.id);
   const installed = isModInstalled(mod.id);
+  const damaged = installed && nativeMod?.healthy === false;
   const download = currentDownloadMetrics(mod.id);
   const activeDownload = Boolean(download?.busy);
   const busy = Boolean(nativeState?.download?.busy);
@@ -971,11 +1000,14 @@ function modInstallActions(mod) {
 
   if (installed) {
     return `
-      ${updateAvailable ? `
+      ${damaged ? `
+        <button type="button" class="mod-install-button mod-install-button--primary" data-mod-download="${mod.id}" ${busy ? "disabled" : ""}>
+          Repair
+        </button>` : (updateAvailable ? `
         <button type="button" class="mod-install-button mod-install-button--primary" data-mod-download="${mod.id}" ${busy ? "disabled" : ""}>
           Update
-        </button>` : ""}
-      <button type="button" class="mod-install-button" data-mod-remove="${mod.id}" ${busy ? "disabled" : ""}>Remove</button>
+        </button>` : "")}
+      <button type="button" class="mod-install-button mod-install-button--danger" data-mod-remove="${mod.id}" ${busy ? "disabled" : ""}>Remove</button>
     `;
   }
 
@@ -1035,17 +1067,87 @@ function updateDownloadPanel(profileId) {
   if (toggle) toggle.textContent = metrics.paused ? "Resume" : "Pause";
 }
 
+function renderModHubHeaderActions() {
+  if (!modalHeaderActions) return;
+  modalHeaderActions.innerHTML = `
+    <div class="segment-control mod-channel-control mod-channel-control--header">
+      <button type="button" data-channel="stable" class="${(nativeState?.channel || "stable") === "stable" ? "is-selected" : ""}">Stable</button>
+      <button type="button" data-channel="beta" class="${nativeState?.channel === "beta" ? "is-selected" : ""}">Beta</button>
+    </div>
+    <span class="modal-header-divider" aria-hidden="true"></span>
+    <button type="button" class="page-header-action mod-hub-refresh" data-catalog-refresh aria-label="Refresh catalog" title="Refresh catalog">
+      <svg class="lucide lucide-refresh-cw" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M21 12a9 9 0 0 0-15.5-6.2L3 8"/>
+        <path d="M3 3v5h5"/>
+        <path d="M3 12a9 9 0 0 0 15.5 6.2L21 16"/>
+        <path d="M16 16h5v5"/>
+      </svg>
+      <span>Refresh</span>
+    </button>
+  `;
+
+  modalHeaderActions.querySelectorAll("[data-channel]").forEach(button => {
+    button.addEventListener("click", async () => {
+      if (!hasNativeBridge) return;
+      try {
+        applyNativeState(await nativeRequest("setChannel", { channel: button.dataset.channel }));
+        showToast(`${button.dataset.channel.toUpperCase()} channel active`);
+      } catch (error) {
+        showToast(error.message || "Channel switch failed");
+      }
+    });
+  });
+
+  modalHeaderActions.querySelector("[data-catalog-refresh]")?.addEventListener("click", async () => {
+    if (!hasNativeBridge) return;
+    const button = modalHeaderActions.querySelector("[data-catalog-refresh]");
+    try {
+      button?.classList.add("is-refreshing");
+      applyNativeState(await nativeRequest("refreshCatalog"));
+      showToast("Catalog refreshed");
+    } catch (error) {
+      showToast(error.message || "Refresh failed");
+    } finally {
+      button?.classList.remove("is-refreshing");
+    }
+  });
+}
+
+let confirmActionResolver = null;
+
+function closeConfirmDialog(accepted = false) {
+  if (!confirmBackdrop || confirmBackdrop.hidden) return;
+  confirmBackdrop.classList.remove("is-visible");
+  const resolver = confirmActionResolver;
+  confirmActionResolver = null;
+  window.setTimeout(() => { confirmBackdrop.hidden = true; }, 140);
+  resolver?.(accepted);
+}
+
+function confirmLauncherAction({ title, message, confirmLabel = "Confirm" }) {
+  if (!confirmBackdrop) return Promise.resolve(window.confirm(message));
+  confirmTitle.textContent = title;
+  confirmMessage.textContent = message;
+  confirmAccept.textContent = confirmLabel;
+  confirmBackdrop.hidden = false;
+  window.requestAnimationFrame(() => confirmBackdrop.classList.add("is-visible"));
+  return new Promise(resolve => {
+    confirmActionResolver = resolve;
+    window.setTimeout(() => confirmCancel?.focus(), 40);
+  });
+}
+
+confirmCancel?.addEventListener("click", () => closeConfirmDialog(false));
+confirmAccept?.addEventListener("click", () => closeConfirmDialog(true));
+confirmBackdrop?.addEventListener("click", event => {
+  if (event.target === confirmBackdrop) closeConfirmDialog(false);
+});
+
 function renderModLibrary() {
+  renderModHubHeaderActions();
   modalBody.innerHTML = `
     <div class="mod-library">
-      <div class="mod-library__toolbar">
-        <div class="segment-control mod-channel-control">
-          <button type="button" data-channel="stable" class="${(nativeState?.channel || "stable") === "stable" ? "is-selected" : ""}">Stable</button>
-          <button type="button" data-channel="beta" class="${nativeState?.channel === "beta" ? "is-selected" : ""}">Beta</button>
-        </div>
-        <button type="button" class="diagnostics-action" data-catalog-refresh>Refresh</button>
-      </div>
-      <p class="mod-library__intro">Install or update profiles from the Generals X catalog. Only one large package is downloaded at a time.</p>
+      <p class="mod-library__intro">Install, repair or update profiles from the Generals X catalog. Only one large package is downloaded at a time.</p>
       ${modCatalog.map(mod => `
         <div class="mod-library-card" data-mod-card="${mod.id}">
           <div class="mod-library-card__main">
@@ -1053,6 +1155,7 @@ function renderModLibrary() {
               <strong>${mod.title}</strong>
               <span>${mod.description}</span>
               ${modVersionSummary(mod)}
+              ${modIntegrityNotice(mod)}
               ${mod.fallbackChannel ? `<span class="mod-channel-note">${mod.fallbackChannel.toUpperCase()} package fallback</span>` : ""}
               ${mod.moddbUrl ? `
                 <a class="mod-author-link" href="${mod.moddbUrl}" target="_blank" rel="noopener noreferrer">
@@ -1083,11 +1186,23 @@ function renderModLibrary() {
 
   modalBody.querySelectorAll("[data-mod-remove]").forEach(button => {
     button.addEventListener("click", async () => {
+      const profileId = button.dataset.modRemove;
+      const mod = modCatalog.find(item => item.id === profileId);
+      const confirmed = await confirmLauncherAction({
+        title: `Remove ${mod?.title || "mod"}?`,
+        message: "The installed profile and its settings will be deleted from this device. You can download it again later from Mod Hub.",
+        confirmLabel: "Remove"
+      });
+      if (!confirmed) return;
+
       try {
-        const state = await nativeRequest("remove", { profileId: button.dataset.modRemove });
+        button.disabled = true;
+        const state = await nativeRequest("remove", { profileId });
         applyNativeState(state);
-        showToast("Mod removed");
+        triggerHaptic("medium");
+        showToast(`${mod?.title || "Mod"} removed`);
       } catch (error) {
+        button.disabled = false;
         showToast(error.message || "Remove failed");
       }
     });
@@ -1122,28 +1237,6 @@ function renderModLibrary() {
         showToast(error.message || "Cancel failed");
       }
     });
-  });
-
-  modalBody.querySelectorAll("[data-channel]").forEach(button => {
-    button.addEventListener("click", async () => {
-      if (!hasNativeBridge) return;
-      try {
-        applyNativeState(await nativeRequest("setChannel", { channel: button.dataset.channel }));
-        showToast(`${button.dataset.channel.toUpperCase()} channel active`);
-      } catch (error) {
-        showToast(error.message || "Channel switch failed");
-      }
-    });
-  });
-
-  modalBody.querySelector("[data-catalog-refresh]")?.addEventListener("click", async () => {
-    if (!hasNativeBridge) return;
-    try {
-      applyNativeState(await nativeRequest("refreshCatalog"));
-      showToast("Catalog refreshed");
-    } catch (error) {
-      showToast(error.message || "Refresh failed");
-    }
   });
 
   modalBody.querySelectorAll("[data-mod-file]").forEach(button => {
@@ -1944,7 +2037,8 @@ modalBackdrop.addEventListener("click", event => {
 
 window.addEventListener("keydown", event => {
   if (event.key === "Escape") {
-    if (profileOrderEditing) setProfileOrderEditing(false);
+    if (confirmBackdrop && !confirmBackdrop.hidden) closeConfirmDialog(false);
+    else if (profileOrderEditing) setProfileOrderEditing(false);
     else closePanel();
   }
 
