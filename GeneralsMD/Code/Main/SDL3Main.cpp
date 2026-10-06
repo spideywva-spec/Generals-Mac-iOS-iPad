@@ -952,12 +952,19 @@ static void InjectIOSProfileModArgument(const char *profileId)
     strncat(bundledModPath, profileDir, sizeof(bundledModPath) - strlen(bundledModPath) - 1);
 
     static char externalModPath[1024];
+    static char legacyExternalModPath[1024];
     externalModPath[0] = '\0';
+    legacyExternalModPath[0] = '\0';
     const char *home = getenv("HOME");
     if (home != nullptr && home[0] != '\0')
     {
         snprintf(externalModPath,
                  sizeof(externalModPath),
+                 "%s/Library/Application Support/GeneralsX/Hub/Mods/%s/profile",
+                 home,
+                 profileDir);
+        snprintf(legacyExternalModPath,
+                 sizeof(legacyExternalModPath),
                  "%s/Documents/Mods/%s/profile",
                  home,
                  profileDir);
@@ -967,8 +974,14 @@ static void InjectIOSProfileModArgument(const char *profileId)
     if (externalModPath[0] != '\0' && access(externalModPath, R_OK) == 0)
     {
         sourceModPath = externalModPath;
-        fprintf(stderr, "[HUB] external profile selected id='%s' path='%s'\n",
+        fprintf(stderr, "[HUB] managed profile selected id='%s' path='%s'\n",
                 profileId, externalModPath);
+    }
+    else if (legacyExternalModPath[0] != '\0' && access(legacyExternalModPath, R_OK) == 0)
+    {
+        sourceModPath = legacyExternalModPath;
+        fprintf(stderr, "[HUB] legacy profile selected id='%s' path='%s'\n",
+                profileId, legacyExternalModPath);
     }
     else if (access(bundledModPath, R_OK) == 0)
     {
@@ -1289,16 +1302,21 @@ int main(int argc, char* argv[])
 	// The engine resolves all base game data relative to the working directory.
 	// Generals Hub keeps this large content outside the signed application so a
 	// small Hub IPA can reuse one downloaded Zero Hour + Online package for every
-	// experience. Preferred layout is Documents/Mods/online/profile. Bundled
+	// experience. Preferred layout is Library/Application Support/GeneralsX/Hub/Mods/online/profile. Bundled
 	// GameData remains a compatibility fallback for legacy standalone IPAs.
 	// User data (saves, Options.ini) always lives in Library/Application Support.
 	{
 		const char *home = getenv("HOME");
 
 		char externalOnlineData[1024] = {0};
+		char legacyOnlineData[1024] = {0};
 		if (home != nullptr && home[0] != '\0') {
 			snprintf(externalOnlineData,
 			         sizeof(externalOnlineData),
+			         "%s/Library/Application Support/GeneralsX/Hub/Mods/online/profile",
+			         home);
+			snprintf(legacyOnlineData,
+			         sizeof(legacyOnlineData),
 			         "%s/Documents/Mods/online/profile",
 			         home);
 		}
@@ -1321,6 +1339,12 @@ int main(int argc, char* argv[])
 			if (chdir(externalOnlineData) == 0) {
 				usingManagedGameData = true;
 				fprintf(stderr, "[HUB] iOS working directory (downloaded Online base): %s\n", externalOnlineData);
+			}
+		}
+		if (!usingManagedGameData && legacyOnlineData[0] != '\0' && access(legacyOnlineData, R_OK) == 0) {
+			if (chdir(legacyOnlineData) == 0) {
+				usingManagedGameData = true;
+				fprintf(stderr, "[HUB] iOS working directory (legacy Files-visible Online base): %s\n", legacyOnlineData);
 			}
 		}
 		if (!usingManagedGameData && bundleData[0] != '\0' && access(bundleData, R_OK) == 0) {
