@@ -148,6 +148,14 @@ BOOL GXHubVersionSatisfies(NSString *current, NSString *minimum)
 
 NSString *GXHubProjectVersion(void)
 {
+    id bundleValue = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+    if ([bundleValue isKindOfClass:[NSString class]])
+    {
+        NSString *bundleVersion = GXHubTrimmedString((NSString *)bundleValue);
+        if (bundleVersion.length > 0)
+            return bundleVersion;
+    }
+
     return [NSString stringWithUTF8String:GX_PROJECT_VERSION] ?: @"0.0.0";
 }
 
