@@ -10,7 +10,7 @@
   --accent: #2f80ed;
   --accent-soft: rgba(47, 128, 237, 0.18);
   --good: #8bc99a;
-  --warn: #e3b35c;
+  --warn: #5ca4ff;
   --shadow: 0 24px 80px rgba(0, 0, 0, 0.36);
   font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -1039,7 +1039,7 @@ button {
 .segment-control button.is-selected {
   border-color: rgba(47, 128, 237, 0.58);
   background: rgba(47, 128, 237, 0.14);
-  color: #f2d895;
+  color: #8ec5ff;
 }
 
 .switch-control {
@@ -1120,7 +1120,7 @@ button {
 .settings-action--primary {
   border-color: rgba(47, 128, 237, 0.58);
   background: rgba(47, 128, 237, 0.14);
-  color: #f3d993;
+  color: #8ec5ff;
 }
 
 .mod-library {
@@ -1194,7 +1194,7 @@ button {
 }
 
 .mod-author-link:hover {
-  color: #efd58f;
+  color: #7dbaff;
 }
 
 .mod-author-link svg {
@@ -1235,7 +1235,7 @@ button {
 .mod-install-button--primary {
   border-color: rgba(47, 128, 237, 0.46);
   background: rgba(47, 128, 237, 0.11);
-  color: #ecd28e;
+  color: #6faeff;
 }
 
 .mod-install-button svg {
