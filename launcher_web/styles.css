@@ -7,8 +7,8 @@
   --line-strong: rgba(255, 255, 255, 0.22);
   --text: #f4f5f2;
   --muted: rgba(235, 239, 232, 0.62);
-  --accent:#2f80ed;
-  --accent-soft:rgba(47,128,237,.12);
+  --accent: #d4ad54;
+  --accent-soft: rgba(212, 173, 84, 0.18);
   --good: #8bc99a;
   --warn: #e3b35c;
   --shadow: 0 24px 80px rgba(0, 0, 0, 0.36);
