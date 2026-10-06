@@ -1969,21 +1969,3 @@ startBackgroundMotion();
 if (hasNativeBridge) {
   syncNativeState();
 }
-
-/* Generals ZH Russian UI layer: preserves original launcher runtime. */
-(() => {
-  const map = new Map([
-    ["COMMAND HUB","КОМАНДНЫЙ ЦЕНТР"],["SELECT EXPERIENCE","ВЫБЕРИТЕ РЕЖИМ"],
-    ["Zero Hour + Online","Zero Hour + Онлайн"],["PROFILE","ПРОФИЛЬ"],["ORIGINAL","ОРИГИНАЛ"],
-    ["STATUS","СТАТУС"],["READY","ГОТОВО"],["NOT INSTALLED","НЕ УСТАНОВЛЕНО"],
-    ["PLATFORM","ПЛАТФОРМА"],["PLAY","ИГРАТЬ"],["SETTINGS","НАСТРОЙКИ"],
-    ["DIAGNOSTICS","ДИАГНОСТИКА"],["MODS & UPDATES","МОДЫ И ОБНОВЛЕНИЯ"]
-  ]);
-  const translate = () => {
-    const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
-    let n; while(n=walker.nextNode()) { let v=n.nodeValue; for(const [a,b] of map) v=v.split(a).join(b); n.nodeValue=v; }
-    document.title="Generals ZH — Лаунчер";
-  };
-  translate();
-  new MutationObserver(translate).observe(document.body,{subtree:true,childList:true,characterData:true});
-})();
