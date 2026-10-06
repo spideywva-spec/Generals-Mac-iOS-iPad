@@ -29,6 +29,24 @@ NSString *GXHubDocumentsPath(NSString *name)
     return [[NSHomeDirectory() stringByAppendingPathComponent:@"Documents"] stringByAppendingPathComponent:name];
 }
 
+NSString *GXHubManagedRootPath(void)
+{
+    NSString *root = [NSHomeDirectory()
+        stringByAppendingPathComponent:@"Library/Application Support/GeneralsX/Hub"];
+    [[NSFileManager defaultManager] createDirectoryAtPath:root
+                              withIntermediateDirectories:YES
+                                               attributes:nil
+                                                    error:nil];
+    NSURL *rootURL = [NSURL fileURLWithPath:root isDirectory:YES];
+    [rootURL setResourceValue:@YES forKey:NSURLIsExcludedFromBackupKey error:nil];
+    return root;
+}
+
+NSString *GXHubManagedPath(NSString *name)
+{
+    return [GXHubManagedRootPath() stringByAppendingPathComponent:name];
+}
+
 NSDictionary<NSString *, id> *GXHubReadJSONDictionary(NSString *path)
 {
     if (path.length == 0)
@@ -60,6 +78,7 @@ NSDictionary<NSString *, id> *GXHubPreferredCatalogDocumentInternal(void)
 {
     for (NSString *path in @[
         GXHubDocumentsPath(GXHubCatalogOverrideName),
+        GXHubManagedPath(GXHubRemoteCatalogName),
         GXHubDocumentsPath(GXHubRemoteCatalogName)
     ])
     {
@@ -817,7 +836,47 @@ static void GXHubStartDownloadProgressTimer(void)
 
 NSString *GXHubModsRootPath(void)
 {
-    return [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/Mods"];
+    static NSString *root = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        NSFileManager *fm = [NSFileManager defaultManager];
+        root = [GXHubManagedPath(@"Mods") copy];
+        [fm createDirectoryAtPath:root withIntermediateDirectories:YES attributes:nil error:nil];
+
+        // Migrate legacy Files-visible Hub profiles without forcing any re-download.
+        NSString *legacy = GXHubDocumentsPath(@"Mods");
+        BOOL legacyIsDirectory = NO;
+        if ([fm fileExistsAtPath:legacy isDirectory:&legacyIsDirectory] && legacyIsDirectory)
+        {
+            NSArray<NSString *> *children = [fm contentsOfDirectoryAtPath:legacy error:nil] ?: @[];
+            for (NSString *child in children)
+            {
+                if ([child hasPrefix:@"."])
+                    continue;
+                NSString *source = [legacy stringByAppendingPathComponent:child];
+                NSString *destination = [root stringByAppendingPathComponent:child];
+                if ([fm fileExistsAtPath:destination])
+                    continue;
+
+                NSError *moveError = nil;
+                if ([fm moveItemAtPath:source toPath:destination error:&moveError])
+                {
+                    fprintf(stderr, "[HUB-STORAGE] migrated '%s' -> Application Support\n", child.UTF8String);
+                }
+                else
+                {
+                    fprintf(stderr, "WARNING: failed to migrate Hub profile '%s': %s\n",
+                            child.UTF8String,
+                            moveError != nil ? moveError.description.UTF8String : "unknown");
+                }
+            }
+
+            NSArray *remaining = [fm contentsOfDirectoryAtPath:legacy error:nil] ?: @[];
+            if (remaining.count == 0)
+                [fm removeItemAtPath:legacy error:nil];
+        }
+    });
+    return root;
 }
 
 NSString *GXHubInstalledProfilePath(NSString *profileId)
@@ -835,6 +894,73 @@ BOOL GXHubProfileInstalled(NSString *profileId)
         return NO;
     BOOL isDirectory = NO;
     return [[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isDirectory] && isDirectory;
+}
+
+NSDictionary<NSString *, id> *GXHubProfileIntegrity(NSString *profileId)
+{
+    if (!GXHubSafeId(profileId))
+        return @{ @"installed": @NO, @"healthy": @NO, @"status": @"invalid", @"message": @"Invalid profile ID." };
+
+    NSString *profilePath = GXHubInstalledProfilePath(profileId);
+    BOOL isDirectory = NO;
+    BOOL installed = profilePath.length > 0 &&
+        [[NSFileManager defaultManager] fileExistsAtPath:profilePath isDirectory:&isDirectory] &&
+        isDirectory;
+    if (!installed)
+        return @{ @"installed": @NO, @"healthy": @NO, @"status": @"missing", @"message": @"Profile is not installed." };
+
+    NSDictionary *manifest = GXHubInstalledManifest(profileId);
+    if (manifest == nil)
+    {
+        return @{
+            @"installed": @YES,
+            @"healthy": @NO,
+            @"status": @"damaged",
+            @"message": @"Install manifest is missing. Repair the profile."
+        };
+    }
+
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSDirectoryEnumerator *enumerator = [fm enumeratorAtPath:profilePath];
+    NSUInteger actualFiles = 0;
+    unsigned long long actualBytes = 0;
+    NSString *relative = nil;
+    while ((relative = [enumerator nextObject]) != nil)
+    {
+        NSString *fullPath = [profilePath stringByAppendingPathComponent:relative];
+        NSDictionary<NSFileAttributeKey, id> *attrs = [fm attributesOfItemAtPath:fullPath error:nil];
+        if ([attrs[NSFileType] isEqualToString:NSFileTypeRegular])
+        {
+            ++actualFiles;
+            actualBytes += [attrs fileSize];
+        }
+    }
+
+    NSUInteger expectedFiles = [manifest[@"profileFiles"] unsignedIntegerValue];
+    unsigned long long expectedBytes = [manifest[@"profileBytes"] unsignedLongLongValue];
+    BOOL fileCountOK = expectedFiles == 0 || actualFiles == expectedFiles;
+    BOOL byteCountOK = expectedBytes == 0 || actualBytes == expectedBytes;
+    BOOL healthy = fileCountOK && byteCountOK;
+
+    NSString *message = healthy
+        ? @"Profile files are intact."
+        : [NSString stringWithFormat:
+            @"Profile files are incomplete or modified (%lu/%lu files, %.1f/%.1f MB). Repair the profile.",
+            (unsigned long)actualFiles,
+            (unsigned long)expectedFiles,
+            (double)actualBytes / 1024.0 / 1024.0,
+            expectedBytes > 0 ? (double)expectedBytes / 1024.0 / 1024.0 : (double)actualBytes / 1024.0 / 1024.0];
+
+    return @{
+        @"installed": @YES,
+        @"healthy": @(healthy),
+        @"status": healthy ? @"healthy" : @"damaged",
+        @"message": message,
+        @"expectedFiles": @(expectedFiles),
+        @"actualFiles": @(actualFiles),
+        @"expectedBytes": @(expectedBytes),
+        @"actualBytes": @(actualBytes)
+    };
 }
 
 NSDictionary<NSString *, id> *GXHubInstalledManifest(NSString *profileId)
@@ -957,7 +1083,7 @@ void GXHubRefreshRemoteCatalog(GXHubCatalogCompletion completion)
 
         if (finalError == nil)
         {
-            NSString *path = GXHubDocumentsPath(GXHubRemoteCatalogName);
+            NSString *path = GXHubManagedPath(GXHubRemoteCatalogName);
             updated = [data writeToFile:path options:NSDataWritingAtomic error:&finalError];
             if (updated)
             {
@@ -1352,7 +1478,7 @@ void GXHubDownloadAndInstallWithProgress(
         }
 
         NSFileManager *fm = [NSFileManager defaultManager];
-        NSString *downloadsRoot = GXHubDocumentsPath(@"Downloads");
+        NSString *downloadsRoot = GXHubManagedPath(@"Downloads");
         NSError *fileError = nil;
         if (![fm createDirectoryAtPath:downloadsRoot
            withIntermediateDirectories:YES
