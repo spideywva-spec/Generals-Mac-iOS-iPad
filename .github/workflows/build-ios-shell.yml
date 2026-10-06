@@ -9,6 +9,7 @@ on:
       - a13-ios-build
     paths:
       - 'GeneralsMD/**'
+      - 'launcher_web/**'
       - '!GeneralsMD/Code/Main/IOSProfileLauncher.mm'
       - '!GeneralsMD/Code/Main/IOSProfileLauncher.h'
       - '!GeneralsMD/Code/Main/IOSModManager.mm'
