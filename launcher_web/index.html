@@ -202,6 +202,27 @@
         <div class="modal__body" id="modalBody"></div>
       </section>
     </div>
+
+    <div class="confirm-backdrop" id="confirmBackdrop" hidden>
+      <section class="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
+        <div class="confirm-dialog__mark" aria-hidden="true">
+          <svg class="lucide lucide-triangle-alert" viewBox="0 0 24 24">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/>
+            <path d="M12 9v4"/>
+            <path d="M12 17h.01"/>
+          </svg>
+        </div>
+        <div class="confirm-dialog__copy">
+          <small>CONFIRM ACTION</small>
+          <h3 id="confirmTitle">Remove mod?</h3>
+          <p id="confirmMessage">The installed profile will be deleted from this device.</p>
+        </div>
+        <div class="confirm-dialog__actions">
+          <button type="button" class="confirm-dialog__button" id="confirmCancel">Cancel</button>
+          <button type="button" class="confirm-dialog__button confirm-dialog__button--danger" id="confirmAccept">Remove</button>
+        </div>
+      </section>
+    </div>
   </div>
 
   <script src="./app.js"></script>
