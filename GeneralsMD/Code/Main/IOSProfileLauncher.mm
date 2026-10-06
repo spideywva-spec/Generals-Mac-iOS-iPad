@@ -997,8 +997,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
 }
 
 - (BOOL)isTrustedWebMessage:(WKScriptMessage *)message
-{
-    NSURL *url = message.webView.URL;
+{    NSURL *url = message.webView.URL;
     if (url.isFileURL)
         return YES;
     return [url.scheme isEqualToString:@"https"] &&
@@ -1111,7 +1110,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         }
         if (GXHubDownloadBusy())
         {
-            [self sendWebResponse:requestId result:nil error:[NSString stringWithFormat:@"%@ is already downloading.", GXHubActiveDownloadProfile() ?: @"Another mod"]];
+            [self sendWebResponse:requestId result:nil error:[NSString stringWithFormat:@"%@ уже загружается.", GXHubActiveDownloadProfile() ?: @"Другой мод"]];
             return;
         }
 
@@ -1233,7 +1232,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
                     ExportDiagnosticsSnapshot(report);
                     [strongSelf sendWebResponse:requestId
                                         result:@{ @"report": report,
-                                                  @"exportPath": @"Files > On My iPad > Generals ZH > Diagnostics" }
+                                                  @"exportPath": @"Файлы > На моём iPad > Generals ZH > Диагностика" }
                                          error:nil];
                 }
             });
@@ -1249,7 +1248,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         [self sendWebResponse:requestId
                       result:@{ @"accepted": @YES,
                                 @"fileCount": @(files.count),
-                                @"path": @"Files > On My iPad > Generals ZH > Diagnostics" }
+                                @"path": @"Файлы > На моём iPad > Generals ZH > Диагностика" }
                        error:nil];
         return;
     }
@@ -1522,7 +1521,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
 
     NSString *titleText = dedicatedEnhanced
         ? @"ZERO HOUR ENHANCED"
-        : (dedicatedContra ? @"CONTRA X" : @"GENERALS HUB");
+        : (dedicatedContra ? @"CONTRA X" : @"ЦЕНТР GENERALS");
     NSString *subtitleText = dedicatedEnhanced
         ? @"v1.0 + патч 28/03/2024 · iPad"
         : (dedicatedContra ? @"Beta 2 + Патч 1 · iPad" : @"Generals Online · Моды · iPad");
@@ -1997,15 +1996,14 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
             return;
         if (error != nil)
         {
-            strongSelf.modsStatus.textColor = [UIColor colorWithWhite:0.62 alpha:1.0];
-            strongSelf.modsStatus.text = [NSString stringWithFormat:@"Не удалось обновить каталог; используются сохранённые данные: %@",
+            strongSelf.modsStatus.textColor = [UIColor colorWithWhite:0.62 alpha:1.0];            strongSelf.modsStatus.text = [NSString stringWithFormat:@"Не удалось обновить каталог; используются сохранённые данные: %@",
                 error.localizedDescription];
             [strongSelf reloadModsList];
             return;
         }
         strongSelf.modsStatus.textColor = [UIColor systemGreenColor];
         strongSelf.modsStatus.text = updated
-            ? [NSString stringWithFormat:@"%@ catalog updated.", [GXHubCatalogChannel() uppercaseString]]
+            ? [NSString stringWithFormat:@"Каталог %@ обновлён.", [GXHubCatalogChannel() uppercaseString]]
             : @"Каталог уже обновлён.";
         [strongSelf reloadModsList];
     });
@@ -2604,8 +2602,8 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         ShortBuildIdentifier(GX_BASE_SHELL_RUN),
         gameDataExists ? @"Installed" : @"Отсутствует",
         gameDataSize,
-        enhancedInstalled ? @"Installed" : @"Not installed",
-        contraInstalled ? @"Installed" : @"Not installed",
+        enhancedInstalled ? @"Installed" : @"Не установлен",
+        contraInstalled ? @"Installed" : @"Не установлен",
         installedModsText,
         settingsExists ? @"Показать" : @"Отсутствует",
         enhancedSettingsText,
@@ -2632,7 +2630,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     UILabel *title = MakeLabel(@"Диагностика", 26.0, UIFontWeightBold);
     title.textAlignment = NSTextAlignmentLeft;
 
-    UILabel *note = MakeLabel(@"Build, installed content and crash logs. The last 10 app sessions are kept automatically.", 13.0, UIFontWeightRegular);
+    UILabel *note = MakeLabel(@"Сборка, установленные файлы и журналы сбоев. Последние 10 сессий приложения сохраняются автоматически.", 13.0, UIFontWeightRegular);
     note.textAlignment = NSTextAlignmentLeft;
     note.textColor = [UIColor colorWithWhite:0.62 alpha:1.0];
 
@@ -2647,8 +2645,8 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     [scroll addSubview:self.diagnosticsText];
 
     UIButton *refresh = MakeButton(@"Обновить", self, @selector(refreshDiagnostics));
-    self.shareDiagnosticsButton = MakeButton(@"Share report + logs", self, @selector(shareDiagnostics));
-    UIButton *clearLogs = MakeButton(@"Clear logs", self, @selector(clearDiagnosticsLogs));
+    self.shareDiagnosticsButton = MakeButton(@"Поделиться отчётом и журналами", self, @selector(shareDiagnostics));
+    UIButton *clearLogs = MakeButton(@"Очистить журналы", self, @selector(clearDiagnosticsLogs));
     UIButton *back = MakeButton(@"Назад", self, @selector(hideDiagnostics));
 
     clearLogs.backgroundColor = [UIColor colorWithRed:0.24 green:0.06 blue:0.06 alpha:1.0];
@@ -2750,8 +2748,8 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
 - (void)clearDiagnosticsLogs
 {
     UIAlertController *alert =
-        [UIAlertController alertControllerWithTitle:@"Clear diagnostic logs?"
-                                            message:@"This clears the current session log and all saved session logs."
+        [UIAlertController alertControllerWithTitle:@"Очистить журналы диагностики?"
+                                            message:@"Будет удалён журнал текущей сессии и все сохранённые журналы сессий."
                                      preferredStyle:UIAlertControllerStyleAlert];
 
     [alert addAction:[UIAlertAction actionWithTitle:@"Cancel"
@@ -2759,7 +2757,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
                                            handler:nil]];
 
     __weak GXProfileLauncherViewController *weakSelf = self;
-    [alert addAction:[UIAlertAction actionWithTitle:@"Clear logs"
+    [alert addAction:[UIAlertAction actionWithTitle:@"Очистить журналы"
                                              style:UIAlertActionStyleDestructive
                                            handler:^(__unused UIAlertAction *action) {
         if (gDiagnosticClearCallback != nullptr)
@@ -2799,7 +2797,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     NSArray<NSURL *> *exportedFiles = ExportDiagnosticsSnapshot(report);
     NSMutableArray *items = [NSMutableArray arrayWithArray:exportedFiles];
     if (items.count == 0)
-        [items addObject:report.length > 0 ? report : @"Generals ZH diagnostics unavailable"];
+        [items addObject:report.length > 0 ? report : @"Диагностика Generals ZH недоступна"];
 
     UIActivityViewController *activity =
         [[UIActivityViewController alloc] initWithActivityItems:items applicationActivities:nil];
@@ -2998,7 +2996,6 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     self.msaaSegment.selectedSegmentIndex = 0;
     [self textureFilterChanged:self.textureFilterSegment];
 }
-
 - (void)loadContraSettingsControls
 {
     EnsureDefaultContraSettings();
