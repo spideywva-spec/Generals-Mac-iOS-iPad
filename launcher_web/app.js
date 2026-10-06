@@ -2,8 +2,8 @@ const hasNativeBridge = Boolean(window.webkit?.messageHandlers?.generalsX);
 const nativePending = new Map();
 let nativeRequestCounter = 0;
 let nativeState = null;
-let nativeDiagnosticsText = "";
-const homeDownloadState = new Map();
+let nativeДиагностикаText = "";
+const homeСкачатьState = new Map();
 const downloadMetrics = new Map();
 
 window.GeneralsXNative = {
@@ -80,7 +80,7 @@ function applyNativeState(state) {
     mod.title = item.name || mod.title;
     mod.description = item.description || mod.description;
     mod.version = item.version || "";
-    mod.installedVersion = item.installedVersion || "";
+    mod.installedВерсия = item.installedВерсия || "";
     mod.updateAvailable = Boolean(item.updateAvailable);
     mod.packageBytes = Number(item.packageBytes || 0);
     mod.releaseNotes = item.releaseNotes || "";
@@ -97,19 +97,19 @@ function applyNativeState(state) {
       ...downloadMetrics.get(profileId),
       ...state.download
     });
-    setHomeDownloadProgress(profileId, Number(state.download.fraction || 0), true);
+    setHomeСкачатьProgress(profileId, Number(state.download.fraction || 0), true);
   }
 
   syncInstalledModCards();
   syncActiveModSourceLink();
-  syncNativeSystemStatus();
+  syncNativeSystemСтатус();
 
-  if (!modalBackdrop.hidden && modalTitle.textContent === "Add Mod") {
+  if (!modalBackdrop.hidden && modalTitle.textContent === "Добавить мод") {
     renderModLibrary();
   }
 }
 
-function syncNativeSystemStatus() {
+function syncNativeSystemСтатус() {
   if (!nativeState) return;
   const engine = document.querySelector("#systemEngine");
   const launcher = document.querySelector("#systemLauncher");
@@ -117,17 +117,17 @@ function syncNativeSystemStatus() {
   const profiles = document.querySelector("#systemProfiles");
   const footerBuild = document.querySelector("#footerBuild");
 
-  if (engine) engine.textContent = nativeState.engineVersion || "unknown";
+  if (engine) engine.textContent = nativeState.engineВерсия || "unknown";
   if (launcher) launcher.textContent =
-    `${nativeState.launcherVersion || "unknown"} · web ${nativeState.launcherWebVersion || "bundled"}`;
+    `${nativeState.launcherВерсия || "unknown"} · web ${nativeState.launcherWebВерсия || "bundled"}`;
   const onlineInstalled = Boolean(nativeState.online?.installed);
   if (gameData) {
-    gameData.textContent = onlineInstalled ? "Ready" : "Not installed";
+    gameData.textContent = onlineInstalled ? "Готово" : "Не установлено";
     gameData.classList.toggle("good", onlineInstalled);
   }
   if (profiles) {
     const installedCount = (onlineInstalled ? 1 : 0) + (nativeState.mods || []).filter(item => item.installed).length;
-    profiles.textContent = `${installedCount} ready`;
+    profiles.textContent = `${installedCount} готово`;
   }
   if (footerBuild) footerBuild.textContent = `BUILD ${nativeState.build || "unknown"}`;
 
@@ -135,10 +135,10 @@ function syncNativeSystemStatus() {
   const profile = nativeProfileState(currentProfileId);
   const installed = Boolean(profile?.installed);
   const updateAvailable = Boolean(profile?.updateAvailable);
-  statusLabel.textContent = installed ? (updateAvailable ? "UPDATE" : "READY") : "NOT INSTALLED";
+  statusLabel.textContent = installed ? (updateAvailable ? "ОБНОВИТЬ" : "READY") : "NOT УСТАНОВИТЬED";
   statusLabel.classList.toggle("status-text--warning", !installed || updateAvailable);
-  statusLabel.classList.toggle("status-text--ready", installed && !updateAvailable);
-  playLabel.textContent = !installed ? "INSTALL" : (updateAvailable ? "UPDATE" : "PLAY");
+  statusLabel.classList.toggle("status-text--готово", installed && !updateAvailable);
+  playLabel.textContent = !installed ? "УСТАНОВИТЬ" : (updateAvailable ? "ОБНОВИТЬ" : "ИГРАТЬ");
 }
 
 async function syncNativeState() {
@@ -146,7 +146,7 @@ async function syncNativeState() {
   try {
     applyNativeState(await nativeRequest("getState"));
   } catch (error) {
-    showToast(error.message || "Unable to read launcher state");
+    showToast(error.message || "Не удалось прочитать состояние лаунчера");
   }
 }
 
@@ -159,8 +159,8 @@ function updateNativeProgress(payload) {
     busy: true
   };
   downloadMetrics.set(profileId, metrics);
-  setHomeDownloadProgress(profileId, Number(metrics.fraction || 0), true);
-  updateDownloadPanel(profileId);
+  setHomeСкачатьProgress(profileId, Number(metrics.fraction || 0), true);
+  updateСкачатьPanel(profileId);
 }
 
 function handleNativeEvent(name, payload) {
@@ -176,7 +176,7 @@ function handleNativeEvent(name, payload) {
     const title = modCatalog.find(item => item.id === payload.profileId)?.title ||
       (payload.profileId === "online" ? "Zero Hour + Online" : payload.profileId);
     downloadMetrics.delete(payload.profileId);
-    finishHomeDownload(payload.profileId, "complete");
+    finishHomeСкачать(payload.profileId, "complete");
     triggerHaptic("success");
     showToast(`${title} installed`);
     syncNativeState().then(() => {
@@ -185,17 +185,17 @@ function handleNativeEvent(name, payload) {
     });
     return;
   }
-  if (name === "downloadCancelled") {
+  if (name === "downloadОтменаled") {
     downloadMetrics.delete(payload.profileId);
-    finishHomeDownload(payload.profileId, "cancel");
-    showToast("Download cancelled");
+    finishHomeСкачать(payload.profileId, "cancel");
+    showToast("Загрузка отменена");
     syncNativeState();
     return;
   }
   if (name === "installError") {
     downloadMetrics.delete(payload.profileId);
-    finishHomeDownload(payload.profileId, "error");
-    showToast(payload.error || "Install failed");
+    finishHomeСкачать(payload.profileId, "error");
+    showToast(payload.error || "Ошибка установки");
     syncNativeState();
   }
 }
@@ -203,7 +203,7 @@ function handleNativeEvent(name, payload) {
 const cards = [...document.querySelectorAll(".mode-card")];
 const hero = document.querySelector(".hero");
 const modeTitle = document.querySelector("#modeTitle");
-const modeDescription = document.querySelector("#modeDescription");
+const modeОписание = document.querySelector("#modeОписание");
 const profileLabel = document.querySelector("#profileLabel");
 const statusLabel = document.querySelector("#statusLabel");
 const playLabel = document.querySelector("#playLabel");
@@ -220,6 +220,8 @@ const modSourceLink = document.querySelector("#modSourceLink");
 const modesRail = document.querySelector(".modes");
 const addModCard = document.querySelector(".add-mod-card");
 const audioToggle = document.querySelector("#audioToggle");
+const launcherEsc = document.querySelector("#launcherEsc");
+
 
 const backgroundPrimary = document.querySelector(".battlefield__tile--primary");
 const backgroundSecondary = document.querySelector(".battlefield__tile--secondary");
@@ -298,8 +300,8 @@ function syncAudioToggle() {
   if (!audioToggle) return;
   audioToggle.classList.toggle("is-muted", !uiSoundEnabled);
   audioToggle.setAttribute("aria-pressed", String(!uiSoundEnabled));
-  audioToggle.setAttribute("aria-label", uiSoundEnabled ? "Mute interface sounds" : "Enable interface sounds");
-  audioToggle.title = uiSoundEnabled ? "Mute interface sounds" : "Enable interface sounds";
+  audioToggle.setAttribute("aria-label", uiSoundEnabled ? "Отключить звуки интерфейса" : "Включить звуки интерфейса");
+  audioToggle.title = uiSoundEnabled ? "Отключить звуки интерфейса" : "Включить звуки интерфейса";
 }
 
 function animateInteraction(target) {
@@ -362,7 +364,7 @@ function cardForProfileId(profileId) {
   return cards.find(card => card.dataset.id === cardId) || null;
 }
 
-function ensureHomeDownloadPercent(card) {
+function ensureHomeСкачатьPercent(card) {
   if (!card) return null;
   let indicator = card.querySelector(".mode-card__download-percent");
   if (!indicator) {
@@ -374,16 +376,16 @@ function ensureHomeDownloadPercent(card) {
   return indicator;
 }
 
-function setHomeDownloadProgress(profileId, fraction = 0, active = true) {
+function setHomeСкачатьProgress(profileId, fraction = 0, active = true) {
   const value = Math.max(0, Math.min(1, Number(fraction || 0)));
-  homeDownloadState.set(profileId, { active, fraction: value });
+  homeСкачатьState.set(profileId, { active, fraction: value });
   const card = cardForProfileId(profileId);
   if (!card) return;
 
   const pendingInstall = profileId === "online"
     ? !Boolean(nativeState?.online?.installed)
     : !isModInstalled(profileId);
-  const indicator = ensureHomeDownloadPercent(card);
+  const indicator = ensureHomeСкачатьPercent(card);
 
   card.hidden = false;
   card.classList.toggle("is-downloading", active);
@@ -396,9 +398,9 @@ function setHomeDownloadProgress(profileId, fraction = 0, active = true) {
   updateModesOverflow();
 }
 
-function finishHomeDownload(profileId, outcome) {
+function finishHomeСкачать(profileId, outcome) {
   const card = cardForProfileId(profileId);
-  homeDownloadState.delete(profileId);
+  homeСкачатьState.delete(profileId);
   if (!card) return;
 
   const indicator = card.querySelector(".mode-card__download-percent");
@@ -428,17 +430,17 @@ function updateModesOverflow() {
   });
 }
 
-function syncModeCardVersions() {
+function syncModeCardВерсияs() {
   const baseCard = cards.find(item => item.dataset.id === "zero-hour-online");
-  const baseVersion = nativeState?.online?.installedVersion || nativeState?.online?.version || "1.04";
+  const baseВерсия = nativeState?.online?.installedВерсия || nativeState?.online?.version || "1.04";
   const baseSmall = baseCard?.querySelector("small");
-  if (baseSmall) baseSmall.textContent = `${baseVersion} · Multiplayer`;
+  if (baseSmall) baseSmall.textContent = `${baseВерсия} · Multiplayer`;
 
   modCatalog.forEach(mod => {
     const card = cards.find(item => item.dataset.id === mod.id);
     const small = card?.querySelector("small");
     if (!small) return;
-    small.textContent = mod.installedVersion || mod.version || (mod.id === "contra-x" ? "Beta 2 · Patch 1" : "Installed");
+    small.textContent = mod.installedВерсия || mod.version || (mod.id === "contra-x" ? "Beta 2 · Patch 1" : "Installed");
   });
 }
 
@@ -449,11 +451,11 @@ function syncInstalledModCards() {
 
   modCatalog.forEach(mod => {
     const card = cards.find(item => item.dataset.id === mod.id);
-    const downloading = Boolean(homeDownloadState.get(mod.id)?.active);
+    const downloading = Boolean(homeСкачатьState.get(mod.id)?.active);
     if (card) card.hidden = !isModInstalled(mod.id) && !downloading;
   });
 
-  syncModeCardVersions();
+  syncModeCardВерсияs();
   updateModesOverflow();
 }
 
@@ -522,14 +524,14 @@ const settingsDefaults = {
   }
 };
 
-function cloneSettingsDefaults() {
+function cloneНастройкиDefaults() {
   return JSON.parse(JSON.stringify(settingsDefaults));
 }
 
-function loadDemoSettings() {
+function loadDemoНастройки() {
   try {
     const saved = localStorage.getItem("generals-x-launcher-demo-settings");
-    if (!saved) return cloneSettingsDefaults();
+    if (!saved) return cloneНастройкиDefaults();
     const parsed = JSON.parse(saved);
     return {
       game: { ...settingsDefaults.game, ...(parsed.game || {}) },
@@ -537,11 +539,11 @@ function loadDemoSettings() {
       contra: { ...settingsDefaults.contra, ...(parsed.contra || {}) }
     };
   } catch {
-    return cloneSettingsDefaults();
+    return cloneНастройкиDefaults();
   }
 }
 
-let settingsState = loadDemoSettings();
+let settingsState = loadDemoНастройки();
 
 function showToast(message) {
   window.clearTimeout(toastTimer);
@@ -564,17 +566,17 @@ function setActiveCard(card) {
   window.setTimeout(() => {
     modeTitle.textContent = card.dataset.title;
     modeTitle.classList.toggle("is-long-title", card.dataset.id === "zero-hour-online");
-    modeDescription.textContent = card.dataset.description;
+    modeОписание.textContent = card.dataset.description;
     profileLabel.textContent = card.dataset.profile;
     statusLabel.textContent = card.dataset.status;
-    playLabel.textContent = "PLAY";
+    playLabel.textContent = "ИГРАТЬ";
 
     const experimental = card.dataset.status === "EXPERIMENTAL";
     statusLabel.classList.toggle("status-text--warning", experimental);
-    statusLabel.classList.toggle("status-text--ready", !experimental);
+    statusLabel.classList.toggle("status-text--готово", !experimental);
 
     syncActiveModSourceLink();
-    if (hasNativeBridge) syncNativeSystemStatus();
+    if (hasNativeBridge) syncNativeSystemСтатус();
 
     hero.classList.remove("is-switching");
     card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
@@ -607,32 +609,32 @@ playButton.addEventListener("click", async () => {
           total: Number(profile.packageBytes || 0),
           fraction: 0
         });
-        setHomeDownloadProgress(profileId, 0, true);
-        showToast(`${updateAvailable ? "Updating" : "Downloading"} ${activeCard.dataset.title}…`);
+        setHomeСкачатьProgress(profileId, 0, true);
+        showToast(`${updateAvailable ? "Updating" : "Скачатьing"} ${activeCard.dataset.title}…`);
         await nativeRequest("install", { profileId });
         await syncNativeState();
       } else {
         await nativeRequest("chooseFile", { profileId });
-        showToast(`Choose the ${activeCard.dataset.title} package`);
+        showToast(`Выберите пакет ${activeCard.dataset.title} package`);
       }
     } catch (error) {
       downloadMetrics.delete(profileId);
-      finishHomeDownload(profileId, "error");
-      showToast(error.message || "Install failed");
+      finishHomeСкачать(profileId, "error");
+      showToast(error.message || "Ошибка установки");
     }
     return;
   }
 
   if (profileId !== "online" && !nativeState?.online?.installed) {
-    showToast("Install Zero Hour + Online base content first");
+    showToast("Сначала установите базовые файлы Zero Hour + Online");
     return;
   }
 
   try {
     await nativeRequest("play", { profileId });
-    showToast(`Starting ${activeCard.dataset.title}…`);
+    showToast(`Запуск ${activeCard.dataset.title}…`);
   } catch (error) {
-    showToast(error.message || "Launch failed");
+    showToast(error.message || "Не удалось запустить игру");
   }
 });
 
@@ -640,7 +642,19 @@ detailsButton.addEventListener("click", () => {
   openPanel("details");
 });
 
-async function openPanel(type) {
+async function handleLauncherEsc() {
+  playUISound("close");
+  if (modalBackdrop && !modalBackdrop.hidden) { closeModal(); return; }
+  showToast("ESC");
+}
+
+launcherEsc?.addEventListener("click", handleLauncherEsc);
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") handleLauncherEsc();
+});
+
+function openPanel(type) {
   window.clearTimeout(modalCloseTimer);
   if (modalHeaderActions) modalHeaderActions.innerHTML = "";
   modalBackdrop.hidden = false;
@@ -652,42 +666,42 @@ async function openPanel(type) {
     modalEyebrow.textContent = activeCard.dataset.profile;
     modalTitle.textContent =
       profileId === "enhanced"
-        ? "Enhanced settings"
+        ? "Настройки Enhanced"
         : profileId === "contra-x"
-          ? "Contra X settings"
+          ? "Настройки Contra X"
           : profileId === "online"
-            ? "Zero Hour + Online settings"
+            ? "Настройки Zero Hour + Online"
             : activeCard.dataset.title + " settings";
     if (hasNativeBridge) {
       try {
-        const nativeSettings = await nativeRequest("settingsGet", { profileId });
+        const nativeНастройки = await nativeRequest("settingsGet", { profileId });
         const scope = profileId === "enhanced" ? "enhanced" : profileId === "contra-x" ? "contra" : "game";
-        settingsState[scope] = { ...settingsDefaults[scope], ...(nativeSettings?.values || {}) };
+        settingsState[scope] = { ...settingsDefaults[scope], ...(nativeНастройки?.values || {}) };
       } catch (error) {
         showToast(error.message || "Unable to load settings");
       }
     }
-    renderSettings(profileId);
+    renderНастройки(profileId);
   } else if (type === "mods") {
     modalEyebrow.textContent = "GENERALS X";
-    modalTitle.textContent = "Add Mod";
+    modalTitle.textContent = "Добавить мод";
     renderModLibrary();
   } else if (type === "diagnostics") {
     modalEyebrow.textContent = "SYSTEM";
-    modalTitle.textContent = "Diagnostics";
-    renderDiagnostics();
+    modalTitle.textContent = "Диагностика";
+    renderДиагностика();
   } else {
     modalEyebrow.textContent = activeCard.dataset.profile;
     modalTitle.textContent = activeCard.dataset.title;
     modalBody.innerHTML = `
       <div class="setting-section">
-        <h3>Profile information</h3>
-        <div class="setting-row"><span>Status</span><strong>${activeCard.dataset.status}</strong></div>
-        <div class="setting-row"><span>Target</span><strong>iPad / Mac</strong></div>
-        <div class="setting-row"><span>Launcher mode</span><strong>Web UI · native bridge</strong></div>
+        <h3>Информация о профиле</h3>
+        <div class="setting-row"><span>Статус</span><strong>${activeCard.dataset.status}</strong></div>
+        <div class="setting-row"><span>Платформа</span><strong>iPad / Mac</strong></div>
+        <div class="setting-row"><span>Режим лаунчера</span><strong>Web UI · системный мост</strong></div>
       </div>
       <div class="setting-section">
-        <h3>Description</h3>
+        <h3>Описание</h3>
         <p style="margin:0;color:rgba(255,255,255,.68);font-size:13px;line-height:1.7">${activeCard.dataset.description}</p>
       </div>
     `;
@@ -728,7 +742,7 @@ function formatEta(seconds) {
   return `~${hours}h ${minutes}m`;
 }
 
-function currentDownloadMetrics(profileId) {
+function currentСкачатьMetrics(profileId) {
   if (downloadMetrics.has(profileId)) return downloadMetrics.get(profileId);
   if (nativeState?.download?.busy && nativeState.download.profileId === profileId) {
     return nativeState.download;
@@ -736,12 +750,12 @@ function currentDownloadMetrics(profileId) {
   return null;
 }
 
-function downloadStatusText(profileId) {
-  const metrics = currentDownloadMetrics(profileId);
+function downloadСтатусText(profileId) {
+  const metrics = currentСкачатьMetrics(profileId);
   if (!metrics) return "";
   const parts = [];
   const percent = Math.round(Math.max(0, Math.min(1, Number(metrics.fraction || 0))) * 100);
-  parts.push(metrics.paused ? `Paused · ${percent}%` : `${percent}%`);
+  parts.push(metrics.paused ? `Пауза · ${percent}%` : `${percent}%`);
   const received = formatBytesCompact(metrics.received);
   const total = formatBytesCompact(metrics.total);
   if (received && total) parts.push(`${received} / ${total}`);
@@ -753,10 +767,10 @@ function downloadStatusText(profileId) {
   return parts.join(" · ");
 }
 
-function modVersionSummary(mod) {
+function modВерсияSummary(mod) {
   const nativeMod = nativeModState(mod.id);
   const installed = isModInstalled(mod.id);
-  const current = nativeMod?.installedVersion || mod.installedVersion || "";
+  const current = nativeMod?.installedВерсия || mod.installedВерсия || "";
   const available = nativeMod?.version || mod.version || "";
   const updateAvailable = Boolean(nativeMod?.updateAvailable || mod.updateAvailable) &&
     Boolean(available) && available !== current;
@@ -764,37 +778,37 @@ function modVersionSummary(mod) {
   if (!installed) {
     return `
       <div class="mod-version-summary">
-        <span><em>Version</em><strong>${available || "Unknown"}</strong></span>
-        ${mod.packageBytes ? `<span><em>Download</em><strong>${humanSize(mod.packageBytes)}</strong></span>` : ""}
+        <span><em>Версия</em><strong>${available || "Неизвестно"}</strong></span>
+        ${mod.packageBytes ? `<span><em>Скачать</em><strong>${humanSize(mod.packageBytes)}</strong></span>` : ""}
       </div>`;
   }
 
   return `
     <div class="mod-version-summary">
-      <span><em>Current</em><strong>${current || "Unknown"}</strong></span>
-      ${updateAvailable ? `<span class="has-update"><em>New</em><strong>${available}</strong></span>` : ""}
+      <span><em>Текущая</em><strong>${current || "Неизвестно"}</strong></span>
+      ${updateAvailable ? `<span class="has-update"><em>Новая</em><strong>${available}</strong></span>` : ""}
     </div>`;
 }
 
 function modInstallActions(mod) {
   const nativeMod = nativeModState(mod.id);
   const installed = isModInstalled(mod.id);
-  const download = currentDownloadMetrics(mod.id);
-  const activeDownload = Boolean(download?.busy);
+  const download = currentСкачатьMetrics(mod.id);
+  const activeСкачать = Boolean(download?.busy);
   const busy = Boolean(nativeState?.download?.busy);
   const updateAvailable = Boolean(nativeMod?.updateAvailable || mod.updateAvailable) &&
     Boolean(nativeMod?.version || mod.version) &&
-    (nativeMod?.version || mod.version) !== (nativeMod?.installedVersion || mod.installedVersion || "");
+    (nativeMod?.version || mod.version) !== (nativeMod?.installedВерсия || mod.installedВерсия || "");
 
-  if (activeDownload) return "";
+  if (activeСкачать) return "";
 
   if (installed) {
     return `
       ${updateAvailable ? `
         <button type="button" class="mod-install-button mod-install-button--primary" data-mod-download="${mod.id}" ${busy ? "disabled" : ""}>
-          Update
+          Обновить
         </button>` : ""}
-      <button type="button" class="mod-install-button" data-mod-remove="${mod.id}" ${busy ? "disabled" : ""}>Remove</button>
+      <button type="button" class="mod-install-button" data-mod-remove="${mod.id}" ${busy ? "disabled" : ""}>Удалить</button>
     `;
   }
 
@@ -804,7 +818,7 @@ function modInstallActions(mod) {
         <path d="M12 13v8M8 17l4 4 4-4"/>
         <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
       </svg>
-      Download
+      Скачать
     </button>
     <button type="button" class="mod-install-button" data-mod-file="${mod.id}" ${busy ? "disabled" : ""}>
       <svg class="lucide lucide-file-up" viewBox="0 0 24 24" aria-hidden="true">
@@ -812,37 +826,37 @@ function modInstallActions(mod) {
         <polyline points="14 2 14 8 20 8"/>
         <path d="M12 18v-6M9 15l3-3 3 3"/>
       </svg>
-      Choose File
+      Выбрать файл
     </button>
     <input class="mod-file-input" type="file" data-mod-file-input="${mod.id}">
   `;
 }
 
-function modDownloadPanel(mod) {
-  const metrics = currentDownloadMetrics(mod.id);
+function modСкачатьPanel(mod) {
+  const metrics = currentСкачатьMetrics(mod.id);
   if (!metrics?.busy) return "";
   const fraction = Math.max(0, Math.min(1, Number(metrics.fraction || 0)));
   return `
     <div class="mod-download-panel" data-mod-progress="${mod.id}">
-      <div class="mod-download-track" aria-label="Download progress">
+      <div class="mod-download-track" aria-label="Скачать progress">
         <span style="width:${Math.round(fraction * 100)}%"></span>
       </div>
-      <div class="mod-download-status" data-download-status="${mod.id}">${downloadStatusText(mod.id)}</div>
+      <div class="mod-download-status" data-download-status="${mod.id}">${downloadСтатусText(mod.id)}</div>
       <div class="mod-download-controls">
         <button type="button" class="mod-download-control" data-download-toggle="${mod.id}">
-          ${metrics.paused ? "Resume" : "Pause"}
+          ${metrics.paused ? "Продолжить" : "Pause"}
         </button>
-        <button type="button" class="mod-download-control mod-download-control--cancel" data-download-cancel="${mod.id}">Cancel</button>
+        <button type="button" class="mod-download-control mod-download-control--cancel" data-download-cancel="${mod.id}">Отмена</button>
       </div>
     </div>
   `;
 }
 
-function updateDownloadPanel(profileId) {
-  const metrics = currentDownloadMetrics(profileId);
+function updateСкачатьPanel(profileId) {
+  const metrics = currentСкачатьMetrics(profileId);
   const panel = document.querySelector(`[data-mod-progress="${profileId}"]`);
   if (!panel || !metrics) {
-    if (!modalBackdrop.hidden && modalTitle.textContent === "Add Mod") renderModLibrary();
+    if (!modalBackdrop.hidden && modalTitle.textContent === "Добавить мод") renderModLibrary();
     return;
   }
   const bar = panel.querySelector(".mod-download-track span");
@@ -850,8 +864,8 @@ function updateDownloadPanel(profileId) {
   const toggle = panel.querySelector(`[data-download-toggle="${profileId}"]`);
   const fraction = Math.max(0, Math.min(1, Number(metrics.fraction || 0)));
   if (bar) bar.style.width = `${Math.round(fraction * 100)}%`;
-  if (status) status.textContent = downloadStatusText(profileId);
-  if (toggle) toggle.textContent = metrics.paused ? "Resume" : "Pause";
+  if (status) status.textContent = downloadСтатусText(profileId);
+  if (toggle) toggle.textContent = metrics.paused ? "Продолжить" : "Pause";
 }
 
 function renderModLibrary() {
@@ -871,7 +885,7 @@ function renderModLibrary() {
             <div class="mod-library-card__copy">
               <strong>${mod.title}</strong>
               <span>${mod.description}</span>
-              ${modVersionSummary(mod)}
+              ${modВерсияSummary(mod)}
               ${mod.fallbackChannel ? `<span class="mod-channel-note">${mod.fallbackChannel.toUpperCase()} package fallback</span>` : ""}
               <a class="mod-author-link" href="${mod.moddbUrl}" target="_blank" rel="noopener noreferrer">
                 <svg class="lucide lucide-external-link" viewBox="0 0 24 24" aria-hidden="true">
@@ -886,7 +900,7 @@ function renderModLibrary() {
               ${modInstallActions(mod)}
             </div>
           </div>
-          ${modDownloadPanel(mod)}
+          ${modСкачатьPanel(mod)}
         </div>
       `).join("")}
     </div>
@@ -894,19 +908,19 @@ function renderModLibrary() {
 
   modalBody.querySelectorAll("[data-mod-download]").forEach(button => {
     button.addEventListener("click", () => {
-      if (hasNativeBridge) installNativeMod(button.dataset.modDownload, button);
-      else simulateCloudInstall(button.dataset.modDownload, button);
+      if (hasNativeBridge) installNativeMod(button.dataset.modСкачать, button);
+      else simulateCloudInstall(button.dataset.modСкачать, button);
     });
   });
 
   modalBody.querySelectorAll("[data-mod-remove]").forEach(button => {
     button.addEventListener("click", async () => {
       try {
-        const state = await nativeRequest("remove", { profileId: button.dataset.modRemove });
+        const state = await nativeRequest("remove", { profileId: button.dataset.modУдалить });
         applyNativeState(state);
         showToast("Mod removed");
       } catch (error) {
-        showToast(error.message || "Remove failed");
+        showToast(error.message || "Удалить failed");
       }
     });
   });
@@ -914,30 +928,30 @@ function renderModLibrary() {
   modalBody.querySelectorAll("[data-download-toggle]").forEach(button => {
     button.addEventListener("click", async () => {
       const profileId = button.dataset.downloadToggle;
-      const metrics = currentDownloadMetrics(profileId);
+      const metrics = currentСкачатьMetrics(profileId);
       if (!metrics) return;
       try {
-        const action = metrics.paused ? "resumeDownload" : "pauseDownload";
+        const action = metrics.paused ? "resumeСкачать" : "pauseСкачать";
         applyNativeState(await nativeRequest(action, { profileId }));
         const latest = nativeState?.download;
         if (latest?.profileId === profileId) downloadMetrics.set(profileId, latest);
-        updateDownloadPanel(profileId);
-        showToast(metrics.paused ? "Download resumed" : "Download paused");
+        updateСкачатьPanel(profileId);
+        showToast(metrics.paused ? "Скачать resumed" : "Скачать paused");
       } catch (error) {
-        showToast(error.message || "Download control failed");
+        showToast(error.message || "Скачать control failed");
       }
     });
   });
 
   modalBody.querySelectorAll("[data-download-cancel]").forEach(button => {
     button.addEventListener("click", async () => {
-      const profileId = button.dataset.downloadCancel;
+      const profileId = button.dataset.downloadОтмена;
       try {
-        await nativeRequest("cancelDownload", { profileId });
+        await nativeRequest("cancelСкачать", { profileId });
         button.disabled = true;
-        showToast("Cancelling download…");
+        showToast("Отменаling download…");
       } catch (error) {
-        showToast(error.message || "Cancel failed");
+        showToast(error.message || "Отмена failed");
       }
     });
   });
@@ -991,17 +1005,17 @@ async function installNativeMod(modId, button) {
 
   button.disabled = true;
   downloadMetrics.set(modId, { busy: true, profileId: modId, paused: false, received: 0, total: mod.packageBytes || 0, fraction: 0 });
-  setHomeDownloadProgress(modId, 0, true);
+  setHomeСкачатьProgress(modId, 0, true);
   const fallbackNote = mod.fallbackChannel ? ` · using ${mod.fallbackChannel.toUpperCase()} package` : "";
-  showToast(`Downloading ${mod.title}${fallbackNote}…`);
+  showToast(`Загрузка ${mod.title}${fallbackNote}…`);
   try {
     await nativeRequest("install", { profileId: modId });
     await syncNativeState();
   } catch (error) {
     downloadMetrics.delete(modId);
-    finishHomeDownload(modId, "error");
+    finishHomeСкачать(modId, "error");
     button.disabled = false;
-    showToast(error.message || "Download failed");
+    showToast(error.message || "Скачать failed");
   }
 }
 
@@ -1049,7 +1063,7 @@ function diagnosticsReport() {
 Project: Generals X
 Bundle: demo
 Platform: Local browser
-Device: ${navigator.platform || "Unknown"}
+Device: ${navigator.platform || "Неизвестно"}
 
 BUILD
 Launcher: demo-01
@@ -1060,20 +1074,20 @@ Base shell run: local
 CONTENT
 GameData: Installed
 Zero Hour + Online: Installed
-Enhanced: ${isModInstalled("enhanced") ? "Installed" : "Not installed"}
-Contra X: ${isModInstalled("contra") ? "Installed" : "Not installed"}
+Enhanced: ${isModInstalled("enhanced") ? "Installed" : "Не установлено"}
+Contra X: ${isModInstalled("contra") ? "Installed" : "Не установлено"}
 
 FILES
 iPad settings: Present
-Enhanced settings: ${isModInstalled("enhanced") ? "Present" : "n/a"}
+Настройки Enhanced: ${isModInstalled("enhanced") ? "Present" : "n/a"}
 Contra settings: ${isModInstalled("contra") ? "Present" : "n/a"}
-Current session: Yes
+Текущая session: Yes
 Session logs: 1/10`;
 }
 
-function renderDiagnostics() {
+function renderДиагностика() {
   modalBody.innerHTML = `
-    <p class="diagnostics-note">Build, installed content and crash logs. A copy is saved automatically to Files > On My iPad > Generals ZH > Diagnostics.</p>
+    <p class="diagnostics-note">Build, installed content and crash logs. A copy is saved automatically to Files > On My iPad > Generals ZH > Диагностика.</p>
     <div class="diagnostic-block" id="diagnosticReport">${diagnosticsReport()}</div>
     <div class="diagnostics-actions">
       <button type="button" class="diagnostics-action" data-diagnostics-refresh>Refresh</button>
@@ -1083,24 +1097,24 @@ function renderDiagnostics() {
     </div>
   `;
 
-  const refreshDiagnostics = async () => {
+  const refreshДиагностика = async () => {
     if (!hasNativeBridge) {
       modalBody.querySelector("#diagnosticReport").textContent = diagnosticsReport();
-      showToast("Diagnostics refreshed");
+      showToast("Диагностика refreshed");
       return;
     }
     try {
       const result = await nativeRequest("diagnostics");
-      nativeDiagnosticsText = result?.report || "";
-      modalBody.querySelector("#diagnosticReport").textContent = nativeDiagnosticsText || "No diagnostics available.";
-      if (result?.exportPath) showToast(`Diagnostics saved: ${result.exportPath}`);
+      nativeДиагностикаText = result?.report || "";
+      modalBody.querySelector("#diagnosticReport").textContent = nativeДиагностикаText || "No diagnostics available.";
+      if (result?.exportPath) showToast(`Диагностика saved: ${result.exportPath}`);
     } catch (error) {
-      modalBody.querySelector("#diagnosticReport").textContent = error.message || "Diagnostics failed";
+      modalBody.querySelector("#diagnosticReport").textContent = error.message || "Диагностика failed";
     }
   };
 
-  modalBody.querySelector("[data-diagnostics-refresh]").addEventListener("click", refreshDiagnostics);
-  if (hasNativeBridge) refreshDiagnostics();
+  modalBody.querySelector("[data-diagnostics-refresh]").addEventListener("click", refreshДиагностика);
+  if (hasNativeBridge) refreshДиагностика();
 
   modalBody.querySelector("[data-diagnostics-export]").addEventListener("click", async () => {
     if (!hasNativeBridge) {
@@ -1109,8 +1123,8 @@ function renderDiagnostics() {
     }
     showToast("Saving diagnostics to Files…");
     try {
-      const result = await nativeRequest("exportDiagnostics");
-      showToast(`Saved ${result?.fileCount || 0} files · ${result?.path || "Diagnostics"}`);
+      const result = await nativeRequest("exportДиагностика");
+      showToast(`Saved ${result?.fileCount || 0} files · ${result?.path || "Диагностика"}`);
     } catch (error) {
       showToast(error.message || "Save failed");
     }
@@ -1120,7 +1134,7 @@ function renderDiagnostics() {
     if (hasNativeBridge) {
       showToast("Opening share sheet…");
       try {
-        await nativeRequest("shareDiagnostics");
+        await nativeRequest("shareДиагностика");
       } catch (error) {
         showToast(error.message || "Share failed");
       }
@@ -1144,7 +1158,7 @@ function renderDiagnostics() {
   modalBody.querySelector("[data-diagnostics-clear]").addEventListener("click", async () => {
     if (hasNativeBridge) {
       try {
-        await nativeRequest("clearDiagnostics");
+        await nativeRequest("clearДиагностика");
         showToast("Clear dialog opened");
       } catch (error) {
         showToast(error.message || "Clear failed");
@@ -1189,7 +1203,7 @@ function settingRow(label, control) {
   return `<div class="setting-row"><span>${label}</span><div class="setting-control">${control}</div></div>`;
 }
 
-function renderGameSettings() {
+function renderGameНастройки() {
   return `
     <div class="setting-section">
       <h3>Graphics</h3>
@@ -1224,7 +1238,7 @@ function renderGameSettings() {
   `;
 }
 
-function renderEnhancedSettings() {
+function renderEnhancedНастройки() {
   return `
     <div class="setting-section">
       <h3>Enhanced</h3>
@@ -1237,7 +1251,7 @@ function renderEnhancedSettings() {
   `;
 }
 
-function renderContraSettings() {
+function renderContraНастройки() {
   return `
     <div class="setting-section">
       <h3>Contra X</h3>
@@ -1255,7 +1269,7 @@ function renderContraSettings() {
   `;
 }
 
-function renderSettings(profileId = "zero-hour-online") {
+function renderНастройки(profileId = "zero-hour-online") {
   const scope =
     profileId === "enhanced"
       ? "enhanced"
@@ -1265,10 +1279,10 @@ function renderSettings(profileId = "zero-hour-online") {
 
   const content =
     scope === "enhanced"
-      ? renderEnhancedSettings()
+      ? renderEnhancedНастройки()
       : scope === "contra"
-        ? renderContraSettings()
-        : renderGameSettings();
+        ? renderContraНастройки()
+        : renderGameНастройки();
 
   modalBody.innerHTML = `
     <div class="settings-content">
@@ -1322,13 +1336,13 @@ function renderSettings(profileId = "zero-hour-online") {
       triggerHaptic("success");
       showToast(`${activeCard.dataset.title} settings saved`);
     } catch (error) {
-      showToast(error.message || "Settings save failed");
+      showToast(error.message || "Настройки save failed");
     }
   });
 
   modalHeaderActions?.querySelector("[data-settings-reset]")?.addEventListener("click", () => {
     settingsState[scope] = { ...settingsDefaults[scope] };
-    renderSettings(profileId);
+    renderНастройки(profileId);
     showToast("Default settings loaded");
   });
 }
