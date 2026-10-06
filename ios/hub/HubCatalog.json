@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "catalogVersion": 60,
+  "catalogVersion": 64,
   "defaultChannel": "stable",
   "remoteCatalogURL": "https://pub-08941af8fe30421ba31f2314049303cb.r2.dev/catalog.json",
   "hub": {
@@ -8,11 +8,11 @@
     "channels": {
       "stable": {
         "version": "1.4.15",
-        "build": 37479531437,
+        "build": 37494996231,
         "packageURL": "https://pub-08941af8fe30421ba31f2314049303cb.r2.dev/hub/stable/1.4.15/GeneralsZH-Hub-Online-unsigned.ipa",
-        "sha256": "db6f46493550a8717aefea1434c0631a664817fb7831312e1c4bfeb8b235d8e8",
-        "packageBytes": 49328308,
-        "releaseNotes": "Adds portable loose-file overrides for generic mod profiles and The End of Days 0.986 P11 support."
+        "sha256": "61f6212c3823f165ac2ffbf5dd093974e766460ab32c3714b3d9478fe8b6573c",
+        "packageBytes": 49333241,
+        "releaseNotes": "Moves managed Hub mods/downloads to hidden Application Support with automatic legacy migration, adds profile integrity detection and Repair flow, and supports TEOD loose-file profiles. Web Launcher 0.2.0-web.14 adds remove confirmation and Mod Hub header controls."
       },
       "beta": {
         "version": "0.1.0",
@@ -157,10 +157,10 @@
         "stable": {
           "version": "0.986-P11",
           "packageURL": "https://pub-08941af8fe30421ba31f2314049303cb.r2.dev/mods/teod/stable/0.986-P11.gxmod",
-          "sha256": "007355283e32548b5ec24811e847f96961861bf50ba9a1f2dd4062f15dd20601",
+          "sha256": "e3b2894929bf84b4dfab091e8a77aa77fa7ebc3015b3c7dd33e1e5e9c4c0a3e5",
           "packageBytes": 1111367680,
           "minHubVersion": "1.4.15",
-          "releaseNotes": "Official The End of Days 0.986 Patch 11 full release. Portable iOS profile includes TEOD BIGs, active scripts, English CSF and movies; excludes Windows-only executable/D3D wrapper and backup installer files."
+          "releaseNotes": "Official TEOD 0.986 Patch 11 full release. Managed profile includes integrity metadata for repair detection and excludes Windows-only executable/D3D wrapper files."
         },
         "beta": {
           "version": "0.986-P11",
@@ -173,15 +173,15 @@
       }
     }
   ],
-  "updatedAt": "2026-10-06T14:41:33Z",
+  "updatedAt": "2026-10-06T16:32:34Z",
   "launcherWeb": {
     "stable": {
-      "version": "0.2.0-web.13",
+      "version": "0.2.0-web.14",
       "indexURL": "https://pub-08941af8fe30421ba31f2314049303cb.r2.dev/launcher/stable/index.html",
       "bridgeSchema": 6
     },
     "beta": {
-      "version": "0.2.0-web.13",
+      "version": "0.2.0-web.14",
       "indexURL": "https://pub-08941af8fe30421ba31f2314049303cb.r2.dev/launcher/beta/index.html",
       "bridgeSchema": 6
     }
