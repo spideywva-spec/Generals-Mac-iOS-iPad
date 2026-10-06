@@ -1,4 +1,4 @@
-const hasNativeBridge = Boolean(window.webkit?.messageHandlers?.generalsX);
+const hasРоднойBridge = Boolean(window.webkit?.messageHandlers?.generalsX);
 const nativePending = new Map();
 let nativeRequestCounter = 0;
 let nativeState = null;
@@ -6,14 +6,14 @@ let nativeДиагностикаText = "";
 const homeСкачатьState = new Map();
 const downloadMetrics = new Map();
 
-window.GeneralsXNative = {
+window.GeneralsXРодной = {
   request(action, payload = {}, timeoutMs = 20000) {
-    if (!hasNativeBridge) return Promise.reject(new Error("Native bridge is unavailable"));
+    if (!hasРоднойBridge) return Профессиональныйmise.reject(new Error("Родной bridge is unavailable"));
     const id = `gx-${Date.now()}-${++nativeRequestCounter}`;
-    return new Promise((resolve, reject) => {
+    return new Профессиональныйmise((resolve, reject) => {
       const timer = window.setTimeout(() => {
         nativePending.delete(id);
-        reject(new Error(`Native action timed out: ${action}`));
+        reject(new Error(`Родной action timed out: ${action}`));
       }, timeoutMs);
       nativePending.set(id, {
         resolve(value) { window.clearTimeout(timer); resolve(value); },
@@ -37,21 +37,21 @@ window.GeneralsXNative = {
       if (!pending) return;
       nativePending.delete(envelope.id);
       if (envelope.ok) pending.resolve(envelope.result);
-      else pending.reject(new Error(envelope.error || "Native request failed"));
+      else pending.reject(new Error(envelope.error || "Родной request failed"));
       return;
     }
 
     if (envelope.type === "event") {
-      handleNativeEvent(envelope.name, envelope.payload || {});
+      handleРоднойEvent(envelope.name, envelope.payload || {});
     }
   }
 };
 
 function nativeRequest(action, payload = {}) {
-  return window.GeneralsXNative.request(action, payload);
+  return window.GeneralsXРодной.request(action, payload);
 }
 
-function nativeProfileIdForCard(card = activeCard) {
+function nativeПрофессиональныйfileIdForCard(card = activeCard) {
   const id = card?.dataset?.id || "zero-hour-online";
   if (id === "zero-hour-online") return "online";
   return id;
@@ -61,12 +61,12 @@ function nativeModState(modId) {
   return nativeState?.mods?.find(item => item.profileId === modId) || null;
 }
 
-function nativeProfileState(profileId) {
+function nativeПрофессиональныйfileState(profileId) {
   if (profileId === "online") return nativeState?.online || null;
   return nativeModState(profileId);
 }
 
-function applyNativeState(state) {
+function applyРоднойState(state) {
   if (!state || typeof state !== "object") return;
   nativeState = state;
 
@@ -97,60 +97,60 @@ function applyNativeState(state) {
       ...downloadMetrics.get(profileId),
       ...state.download
     });
-    setHomeСкачатьProgress(profileId, Number(state.download.fraction || 0), true);
+    setHomeСкачатьПрофессиональныйgress(profileId, Number(state.download.fraction || 0), true);
   }
 
-  syncInstalledModCards();
+  syncУстановитьedModCards();
   syncActiveModSourceLink();
-  syncNativeSystemСтатус();
+  syncРоднойSystemСтатус();
 
   if (!modalBackdrop.hidden && modalTitle.textContent === "Добавить мод") {
     renderModLibrary();
   }
 }
 
-function syncNativeSystemСтатус() {
+function syncРоднойSystemСтатус() {
   if (!nativeState) return;
   const engine = document.querySelector("#systemEngine");
   const launcher = document.querySelector("#systemLauncher");
   const gameData = document.querySelector("#systemGameData");
-  const profiles = document.querySelector("#systemProfiles");
+  const profiles = document.querySelector("#systemПрофессиональныйfiles");
   const footerBuild = document.querySelector("#footerBuild");
 
   if (engine) engine.textContent = nativeState.engineВерсия || "unknown";
   if (launcher) launcher.textContent =
     `${nativeState.launcherВерсия || "unknown"} · web ${nativeState.launcherWebВерсия || "bundled"}`;
-  const onlineInstalled = Boolean(nativeState.online?.installed);
+  const onlineУстановитьed = Boolean(nativeState.online?.installed);
   if (gameData) {
-    gameData.textContent = onlineInstalled ? "Готово" : "Не установлено";
-    gameData.classList.toggle("good", onlineInstalled);
+    gameData.textContent = onlineУстановитьed ? "Готово" : "Не установлено";
+    gameData.classList.toggle("good", onlineУстановитьed);
   }
   if (profiles) {
-    const installedCount = (onlineInstalled ? 1 : 0) + (nativeState.mods || []).filter(item => item.installed).length;
+    const installedCount = (onlineУстановитьed ? 1 : 0) + (nativeState.mods || []).filter(item => item.installed).length;
     profiles.textContent = `${installedCount} готово`;
   }
   if (footerBuild) footerBuild.textContent = `BUILD ${nativeState.build || "unknown"}`;
 
-  const currentProfileId = nativeProfileIdForCard();
-  const profile = nativeProfileState(currentProfileId);
+  const currentПрофессиональныйfileId = nativeПрофессиональныйfileIdForCard();
+  const profile = nativeПрофессиональныйfileState(currentПрофессиональныйfileId);
   const installed = Boolean(profile?.installed);
   const updateAvailable = Boolean(profile?.updateAvailable);
-  statusLabel.textContent = installed ? (updateAvailable ? "ОБНОВИТЬ" : "READY") : "NOT УСТАНОВИТЬED";
+  statusLabel.textContent = installed ? (updateAvailable ? "ОБНОВИТЬ" : "ГОТОВО") : "NOT УСТАНОВИТЬED";
   statusLabel.classList.toggle("status-text--warning", !installed || updateAvailable);
   statusLabel.classList.toggle("status-text--готово", installed && !updateAvailable);
   playLabel.textContent = !installed ? "УСТАНОВИТЬ" : (updateAvailable ? "ОБНОВИТЬ" : "ИГРАТЬ");
 }
 
-async function syncNativeState() {
-  if (!hasNativeBridge) return;
+async function syncРоднойState() {
+  if (!hasРоднойBridge) return;
   try {
-    applyNativeState(await nativeRequest("getState"));
+    applyРоднойState(await nativeRequest("getState"));
   } catch (error) {
     showToast(error.message || "Не удалось прочитать состояние лаунчера");
   }
 }
 
-function updateNativeProgress(payload) {
+function updateРоднойПрофессиональныйgress(payload) {
   const profileId = payload.profileId;
   if (!profileId) return;
   const metrics = {
@@ -159,17 +159,17 @@ function updateNativeProgress(payload) {
     busy: true
   };
   downloadMetrics.set(profileId, metrics);
-  setHomeСкачатьProgress(profileId, Number(metrics.fraction || 0), true);
+  setHomeСкачатьПрофессиональныйgress(profileId, Number(metrics.fraction || 0), true);
   updateСкачатьPanel(profileId);
 }
 
-function handleNativeEvent(name, payload) {
+function handleРоднойEvent(name, payload) {
   if (name === "stateChanged") {
-    applyNativeState(payload);
+    applyРоднойState(payload);
     return;
   }
-  if (name === "downloadProgress") {
-    updateNativeProgress(payload);
+  if (name === "downloadПрофессиональныйgress") {
+    updateРоднойПрофессиональныйgress(payload);
     return;
   }
   if (name === "installComplete") {
@@ -179,8 +179,8 @@ function handleNativeEvent(name, payload) {
     finishHomeСкачать(payload.profileId, "complete");
     triggerHaptic("success");
     showToast(`${title} installed`);
-    syncNativeState().then(() => {
-      const installedCard = cardForProfileId(payload.profileId);
+    syncРоднойState().then(() => {
+      const installedCard = cardForПрофессиональныйfileId(payload.profileId);
       if (installedCard) setActiveCard(installedCard);
     });
     return;
@@ -189,14 +189,14 @@ function handleNativeEvent(name, payload) {
     downloadMetrics.delete(payload.profileId);
     finishHomeСкачать(payload.profileId, "cancel");
     showToast("Загрузка отменена");
-    syncNativeState();
+    syncРоднойState();
     return;
   }
   if (name === "installError") {
     downloadMetrics.delete(payload.profileId);
     finishHomeСкачать(payload.profileId, "error");
     showToast(payload.error || "Ошибка установки");
-    syncNativeState();
+    syncРоднойState();
   }
 }
 
@@ -249,7 +249,7 @@ let uiSoundEnabled = (() => {
   catch { return true; }
 })();
 
-const uiSoundProfiles = {
+const uiSoundПрофессиональныйfiles = {
   tap: [[310, 250, 0.045, 0.020]],
   select: [[390, 520, 0.070, 0.026], [690, 760, 0.045, 0.012]],
   open: [[260, 390, 0.085, 0.020], [520, 650, 0.070, 0.010]],
@@ -270,15 +270,15 @@ function ensureUIAudio() {
 }
 
 function triggerHaptic(style = "light") {
-  if (!hasNativeBridge) return;
-  window.GeneralsXNative.request("haptic", { style }, 1200).catch(() => {});
+  if (!hasРоднойBridge) return;
+  window.GeneralsXРодной.request("haptic", { style }, 1200).catch(() => {});
 }
 
 function playUISound(name = "tap") {
   if (!uiSoundEnabled) return;
   const context = ensureUIAudio();
   if (!context) return;
-  const profile = uiSoundProfiles[name] || uiSoundProfiles.tap;
+  const profile = uiSoundПрофессиональныйfiles[name] || uiSoundПрофессиональныйfiles.tap;
   const now = context.currentTime;
   profile.forEach(([from, to, duration, volume], index) => {
     const oscillator = context.createOscillator();
@@ -323,20 +323,20 @@ const modCatalog = [
   {
     id: "contra-x",
     title: "Contra X",
-    description: "Contra X Beta 2 + Patch 1 with dedicated mod settings.",
+    description: "Contra X Бета 2 + Patch 1 with dedicated mod settings.",
     author: "Contra Mod Team",
     moddbUrl: "https://www.moddb.com/mods/contra"
   },
   {
     id: "contra-007",
     title: "Contra 007",
-    description: "Classic Contra 0.07 with official Fixed AI and Map Fix patches.",
+    description: "Классический Contra 0.07 с официальными исправлениями ИИ и карт.",
     author: "Contra Mod Team",
     moddbUrl: "https://www.moddb.com/mods/contra/downloads/contra-007"
   }
 ];
 
-function loadInstalledMods() {
+function loadУстановитьedMods() {
   try {
     const saved = JSON.parse(localStorage.getItem("generals-x-launcher-demo-installed-mods") || "[]");
     return Array.isArray(saved) ? saved.filter(id => modCatalog.some(mod => mod.id === id)) : [];
@@ -345,9 +345,9 @@ function loadInstalledMods() {
   }
 }
 
-let installedMods = loadInstalledMods();
+let installedMods = loadУстановитьedMods();
 
-function saveInstalledMods() {
+function saveУстановитьedMods() {
   try {
     localStorage.setItem("generals-x-launcher-demo-installed-mods", JSON.stringify(installedMods));
   } catch {
@@ -355,11 +355,11 @@ function saveInstalledMods() {
   }
 }
 
-function isModInstalled(modId) {
+function isModУстановитьed(modId) {
   return installedMods.includes(modId);
 }
 
-function cardForProfileId(profileId) {
+function cardForПрофессиональныйfileId(profileId) {
   const cardId = profileId === "online" ? "zero-hour-online" : profileId;
   return cards.find(card => card.dataset.id === cardId) || null;
 }
@@ -376,20 +376,20 @@ function ensureHomeСкачатьPercent(card) {
   return indicator;
 }
 
-function setHomeСкачатьProgress(profileId, fraction = 0, active = true) {
+function setHomeСкачатьПрофессиональныйgress(profileId, fraction = 0, active = true) {
   const value = Math.max(0, Math.min(1, Number(fraction || 0)));
   homeСкачатьState.set(profileId, { active, fraction: value });
-  const card = cardForProfileId(profileId);
+  const card = cardForПрофессиональныйfileId(profileId);
   if (!card) return;
 
-  const pendingInstall = profileId === "online"
+  const pendingУстановить = profileId === "online"
     ? !Boolean(nativeState?.online?.installed)
-    : !isModInstalled(profileId);
+    : !isModУстановитьed(profileId);
   const indicator = ensureHomeСкачатьPercent(card);
 
   card.hidden = false;
   card.classList.toggle("is-downloading", active);
-  card.classList.toggle("is-download-pending", active && pendingInstall);
+  card.classList.toggle("is-download-pending", active && pendingУстановить);
   card.classList.remove("is-download-error", "is-download-complete");
 
   if (indicator) {
@@ -399,7 +399,7 @@ function setHomeСкачатьProgress(profileId, fraction = 0, active = true) {
 }
 
 function finishHomeСкачать(profileId, outcome) {
-  const card = cardForProfileId(profileId);
+  const card = cardForПрофессиональныйfileId(profileId);
   homeСкачатьState.delete(profileId);
   if (!card) return;
 
@@ -419,7 +419,7 @@ function finishHomeСкачать(profileId, outcome) {
     card.classList.add("is-download-error");
     window.setTimeout(() => card.classList.remove("is-download-error"), 850);
   }
-  syncInstalledModCards();
+  syncУстановитьedModCards();
 }
 
 function updateModesOverflow() {
@@ -434,25 +434,25 @@ function syncModeCardВерсияs() {
   const baseCard = cards.find(item => item.dataset.id === "zero-hour-online");
   const baseВерсия = nativeState?.online?.installedВерсия || nativeState?.online?.version || "1.04";
   const baseSmall = baseCard?.querySelector("small");
-  if (baseSmall) baseSmall.textContent = `${baseВерсия} · Multiplayer`;
+  if (baseSmall) baseSmall.textContent = `${baseВерсия} · Сетевая игра`;
 
   modCatalog.forEach(mod => {
     const card = cards.find(item => item.dataset.id === mod.id);
     const small = card?.querySelector("small");
     if (!small) return;
-    small.textContent = mod.installedВерсия || mod.version || (mod.id === "contra-x" ? "Beta 2 · Patch 1" : "Installed");
+    small.textContent = mod.installedВерсия || mod.version || (mod.id === "contra-x" ? "Бета 2 · Patch 1" : "Установитьed");
   });
 }
 
-function syncInstalledModCards() {
-  const hasInstalledMods = installedMods.length > 0;
+function syncУстановитьedModCards() {
+  const hasУстановитьedMods = installedMods.length > 0;
   const baseCard = cards.find(item => item.dataset.id === "zero-hour-online");
-  if (baseCard) baseCard.hidden = !hasInstalledMods;
+  if (baseCard) baseCard.hidden = !hasУстановитьedMods;
 
   modCatalog.forEach(mod => {
     const card = cards.find(item => item.dataset.id === mod.id);
     const downloading = Boolean(homeСкачатьState.get(mod.id)?.active);
-    if (card) card.hidden = !isModInstalled(mod.id) && !downloading;
+    if (card) card.hidden = !isModУстановитьed(mod.id) && !downloading;
   });
 
   syncModeCardВерсияs();
@@ -463,7 +463,7 @@ function syncActiveModSourceLink() {
   if (!modSourceLink) return;
 
   const mod = modCatalog.find(item => item.id === activeCard?.dataset.id);
-  const shouldShow = Boolean(mod && isModInstalled(mod.id));
+  const shouldShow = Boolean(mod && isModУстановитьed(mod.id));
 
   modSourceLink.hidden = !shouldShow;
 
@@ -477,7 +477,7 @@ function syncActiveModSourceLink() {
   modSourceLink.title = `Original mod on ModDB — ${mod.author}`;
 }
 
-const settingsDefaults = {
+const settingsПо умолчаниюs = {
   game: {
     shadow3D: false,
     shadow2D: true,
@@ -485,13 +485,13 @@ const settingsDefaults = {
     groundLighting: true,
     softWater: true,
     buildingOcclusion: true,
-    showProps: true,
+    showПрофессиональныйps: true,
     extraAnimations: true,
     dynamicLOD: false,
     heatEffects: false,
     textureQuality: "High",
     particles: "Medium",
-    textureFilter: "Anisotropic",
+    textureFilter: "Анизотропная",
     anisotropy: "8x",
     msaa: "Off",
     maxCamera: 550,
@@ -508,38 +508,38 @@ const settingsDefaults = {
     uiQuality: "FHD",
     infantryIconScale: "100%",
     cameos: "HD",
-    aiScripts: "Default"
+    aiScripts: "По умолчанию"
   },
   contra: {
     controlBar: "Contra",
-    cameos: "Standard",
-    music: "Standard",
-    voices: "English",
+    cameos: "Стандарт",
+    music: "Стандарт",
+    voices: "Английский",
     hotkeys: "Original",
-    hotkeyLanguage: "English",
-    portraits: "Standard",
+    hotkeyLanguage: "Английский",
+    portraits: "Стандарт",
     fogEffects: false,
     waterEffects: true,
-    extraBuildingProps: true
+    extraBuildingПрофессиональныйps: true
   }
 };
 
-function cloneНастройкиDefaults() {
-  return JSON.parse(JSON.stringify(settingsDefaults));
+function cloneНастройкиПо умолчаниюs() {
+  return JSON.parse(JSON.stringify(settingsПо умолчаниюs));
 }
 
 function loadDemoНастройки() {
   try {
     const saved = localStorage.getItem("generals-x-launcher-demo-settings");
-    if (!saved) return cloneНастройкиDefaults();
+    if (!saved) return cloneНастройкиПо умолчаниюs();
     const parsed = JSON.parse(saved);
     return {
-      game: { ...settingsDefaults.game, ...(parsed.game || {}) },
-      enhanced: { ...settingsDefaults.enhanced, ...(parsed.enhanced || {}) },
-      contra: { ...settingsDefaults.contra, ...(parsed.contra || {}) }
+      game: { ...settingsПо умолчаниюs.game, ...(parsed.game || {}) },
+      enhanced: { ...settingsПо умолчаниюs.enhanced, ...(parsed.enhanced || {}) },
+      contra: { ...settingsПо умолчаниюs.contra, ...(parsed.contra || {}) }
     };
   } catch {
-    return cloneНастройкиDefaults();
+    return cloneНастройкиПо умолчаниюs();
   }
 }
 
@@ -576,7 +576,7 @@ function setActiveCard(card) {
     statusLabel.classList.toggle("status-text--готово", !experimental);
 
     syncActiveModSourceLink();
-    if (hasNativeBridge) syncNativeSystemСтатус();
+    if (hasРоднойBridge) syncРоднойSystemСтатус();
 
     hero.classList.remove("is-switching");
     card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
@@ -588,13 +588,13 @@ cards.forEach(card => {
 });
 
 playButton.addEventListener("click", async () => {
-  const profileId = nativeProfileIdForCard();
-  if (!hasNativeBridge) {
+  const profileId = nativeПрофессиональныйfileIdForCard();
+  if (!hasРоднойBridge) {
     showToast("Demo: launch request for " + activeCard.dataset.title);
     return;
   }
 
-  const profile = nativeProfileState(profileId);
+  const profile = nativeПрофессиональныйfileState(profileId);
   const installed = Boolean(profile?.installed);
   const updateAvailable = Boolean(profile?.updateAvailable);
 
@@ -609,10 +609,10 @@ playButton.addEventListener("click", async () => {
           total: Number(profile.packageBytes || 0),
           fraction: 0
         });
-        setHomeСкачатьProgress(profileId, 0, true);
-        showToast(`${updateAvailable ? "Updating" : "Скачатьing"} ${activeCard.dataset.title}…`);
+        setHomeСкачатьПрофессиональныйgress(profileId, 0, true);
+        showToast(`${updateAvailable ? "Обновление" : "Скачатьing"} ${activeCard.dataset.title}…`);
         await nativeRequest("install", { profileId });
-        await syncNativeState();
+        await syncРоднойState();
       } else {
         await nativeRequest("chooseFile", { profileId });
         showToast(`Выберите пакет ${activeCard.dataset.title} package`);
@@ -661,7 +661,7 @@ function openPanel(type) {
   window.requestAnimationFrame(() => modalBackdrop.classList.add("is-visible"));
 
   if (type === "settings") {
-    const profileId = nativeProfileIdForCard();
+    const profileId = nativeПрофессиональныйfileIdForCard();
 
     modalEyebrow.textContent = activeCard.dataset.profile;
     modalTitle.textContent =
@@ -672,13 +672,13 @@ function openPanel(type) {
           : profileId === "online"
             ? "Настройки Zero Hour + Online"
             : activeCard.dataset.title + " settings";
-    if (hasNativeBridge) {
+    if (hasРоднойBridge) {
       try {
         const nativeНастройки = await nativeRequest("settingsGet", { profileId });
         const scope = profileId === "enhanced" ? "enhanced" : profileId === "contra-x" ? "contra" : "game";
-        settingsState[scope] = { ...settingsDefaults[scope], ...(nativeНастройки?.values || {}) };
+        settingsState[scope] = { ...settingsПо умолчаниюs[scope], ...(nativeНастройки?.values || {}) };
       } catch (error) {
-        showToast(error.message || "Unable to load settings");
+        showToast(error.message || "Не удалось загрузить настройки");
       }
     }
     renderНастройки(profileId);
@@ -769,7 +769,7 @@ function downloadСтатусText(profileId) {
 
 function modВерсияSummary(mod) {
   const nativeMod = nativeModState(mod.id);
-  const installed = isModInstalled(mod.id);
+  const installed = isModУстановитьed(mod.id);
   const current = nativeMod?.installedВерсия || mod.installedВерсия || "";
   const available = nativeMod?.version || mod.version || "";
   const updateAvailable = Boolean(nativeMod?.updateAvailable || mod.updateAvailable) &&
@@ -790,9 +790,9 @@ function modВерсияSummary(mod) {
     </div>`;
 }
 
-function modInstallActions(mod) {
+function modУстановитьActions(mod) {
   const nativeMod = nativeModState(mod.id);
-  const installed = isModInstalled(mod.id);
+  const installed = isModУстановитьed(mod.id);
   const download = currentСкачатьMetrics(mod.id);
   const activeСкачать = Boolean(download?.busy);
   const busy = Boolean(nativeState?.download?.busy);
@@ -844,7 +844,7 @@ function modСкачатьPanel(mod) {
       <div class="mod-download-status" data-download-status="${mod.id}">${downloadСтатусText(mod.id)}</div>
       <div class="mod-download-controls">
         <button type="button" class="mod-download-control" data-download-toggle="${mod.id}">
-          ${metrics.paused ? "Продолжить" : "Pause"}
+          ${metrics.paused ? "Продолжить" : "Пауза"}
         </button>
         <button type="button" class="mod-download-control mod-download-control--cancel" data-download-cancel="${mod.id}">Отмена</button>
       </div>
@@ -865,7 +865,7 @@ function updateСкачатьPanel(profileId) {
   const fraction = Math.max(0, Math.min(1, Number(metrics.fraction || 0)));
   if (bar) bar.style.width = `${Math.round(fraction * 100)}%`;
   if (status) status.textContent = downloadСтатусText(profileId);
-  if (toggle) toggle.textContent = metrics.paused ? "Продолжить" : "Pause";
+  if (toggle) toggle.textContent = metrics.paused ? "Продолжить" : "Пауза";
 }
 
 function renderModLibrary() {
@@ -873,12 +873,12 @@ function renderModLibrary() {
     <div class="mod-library">
       <div class="mod-library__toolbar">
         <div class="segment-control mod-channel-control">
-          <button type="button" data-channel="stable" class="${(nativeState?.channel || "stable") === "stable" ? "is-selected" : ""}">Stable</button>
-          <button type="button" data-channel="beta" class="${nativeState?.channel === "beta" ? "is-selected" : ""}">Beta</button>
+          <button type="button" data-channel="stable" class="${(nativeState?.channel || "stable") === "stable" ? "is-selected" : ""}">Стабильная</button>
+          <button type="button" data-channel="beta" class="${nativeState?.channel === "beta" ? "is-selected" : ""}">Бета</button>
         </div>
-        <button type="button" class="diagnostics-action" data-catalog-refresh>Refresh</button>
+        <button type="button" class="diagnostics-action" data-catalog-refresh>Обновить</button>
       </div>
-      <p class="mod-library__intro">Install or update profiles from the Generals X catalog. Only one large package is downloaded at a time.</p>
+      <p class="mod-library__intro">Установить or update profiles from the Generals X catalog. Only one large package is downloaded at a time.</p>
       ${modCatalog.map(mod => `
         <div class="mod-library-card" data-mod-card="${mod.id}">
           <div class="mod-library-card__main">
@@ -897,7 +897,7 @@ function renderModLibrary() {
               </a>
             </div>
             <div class="mod-library-card__actions">
-              ${modInstallActions(mod)}
+              ${modУстановитьActions(mod)}
             </div>
           </div>
           ${modСкачатьPanel(mod)}
@@ -908,8 +908,8 @@ function renderModLibrary() {
 
   modalBody.querySelectorAll("[data-mod-download]").forEach(button => {
     button.addEventListener("click", () => {
-      if (hasNativeBridge) installNativeMod(button.dataset.modСкачать, button);
-      else simulateCloudInstall(button.dataset.modСкачать, button);
+      if (hasРоднойBridge) installРоднойMod(button.dataset.modСкачать, button);
+      else simulateCloudУстановить(button.dataset.modСкачать, button);
     });
   });
 
@@ -917,8 +917,8 @@ function renderModLibrary() {
     button.addEventListener("click", async () => {
       try {
         const state = await nativeRequest("remove", { profileId: button.dataset.modУдалить });
-        applyNativeState(state);
-        showToast("Mod removed");
+        applyРоднойState(state);
+        showToast("Мод удалён");
       } catch (error) {
         showToast(error.message || "Удалить failed");
       }
@@ -932,7 +932,7 @@ function renderModLibrary() {
       if (!metrics) return;
       try {
         const action = metrics.paused ? "resumeСкачать" : "pauseСкачать";
-        applyNativeState(await nativeRequest(action, { profileId }));
+        applyРоднойState(await nativeRequest(action, { profileId }));
         const latest = nativeState?.download;
         if (latest?.profileId === profileId) downloadMetrics.set(profileId, latest);
         updateСкачатьPanel(profileId);
@@ -958,31 +958,31 @@ function renderModLibrary() {
 
   modalBody.querySelectorAll("[data-channel]").forEach(button => {
     button.addEventListener("click", async () => {
-      if (!hasNativeBridge) return;
+      if (!hasРоднойBridge) return;
       try {
-        applyNativeState(await nativeRequest("setChannel", { channel: button.dataset.channel }));
+        applyРоднойState(await nativeRequest("setChannel", { channel: button.dataset.channel }));
         showToast(`${button.dataset.channel.toUpperCase()} channel active`);
       } catch (error) {
-        showToast(error.message || "Channel switch failed");
+        showToast(error.message || "Не удалось сменить канал");
       }
     });
   });
 
   modalBody.querySelector("[data-catalog-refresh]")?.addEventListener("click", async () => {
-    if (!hasNativeBridge) return;
+    if (!hasРоднойBridge) return;
     try {
-      applyNativeState(await nativeRequest("refreshCatalog"));
-      showToast("Catalog refreshed");
+      applyРоднойState(await nativeRequest("refreshCatalog"));
+      showToast("Каталог обновлён");
     } catch (error) {
-      showToast(error.message || "Refresh failed");
+      showToast(error.message || "Обновить failed");
     }
   });
 
   modalBody.querySelectorAll("[data-mod-file]").forEach(button => {
     button.addEventListener("click", () => {
-      if (hasNativeBridge) {
+      if (hasРоднойBridge) {
         nativeRequest("chooseFile", { profileId: button.dataset.modFile })
-          .catch(error => showToast(error.message || "File picker failed"));
+          .catch(error => showToast(error.message || "Не удалось открыть выбор файла"));
         return;
       }
       const input = modalBody.querySelector(`[data-mod-file-input="${button.dataset.modFile}"]`);
@@ -999,18 +999,18 @@ function renderModLibrary() {
 }
 
 
-async function installNativeMod(modId, button) {
+async function installРоднойMod(modId, button) {
   const mod = modCatalog.find(item => item.id === modId);
   if (!mod) return;
 
   button.disabled = true;
   downloadMetrics.set(modId, { busy: true, profileId: modId, paused: false, received: 0, total: mod.packageBytes || 0, fraction: 0 });
-  setHomeСкачатьProgress(modId, 0, true);
+  setHomeСкачатьПрофессиональныйgress(modId, 0, true);
   const fallbackNote = mod.fallbackChannel ? ` · using ${mod.fallbackChannel.toUpperCase()} package` : "";
   showToast(`Загрузка ${mod.title}${fallbackNote}…`);
   try {
     await nativeRequest("install", { profileId: modId });
-    await syncNativeState();
+    await syncРоднойState();
   } catch (error) {
     downloadMetrics.delete(modId);
     finishHomeСкачать(modId, "error");
@@ -1019,7 +1019,7 @@ async function installNativeMod(modId, button) {
   }
 }
 
-function simulateCloudInstall(modId, button) {
+function simulateCloudУстановить(modId, button) {
   const card = button.closest("[data-mod-card]");
   const progress = card?.querySelector(`[data-mod-progress="${modId}"]`);
   const bar = progress?.querySelector("span");
@@ -1044,23 +1044,23 @@ function installMod(modId, source) {
   const mod = modCatalog.find(item => item.id === modId);
   if (!mod) return;
 
-  if (!isModInstalled(modId)) {
+  if (!isModУстановитьed(modId)) {
     installedMods.push(modId);
-    saveInstalledMods();
+    saveУстановитьedMods();
   }
 
-  syncInstalledModCards();
+  syncУстановитьedModCards();
 
   const card = cards.find(item => item.dataset.id === modId);
   if (card) setActiveCard(card);
 
-  showToast(`${mod.title} installed${source === "file" ? " from file" : ""}`);
+  showToast(`${mod.title} installed${source === "file" ? " из файла" : ""}`);
   window.setTimeout(closePanel, 220);
 }
 
 function diagnosticsReport() {
   return `APP
-Project: Generals X
+Профессиональныйject: Generals X
 Bundle: demo
 Platform: Local browser
 Device: ${navigator.platform || "Неизвестно"}
@@ -1072,15 +1072,15 @@ Engine: 0.1.0
 Base shell run: local
 
 CONTENT
-GameData: Installed
-Zero Hour + Online: Installed
-Enhanced: ${isModInstalled("enhanced") ? "Installed" : "Не установлено"}
-Contra X: ${isModInstalled("contra") ? "Installed" : "Не установлено"}
+GameData: Установитьed
+Zero Hour + Online: Установитьed
+Enhanced: ${isModУстановитьed("enhanced") ? "Установитьed" : "Не установлено"}
+Contra X: ${isModУстановитьed("contra") ? "Установитьed" : "Не установлено"}
 
 FILES
-iPad settings: Present
-Настройки Enhanced: ${isModInstalled("enhanced") ? "Present" : "n/a"}
-Contra settings: ${isModInstalled("contra") ? "Present" : "n/a"}
+iPad settings: Есть
+Настройки Enhanced: ${isModУстановитьed("enhanced") ? "Есть" : "n/a"}
+Contra settings: ${isModУстановитьed("contra") ? "Есть" : "n/a"}
 Текущая session: Yes
 Session logs: 1/10`;
 }
@@ -1090,15 +1090,15 @@ function renderДиагностика() {
     <p class="diagnostics-note">Build, installed content and crash logs. A copy is saved automatically to Files > On My iPad > Generals ZH > Диагностика.</p>
     <div class="diagnostic-block" id="diagnosticReport">${diagnosticsReport()}</div>
     <div class="diagnostics-actions">
-      <button type="button" class="diagnostics-action" data-diagnostics-refresh>Refresh</button>
-      <button type="button" class="diagnostics-action" data-diagnostics-export>Save to Files</button>
-      <button type="button" class="diagnostics-action" data-diagnostics-share>Share report + logs</button>
-      <button type="button" class="diagnostics-action diagnostics-action--danger" data-diagnostics-clear>Clear logs</button>
+      <button type="button" class="diagnostics-action" data-diagnostics-refresh>Обновить</button>
+      <button type="button" class="diagnostics-action" data-diagnostics-export>Сохранить в Файлы</button>
+      <button type="button" class="diagnostics-action" data-diagnostics-share>Поделиться отчётом и логами</button>
+      <button type="button" class="diagnostics-action diagnostics-action--danger" data-diagnostics-clear>Очистить логи</button>
     </div>
   `;
 
   const refreshДиагностика = async () => {
-    if (!hasNativeBridge) {
+    if (!hasРоднойBridge) {
       modalBody.querySelector("#diagnosticReport").textContent = diagnosticsReport();
       showToast("Диагностика refreshed");
       return;
@@ -1106,7 +1106,7 @@ function renderДиагностика() {
     try {
       const result = await nativeRequest("diagnostics");
       nativeДиагностикаText = result?.report || "";
-      modalBody.querySelector("#diagnosticReport").textContent = nativeДиагностикаText || "No diagnostics available.";
+      modalBody.querySelector("#diagnosticReport").textContent = nativeДиагностикаText || "Диагностика недоступна.";
       if (result?.exportPath) showToast(`Диагностика saved: ${result.exportPath}`);
     } catch (error) {
       modalBody.querySelector("#diagnosticReport").textContent = error.message || "Диагностика failed";
@@ -1114,29 +1114,29 @@ function renderДиагностика() {
   };
 
   modalBody.querySelector("[data-diagnostics-refresh]").addEventListener("click", refreshДиагностика);
-  if (hasNativeBridge) refreshДиагностика();
+  if (hasРоднойBridge) refreshДиагностика();
 
   modalBody.querySelector("[data-diagnostics-export]").addEventListener("click", async () => {
-    if (!hasNativeBridge) {
-      showToast("Native bridge is unavailable");
+    if (!hasРоднойBridge) {
+      showToast("Родной bridge is unavailable");
       return;
     }
-    showToast("Saving diagnostics to Files…");
+    showToast("Сохранение диагностики в Файлы…");
     try {
       const result = await nativeRequest("exportДиагностика");
-      showToast(`Saved ${result?.fileCount || 0} files · ${result?.path || "Диагностика"}`);
+      showToast(`Сохранитьd ${result?.fileCount || 0} files · ${result?.path || "Диагностика"}`);
     } catch (error) {
-      showToast(error.message || "Save failed");
+      showToast(error.message || "Сохранить failed");
     }
   });
 
   modalBody.querySelector("[data-diagnostics-share]").addEventListener("click", async () => {
-    if (hasNativeBridge) {
-      showToast("Opening share sheet…");
+    if (hasРоднойBridge) {
+      showToast("Открытие меню «Поделиться»…");
       try {
         await nativeRequest("shareДиагностика");
       } catch (error) {
-        showToast(error.message || "Share failed");
+        showToast(error.message || "Не удалось поделиться");
       }
       return;
     }
@@ -1146,9 +1146,9 @@ function renderДиагностика() {
         await navigator.share({ title: "Generals X diagnostics", text: report });
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(report);
-        showToast("Report copied");
+        showToast("Отчёт скопирован");
       } else {
-        showToast("Share is unavailable in this browser");
+        showToast("Поделиться в этом браузере невозможно");
       }
     } catch {
       // User cancellation is not an error for this demo.
@@ -1156,15 +1156,15 @@ function renderДиагностика() {
   });
 
   modalBody.querySelector("[data-diagnostics-clear]").addEventListener("click", async () => {
-    if (hasNativeBridge) {
+    if (hasРоднойBridge) {
       try {
         await nativeRequest("clearДиагностика");
-        showToast("Clear dialog opened");
+        showToast("Открыто окно очистки");
       } catch (error) {
-        showToast(error.message || "Clear failed");
+        showToast(error.message || "Не удалось очистить");
       }
     } else {
-      showToast("Demo logs cleared");
+      showToast("Демо-логи очищены");
     }
   });
 }
@@ -1206,34 +1206,34 @@ function settingRow(label, control) {
 function renderGameНастройки() {
   return `
     <div class="setting-section">
-      <h3>Graphics</h3>
-      ${settingRow("3D shadows", toggleControl("game", "shadow3D"))}
-      ${settingRow("2D shadows", toggleControl("game", "shadow2D"))}
-      ${settingRow("Cloud shadows", toggleControl("game", "cloudShadows"))}
-      ${settingRow("Ground lighting", toggleControl("game", "groundLighting"))}
-      ${settingRow("Smooth water borders", toggleControl("game", "softWater"))}
-      ${settingRow("Units behind buildings", toggleControl("game", "buildingOcclusion"))}
-      ${settingRow("Small props / trees", toggleControl("game", "showProps"))}
-      ${settingRow("Extra animations", toggleControl("game", "extraAnimations"))}
-      ${settingRow("Dynamic LOD", toggleControl("game", "dynamicLOD"))}
-      ${settingRow("Heat effects", toggleControl("game", "heatEffects"))}
-      ${settingRow("Texture quality", segmentControl("game", "textureQuality", ["High", "Medium", "Low"]))}
-      ${settingRow("Particles", segmentControl("game", "particles", ["Low", "Medium", "High"]))}
-      ${settingRow("Texture filtering", segmentControl("game", "textureFilter", ["Bilinear", "Trilinear", "Anisotropic"]))}
-      ${settingRow("Anisotropy", segmentControl("game", "anisotropy", ["2x", "4x", "8x", "16x"]))}
+      <h3>Графика</h3>
+      ${settingRow("Тени 3D", toggleControl("game", "shadow3D"))}
+      ${settingRow("Тени 2D", toggleControl("game", "shadow2D"))}
+      ${settingRow("Тени облаков", toggleControl("game", "cloudShadows"))}
+      ${settingRow("Освещение земли", toggleControl("game", "groundLighting"))}
+      ${settingRow("Сглаженные границы воды", toggleControl("game", "softWater"))}
+      ${settingRow("Юниты за зданиями", toggleControl("game", "buildingOcclusion"))}
+      ${settingRow("Мелкие объекты / деревья", toggleControl("game", "showПрофессиональныйps"))}
+      ${settingRow("Дополнительные анимации", toggleControl("game", "extraAnimations"))}
+      ${settingRow("Динамический LOD", toggleControl("game", "dynamicLOD"))}
+      ${settingRow("Эффекты жары", toggleControl("game", "heatEffects"))}
+      ${settingRow("Качество текстур", segmentControl("game", "textureQuality", ["High", "Medium", "Low"]))}
+      ${settingRow("Частицы", segmentControl("game", "particles", ["Low", "Medium", "High"]))}
+      ${settingRow("Фильтрация текстур", segmentControl("game", "textureFilter", ["Билинейная", "Трилинейная", "Анизотропная"]))}
+      ${settingRow("Анизотропия", segmentControl("game", "anisotropy", ["2x", "4x", "8x", "16x"]))}
       ${settingRow("MSAA", segmentControl("game", "msaa", ["Off", "2x", "4x", "8x"]))}
     </div>
 
     <div class="setting-section">
-      <h3>Camera / Performance</h3>
-      ${settingRow("Maximum camera height", rangeControl("game", "maxCamera", 300, 800, 10))}
-      ${settingRow("Minimum camera height", rangeControl("game", "minCamera", 40, 150, 5))}
-      ${settingRow("Camera pitch", rangeControl("game", "cameraPitch", 20, 60, 1, "°"))}
-      ${settingRow("Enforce maximum camera height", toggleControl("game", "enforceMax"))}
-      ${settingRow("Keyboard / edge scroll speed", rangeControl("game", "scrollSpeed", 0.5, 2, 0.1, "×"))}
-      ${settingRow("Terrain draw distance", rangeControl("game", "drawDistance", 0.5, 2, 0.05, "×"))}
-      ${settingRow("FPS limit", toggleControl("game", "fpsLimit"))}
-      ${settingRow("Frames per second", rangeControl("game", "fps", 30, 120, 5, " FPS"))}
+      <h3>Камера / производительность</h3>
+      ${settingRow("Максимальная высота камеры", rangeControl("game", "maxCamera", 300, 800, 10))}
+      ${settingRow("Минимальная высота камеры", rangeControl("game", "minCamera", 40, 150, 5))}
+      ${settingRow("Наклон камеры", rangeControl("game", "cameraPitch", 20, 60, 1, "°"))}
+      ${settingRow("Ограничить максимальную высоту камеры", toggleControl("game", "enforceMax"))}
+      ${settingRow("Скорость прокрутки клавиатурой / у края", rangeControl("game", "scrollSpeed", 0.5, 2, 0.1, "×"))}
+      ${settingRow("Дальность прорисовки местности", rangeControl("game", "drawDistance", 0.5, 2, 0.05, "×"))}
+      ${settingRow("Ограничение FPS", toggleControl("game", "fpsLimit"))}
+      ${settingRow("Кадров в секунду", rangeControl("game", "fps", 30, 120, 5, " FPS"))}
     </div>
   `;
 }
@@ -1242,11 +1242,11 @@ function renderEnhancedНастройки() {
   return `
     <div class="setting-section">
       <h3>Enhanced</h3>
-      ${settingRow("Faction textures", segmentControl("enhanced", "textureResolution", ["Vanilla", "High"]))}
-      ${settingRow("UI quality", segmentControl("enhanced", "uiQuality", ["HD", "FHD", "QHD"]))}
-      ${settingRow("Infantry icons", segmentControl("enhanced", "infantryIconScale", ["100%", "75%", "50%"]))}
+      ${settingRow("Текстуры фракций", segmentControl("enhanced", "textureResolution", ["Vanilla", "High"]))}
+      ${settingRow("Качество интерфейса", segmentControl("enhanced", "uiQuality", ["HD", "FHD", "QHD"]))}
+      ${settingRow("Иконки пехоты", segmentControl("enhanced", "infantryIconScale", ["100%", "75%", "50%"]))}
       ${settingRow("Cameos", segmentControl("enhanced", "cameos", ["SD", "HD"]))}
-      ${settingRow("AI scripts", segmentControl("enhanced", "aiScripts", ["Default", "Restrained", "Skynet"]))}
+      ${settingRow("Скрипты ИИ", segmentControl("enhanced", "aiScripts", ["По умолчанию", "Ограниченный", "Skynet"]))}
     </div>
   `;
 }
@@ -1255,16 +1255,16 @@ function renderContraНастройки() {
   return `
     <div class="setting-section">
       <h3>Contra X</h3>
-      ${settingRow("Control Bar", segmentControl("contra", "controlBar", ["Contra", "Pro", "Standard"]))}
-      ${settingRow("Icon / cameo quality", segmentControl("contra", "cameos", ["Standard", "HD"]))}
-      ${settingRow("Music", segmentControl("contra", "music", ["Standard", "Enhanced", "The Score"]))}
-      ${settingRow("Unit voices", segmentControl("contra", "voices", ["English", "Native"]))}
-      ${settingRow("Hotkeys", segmentControl("contra", "hotkeys", ["Original", "Leikeze"]))}
-      ${settingRow("Hotkey language", segmentControl("contra", "hotkeyLanguage", ["English", "Russian"]))}
-      ${settingRow("General portraits", segmentControl("contra", "portraits", ["Standard", "Funny"]))}
-      ${settingRow("Fog effects", toggleControl("contra", "fogEffects"))}
-      ${settingRow("Water effects", toggleControl("contra", "waterEffects"))}
-      ${settingRow("Extra building props", toggleControl("contra", "extraBuildingProps"))}
+      ${settingRow("Панель управления", segmentControl("contra", "controlBar", ["Contra", "Профессиональный", "Стандарт"]))}
+      ${settingRow("Качество иконок / камео", segmentControl("contra", "cameos", ["Стандарт", "HD"]))}
+      ${settingRow("Музыка", segmentControl("contra", "music", ["Стандарт", "Enhanced", "Саундтрек"]))}
+      ${settingRow("Голоса юнитов", segmentControl("contra", "voices", ["Английский", "Родной"]))}
+      ${settingRow("Горячие клавиши", segmentControl("contra", "hotkeys", ["Original", "Leikeze"]))}
+      ${settingRow("Язык горячих клавиш", segmentControl("contra", "hotkeyLanguage", ["Английский", "Russian"]))}
+      ${settingRow("Портреты генералов", segmentControl("contra", "portraits", ["Стандарт", "Забавные"]))}
+      ${settingRow("Эффекты тумана", toggleControl("contra", "fogEffects"))}
+      ${settingRow("Эффекты воды", toggleControl("contra", "waterEffects"))}
+      ${settingRow("Дополнительные объекты зданий", toggleControl("contra", "extraBuildingПрофессиональныйps"))}
     </div>
   `;
 }
@@ -1292,8 +1292,8 @@ function renderНастройки(profileId = "zero-hour-online") {
 
   if (modalHeaderActions) {
     modalHeaderActions.innerHTML = `
-      <button type="button" class="page-header-action" data-settings-reset>Reset</button>
-      <button type="button" class="page-header-action page-header-action--primary" data-settings-save>Save</button>
+      <button type="button" class="page-header-action" data-settings-reset>Сбросить</button>
+      <button type="button" class="page-header-action page-header-action--primary" data-settings-save>Сохранить</button>
     `;
   }
 
@@ -1328,8 +1328,8 @@ function renderНастройки(profileId = "zero-hour-online") {
 
   modalHeaderActions?.querySelector("[data-settings-save]")?.addEventListener("click", async () => {
     try {
-      if (hasNativeBridge) {
-        await nativeRequest("settingsSave", { profileId, values: settingsState[scope] });
+      if (hasРоднойBridge) {
+        await nativeRequest("settingsСохранить", { profileId, values: settingsState[scope] });
       } else {
         localStorage.setItem("generals-x-launcher-demo-settings", JSON.stringify(settingsState));
       }
@@ -1341,9 +1341,9 @@ function renderНастройки(profileId = "zero-hour-online") {
   });
 
   modalHeaderActions?.querySelector("[data-settings-reset]")?.addEventListener("click", () => {
-    settingsState[scope] = { ...settingsDefaults[scope] };
+    settingsState[scope] = { ...settingsПо умолчаниюs[scope] };
     renderНастройки(profileId);
-    showToast("Default settings loaded");
+    showToast("По умолчанию settings loaded");
   });
 }
 
@@ -1351,7 +1351,7 @@ const backgroundImageCache = new Map();
 
 function preloadBackgroundSlide(src) {
   if (backgroundImageCache.has(src)) return backgroundImageCache.get(src);
-  const promise = new Promise(resolve => {
+  const promise = new Профессиональныйmise(resolve => {
     const image = new Image();
     let settled = false;
     const finish = async () => {
@@ -1374,7 +1374,7 @@ function preloadBackgroundSlide(src) {
 }
 
 function preloadBackgroundSlides() {
-  return Promise.all(backgroundSlides.map(preloadBackgroundSlide));
+  return Профессиональныйmise.all(backgroundSlides.map(preloadBackgroundSlide));
 }
 
 function randomBackgroundIndex(excludeIndex = -1) {
@@ -1509,7 +1509,7 @@ if (audioToggle) {
     try { localStorage.setItem("generals-x-ui-sound", uiSoundEnabled ? "on" : "off"); } catch {}
     syncAudioToggle();
     if (uiSoundEnabled) playUISound("confirm");
-    showToast(uiSoundEnabled ? "Interface sounds on" : "Interface sounds off");
+    showToast(uiSoundEnabled ? "Звуки интерфейса включены" : "Звуки интерфейса выключены");
   });
 }
 
@@ -1544,7 +1544,7 @@ if (modesRail) {
   modesRail.addEventListener("wheel", event => {
     if (!modesRail.classList.contains("is-overflowing")) return;
     if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-    event.preventDefault();
+    event.preventПо умолчанию();
     modesRail.scrollBy({ left: event.deltaY, behavior: "smooth" });
   }, { passive: false });
 
@@ -1585,12 +1585,12 @@ window.addEventListener("keydown", event => {
   }
 });
 
-syncInstalledModCards();
+syncУстановитьedModCards();
 syncActiveModSourceLink();
 updateModesOverflow();
 
 startBackgroundMotion();
 
-if (hasNativeBridge) {
-  syncNativeState();
+if (hasРоднойBridge) {
+  syncРоднойState();
 }
