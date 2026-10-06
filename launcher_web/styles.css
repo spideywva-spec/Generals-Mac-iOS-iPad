@@ -1,28 +1,87 @@
-/* ============================================================
+/* ═══════════════════════════════════════════════════════════════════════════
    GENERALS X — WEB LAUNCHER
-   Design System v3 "TACTICAL COMMAND"
-   ------------------------------------------------------------
-   Drop-in replacement. Same selectors, same DOM contract.
-   Refined typography, layered depth, atmospheric motion,
-   premium gold accent system, glass surfaces with edge lighting.
-   ============================================================ */
+   ██████╗ ███████╗███████╗██╗ ██████╗ ███╗   ██╗    ███████╗██╗   ██╗███████╗
+   ██╔══██╗██╔════╝██╔════╝██║██╔════╝ ████╗  ██║    ██╔════╝╚██╗ ██╔╝██╔════╝
+   ██║  ██║█████╗  ███████╗██║██║  ███╗██╔██╗ ██║    ███████╗ ╚████╔╝ ███████╗
+   ██║  ██║██╔══╝  ╚════██║██║██║   ██║██║╚██╗██║    ╚════██║  ╚██╔╝  ╚════██║
+   ██████╔╝███████╗███████║██║╚██████╔╝██║ ╚████║    ███████║   ██║   ███████║
+   ╚═════╝ ╚══════╝╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝    ╚══════╝   ╚═╝   ╚══════╝
+   ───────────────────────────────────────────────────────────────────────────
+   Design System v4.0 — "COMMAND PROTOCOL"
+   ───────────────────────────────────────────────────────────────────────────
+   Complete visual overhaul with cinematic depth, physical materials, layered
+   glass surfaces, premium gold accents, and sophisticated motion choreography.
+   Drop-in replacement — all selectors and DOM contract preserved 1:1.
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ------------------------------------------------------------
-   1. DESIGN TOKENS
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §00 — GLOBAL SELECTION & SCROLLBAR FOUNDATION
+   ═══════════════════════════════════════════════════════════════════════════ */
+::selection {
+  background: rgba(212, 173, 84, 0.32);
+  color: #fbf1cf;
+  text-shadow: 0 0 12px rgba(212, 173, 84, 0.42);
+}
+
+::-moz-selection {
+  background: rgba(212, 173, 84, 0.32);
+  color: #fbf1cf;
+}
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212, 173, 84, 0.24) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.24);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg,
+    rgba(212, 173, 84, 0.28) 0%,
+    rgba(140, 108, 46, 0.32) 100%);
+  border: 2px solid rgba(0, 0, 0, 0.24);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg,
+    rgba(224, 188, 104, 0.42) 0%,
+    rgba(160, 124, 54, 0.48) 100%);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §01 — DESIGN TOKENS / COMPREHENSIVE SCALE
+   ═══════════════════════════════════════════════════════════════════════════ */
 :root {
   color-scheme: dark;
 
-  /* Layout */
+  /* ─────────────────────────────────────────────────────────────────────────
+     LAYOUT GEOMETRY
+     ───────────────────────────────────────────────────────────────────────── */
   --tile: 760px;
   --rail-gap: 8px;
+  --rail-pad-x: 6px;
+  --rail-pad-y: 6px;
   --radius-xs: 1px;
   --radius-sm: 2px;
   --radius-md: 4px;
   --radius-lg: 6px;
+  --radius-xl: 10px;
+  --radius-full: 999px;
 
-  /* Surface stack */
-  --surface-void: #040607;
+  /* ─────────────────────────────────────────────────────────────────────────
+     SURFACE STACK — 6 LAYERS OF DEPTH
+     From deepest background to highest floating element
+     ───────────────────────────────────────────────────────────────────────── */
+  --surface-void: #030506;
+  --surface-neg: #050708;
   --surface-0: #06090a;
   --surface-1: rgba(11, 14, 15, 0.72);
   --surface-2: rgba(9, 12, 13, 0.86);
@@ -30,89 +89,204 @@
   --surface-4: rgba(5, 7, 8, 0.98);
   --surface-elevated:
     linear-gradient(158deg,
-      rgba(22, 25, 26, 0.98) 0%,
-      rgba(12, 15, 16, 0.98) 55%,
-      rgba(7, 9, 10, 0.98) 100%);
+      rgba(24, 27, 28, 0.98) 0%,
+      rgba(14, 17, 18, 0.98) 48%,
+      rgba(8, 10, 11, 0.98) 100%);
+  --surface-glass:
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.04) 0%,
+      rgba(255, 255, 255, 0.008) 40%,
+      rgba(0, 0, 0, 0.16) 100%);
+  --surface-carbon:
+    repeating-linear-gradient(45deg,
+      rgba(255, 255, 255, 0.014) 0,
+      rgba(255, 255, 255, 0.014) 1px,
+      transparent 1px,
+      transparent 3px);
 
-  /* Hairlines */
-  --line: rgba(255, 255, 255, 0.09);
+  /* ─────────────────────────────────────────────────────────────────────────
+     HAIRLINES — 5 TONES
+     ───────────────────────────────────────────────────────────────────────── */
+  --line-hairline: rgba(255, 255, 255, 0.04);
   --line-soft: rgba(255, 255, 255, 0.06);
+  --line: rgba(255, 255, 255, 0.09);
   --line-strong: rgba(255, 255, 255, 0.19);
-  --line-hairline: rgba(255, 255, 255, 0.045);
+  --line-max: rgba(255, 255, 255, 0.32);
 
-  /* Gold accent system — five tones for depth */
+  /* ─────────────────────────────────────────────────────────────────────────
+     GOLD ACCENT SYSTEM — 7 TONES
+     ───────────────────────────────────────────────────────────────────────── */
+  --gold-000: #fdf9e8;
   --gold-100: #fbf1cf;
   --gold-200: #f0d186;
   --gold-300: #d4ad54;
   --gold-400: #b48d39;
   --gold-500: #8f6d2a;
   --gold-600: #664a1c;
+  --gold-700: #3d2c10;
 
   --accent: var(--gold-300);
   --accent-bright: var(--gold-200);
+  --accent-lighter: var(--gold-100);
+  --accent-deep: var(--gold-500);
   --accent-soft: rgba(212, 173, 84, 0.14);
   --accent-tint: rgba(212, 173, 84, 0.055);
+  --accent-wash: rgba(212, 173, 84, 0.028);
   --accent-hairline: rgba(212, 173, 84, 0.22);
   --accent-edge: rgba(224, 188, 104, 0.62);
+  --accent-glow: rgba(212, 173, 84, 0.18);
 
-  /* Text scale */
+  /* ─────────────────────────────────────────────────────────────────────────
+     TEXT SCALE — 6 LEVELS
+     ───────────────────────────────────────────────────────────────────────── */
+  --text-max: #ffffff;
+  --text-strong: #f8f9f6;
   --text: #f5f6f3;
-  --text-strong: #ffffff;
-  --text-dim: rgba(238, 242, 235, 0.72);
-  --text-soft: rgba(238, 242, 235, 0.52);
-  --muted: rgba(238, 242, 235, 0.42);
-  --muted-soft: rgba(238, 242, 235, 0.28);
-  --muted-faint: rgba(238, 242, 235, 0.14);
+  --text-dim: rgba(240, 243, 236, 0.76);
+  --text-soft: rgba(240, 243, 236, 0.54);
+  --muted: rgba(240, 243, 236, 0.42);
+  --muted-soft: rgba(240, 243, 236, 0.28);
+  --muted-faint: rgba(240, 243, 236, 0.16);
+  --muted-ghost: rgba(240, 243, 236, 0.08);
 
-  /* Semantic */
+  /* ─────────────────────────────────────────────────────────────────────────
+     SEMANTIC PALETTE
+     ───────────────────────────────────────────────────────────────────────── */
   --good: #8bc99a;
   --good-bright: #b8e0c2;
+  --good-deep: #5a8e6a;
   --good-soft: rgba(139, 201, 154, 0.14);
+  --good-glow: rgba(139, 201, 154, 0.20);
+
   --warn: #e3b35c;
+  --warn-bright: #f0c878;
   --warn-soft: rgba(227, 179, 92, 0.14);
+  --warn-glow: rgba(227, 179, 92, 0.18);
+
   --danger: #d75c48;
   --danger-bright: #ff9d8a;
+  --danger-deep: #8a2e22;
   --danger-soft: rgba(176, 65, 54, 0.14);
+  --danger-glow: rgba(215, 104, 89, 0.20);
 
-  /* Elevation — colored shadows, not black */
+  --info: #6ea8d8;
+  --info-soft: rgba(110, 168, 216, 0.14);
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     ELEVATION — COLORED SHADOWS
+     ───────────────────────────────────────────────────────────────────────── */
   --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.32);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.34), 0 1px 2px rgba(0, 0, 0, 0.24);
-  --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.38), 0 4px 12px rgba(0, 0, 0, 0.24);
-  --shadow-lg: 0 28px 76px rgba(0, 0, 0, 0.48), 0 8px 24px rgba(0, 0, 0, 0.32);
-  --shadow-xl: 0 40px 120px rgba(0, 0, 0, 0.58), 0 12px 32px rgba(0, 0, 0, 0.36);
-  --shadow-gold: 0 0 32px rgba(212, 173, 84, 0.14);
+  --shadow-sm:
+    0 2px 8px rgba(0, 0, 0, 0.34),
+    0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-md:
+    0 12px 32px rgba(0, 0, 0, 0.38),
+    0 4px 12px rgba(0, 0, 0, 0.24);
+  --shadow-lg:
+    0 28px 76px rgba(0, 0, 0, 0.48),
+    0 8px 24px rgba(0, 0, 0, 0.32);
+  --shadow-xl:
+    0 40px 120px rgba(0, 0, 0, 0.58),
+    0 12px 32px rgba(0, 0, 0, 0.36);
+  --shadow-2xl:
+    0 60px 180px rgba(0, 0, 0, 0.68),
+    0 20px 60px rgba(0, 0, 0, 0.42);
+
+  /* Colored glows */
+  --glow-gold: 0 0 32px rgba(212, 173, 84, 0.16);
+  --glow-gold-strong: 0 0 44px rgba(212, 173, 84, 0.24);
+  --glow-good: 0 0 22px rgba(139, 201, 154, 0.24);
+  --glow-danger: 0 0 24px rgba(215, 104, 89, 0.22);
+  --glow-inner-top: inset 0 1px rgba(255, 255, 255, 0.055);
+  --glow-inner-top-strong: inset 0 1px rgba(255, 255, 255, 0.10);
+  --glow-inner-bottom: inset 0 -1px rgba(0, 0, 0, 0.32);
+
+  /* Combined composites */
   --shadow-inset-hi: inset 0 1px rgba(255, 255, 255, 0.05);
   --shadow-inset-lo: inset 0 -1px rgba(0, 0, 0, 0.32);
+  --shadow-glass:
+    inset 0 1px rgba(255, 255, 255, 0.06),
+    inset 0 -1px rgba(0, 0, 0, 0.36),
+    0 1px 3px rgba(0, 0, 0, 0.32);
 
-  /* Motion */
+  /* ─────────────────────────────────────────────────────────────────────────
+     MOTION CHOREOGRAPHY
+     ───────────────────────────────────────────────────────────────────────── */
+  --ease-linear: linear;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-spring: cubic-bezier(0.18, 0.82, 0.2, 1);
   --ease-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
   --dur-instant: 90ms;
   --dur-fast: 140ms;
   --dur-med: 220ms;
   --dur-slow: 320ms;
   --dur-glacial: 620ms;
+  --dur-cinematic: 1200ms;
 
-  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", "Helvetica Neue", sans-serif;
-  font-feature-settings: "cv11", "ss01", "ss03", "tnum";
+  /* ─────────────────────────────────────────────────────────────────────────
+     TYPOGRAPHY
+     ───────────────────────────────────────────────────────────────────────── */
+  font-family: "Inter", ui-sans-serif, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-feature-settings: "cv11", "ss01", "ss03", "tnum", "kern";
   font-optical-sizing: auto;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     SPACING SCALE — 8pt grid
+     ───────────────────────────────────────────────────────────────────────── */
+  --space-0: 0;
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 10px;
+  --space-6: 12px;
+  --space-7: 14px;
+  --space-8: 16px;
+  --space-9: 18px;
+  --space-10: 22px;
+  --space-11: 26px;
+  --space-12: 30px;
+  --space-13: 36px;
+  --space-14: 48px;
+  --space-15: 60px;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     Z-INDEX HIERARCHY
+     ───────────────────────────────────────────────────────────────────────── */
+  --z-battlefield: -2;
+  --z-layers-bg: -1;
+  --z-base: 0;
+  --z-raised: 1;
+  --z-dock: 20;
+  --z-modal: 30;
+  --z-toast: 60;
+  --z-confirm: 70;
+  --z-floating: 100;
+  --z-max: 9999;
 }
 
-/* ------------------------------------------------------------
-   2. RESET
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §02 — RESET & NORMALIZE
+   ═══════════════════════════════════════════════════════════════════════════ */
 *,
 *::before,
-*::after { box-sizing: border-box; }
+*::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
 
 html,
 body {
   margin: 0;
+  padding: 0;
   width: 100%;
   min-width: 100%;
   min-height: 100%;
@@ -120,17 +294,22 @@ body {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
 }
 
 html {
   touch-action: manipulation;
-  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
 }
 
 body {
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
   overscroll-behavior-y: none;
+  overscroll-behavior-x: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 button,
@@ -139,6 +318,7 @@ select,
 textarea {
   font: inherit;
   color: inherit;
+  letter-spacing: inherit;
 }
 
 button {
@@ -146,8 +326,24 @@ button {
   background: none;
   padding: 0;
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
   user-select: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img,
+svg,
+video {
+  display: block;
+  max-width: 100%;
+  height: auto;
 }
 
 :focus { outline: none; }
@@ -165,60 +361,89 @@ a:focus-visible {
   box-shadow: 0 0 0 6px rgba(212, 173, 84, 0.10);
 }
 
-img, svg { display: block; max-width: 100%; }
+/* Reduced motion base */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
-/* ------------------------------------------------------------
-   3. APP SHELL
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §03 — APP SHELL / ROOT WRAPPER
+   ═══════════════════════════════════════════════════════════════════════════ */
 .app-shell {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   isolation: isolate;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 140% 90% at 50% -25%, rgba(212, 173, 84, 0.05), transparent 62%),
-    radial-gradient(ellipse 100% 60% at 15% 100%, rgba(212, 173, 84, 0.02), transparent 60%),
-    radial-gradient(ellipse 90% 60% at 85% 0%, rgba(139, 201, 154, 0.015), transparent 55%),
+    radial-gradient(ellipse 140% 90% at 50% -25%, rgba(212, 173, 84, 0.055), transparent 62%),
+    radial-gradient(ellipse 100% 60% at 15% 100%, rgba(212, 173, 84, 0.022), transparent 60%),
+    radial-gradient(ellipse 90% 60% at 85% 0%, rgba(139, 201, 154, 0.016), transparent 55%),
+    radial-gradient(circle at 50% 50%, rgba(212, 173, 84, 0.008), transparent 70%),
     var(--surface-0);
 }
 
-/* Very subtle film grain overlay for the whole shell */
+/* Fine film grain overlay */
 .app-shell::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 1;
-  opacity: 0.035;
+  opacity: 0.038;
   mix-blend-mode: overlay;
   background-image:
-    radial-gradient(circle at 25% 35%, rgba(255, 255, 255, 0.6) 0.5px, transparent 1px),
-    radial-gradient(circle at 72% 68%, rgba(255, 255, 255, 0.5) 0.5px, transparent 1px);
-  background-size: 3px 3px, 4px 4px;
+    radial-gradient(circle at 25% 35%, rgba(255, 255, 255, 0.65) 0.5px, transparent 1px),
+    radial-gradient(circle at 72% 68%, rgba(255, 255, 255, 0.5) 0.5px, transparent 1px),
+    radial-gradient(circle at 40% 82%, rgba(255, 255, 255, 0.4) 0.5px, transparent 1px);
+  background-size: 3px 3px, 4px 4px, 5px 5px;
+  background-position: 0 0, 1px 1px, 2px 2px;
 }
 
-/* ------------------------------------------------------------
-   4. BATTLEFIELD — atmospheric background
-   ------------------------------------------------------------ */
+/* Very subtle top ambient light */
+.app-shell::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40vh;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(ellipse 100% 100% at 50% 0%,
+    rgba(212, 173, 84, 0.03) 0%,
+    transparent 70%);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §04 — BATTLEFIELD / ATMOSPHERIC BACKGROUND
+   ═══════════════════════════════════════════════════════════════════════════ */
 .battlefield {
   position: fixed;
   inset: 0;
-  z-index: -2;
+  z-index: var(--z-battlefield);
   overflow: hidden;
   background: #06090a;
+  pointer-events: none;
 }
 
 .battlefield__tile {
   position: absolute;
-  inset: -140px;
+  inset: -160px;
   background-repeat: repeat;
   background-position: 0 0;
   background-size: var(--tile) var(--tile);
   opacity: 0;
-  filter: saturate(0.68) contrast(1.12) brightness(0.52) blur(0.2px);
+  filter: saturate(0.66) contrast(1.14) brightness(0.50) blur(0.24px);
   will-change: background-position, opacity;
   backface-visibility: hidden;
   transform: translateZ(0);
+  transition: opacity var(--dur-cinematic) var(--ease-in-out);
 }
 
 .battlefield__tile--primary { opacity: 1; }
@@ -228,18 +453,19 @@ img, svg { display: block; max-width: 100%; }
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 70% 30%, rgba(190, 152, 82, 0.07), transparent 42%),
-    radial-gradient(circle at 20% 80%, rgba(120, 90, 40, 0.04), transparent 38%),
-    radial-gradient(ellipse 130% 100% at 50% 110%, rgba(0, 0, 0, 0.78), transparent 62%),
+    radial-gradient(circle at 70% 30%, rgba(190, 152, 82, 0.075), transparent 44%),
+    radial-gradient(circle at 22% 78%, rgba(120, 90, 40, 0.045), transparent 40%),
+    radial-gradient(circle at 88% 62%, rgba(212, 173, 84, 0.028), transparent 38%),
+    radial-gradient(ellipse 130% 100% at 50% 110%, rgba(0, 0, 0, 0.80), transparent 62%),
     linear-gradient(90deg,
       rgba(2, 4, 5, 0.94) 0%,
       rgba(3, 5, 6, 0.62) 40%,
       rgba(3, 5, 6, 0.44) 60%,
-      rgba(2, 4, 5, 0.82) 100%),
+      rgba(2, 4, 5, 0.84) 100%),
     linear-gradient(180deg,
-      rgba(0, 0, 0, 0.34) 0%,
+      rgba(0, 0, 0, 0.36) 0%,
       rgba(0, 0, 0, 0.05) 42%,
-      rgba(0, 0, 0, 0.72) 100%);
+      rgba(0, 0, 0, 0.74) 100%);
 }
 
 /* Cinematic vignette */
@@ -247,17 +473,19 @@ img, svg { display: block; max-width: 100%; }
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 120% 80% at 50% 45%, transparent 42%, rgba(0, 0, 0, 0.42) 100%);
+  background: radial-gradient(ellipse 120% 80% at 50% 45%,
+    transparent 40%,
+    rgba(0, 0, 0, 0.44) 100%);
   pointer-events: none;
 }
 
 .battlefield__grid {
   position: absolute;
   inset: 0;
-  opacity: 0.04;
+  opacity: 0.042;
   background-image:
-    linear-gradient(rgba(212, 173, 84, 0.28) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(212, 173, 84, 0.28) 1px, transparent 1px);
+    linear-gradient(rgba(212, 173, 84, 0.30) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212, 173, 84, 0.30) 1px, transparent 1px);
   background-size: 64px 64px;
   mask-image: radial-gradient(ellipse 92% 72% at 50% 48%, #000 18%, transparent 76%);
   -webkit-mask-image: radial-gradient(ellipse 92% 72% at 50% 48%, #000 18%, transparent 76%);
@@ -267,27 +495,28 @@ img, svg { display: block; max-width: 100%; }
 .battlefield__noise {
   position: absolute;
   inset: 0;
-  opacity: 0.05;
+  opacity: 0.048;
   pointer-events: none;
   background:
     repeating-linear-gradient(
       0deg,
-      rgba(255, 255, 255, 0.035) 0,
-      rgba(255, 255, 255, 0.035) 1px,
+      rgba(255, 255, 255, 0.036) 0,
+      rgba(255, 255, 255, 0.036) 1px,
       transparent 1px,
       transparent 3px
     );
   mix-blend-mode: overlay;
 }
 
-/* ------------------------------------------------------------
-   5. LAUNCHER FRAME
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §05 — LAUNCHER FRAME
+   ═══════════════════════════════════════════════════════════════════════════ */
 .launcher {
   position: relative;
   z-index: 2;
   width: min(1480px, 100%);
   min-height: 100vh;
+  min-height: 100dvh;
   margin: 0 auto;
   padding: 26px clamp(22px, 4.6vw, 68px) 18px;
   display: grid;
@@ -295,9 +524,9 @@ img, svg { display: block; max-width: 100%; }
   gap: 18px;
 }
 
-/* ------------------------------------------------------------
-   6. TOP BAR
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §06 — TOPBAR
+   ═══════════════════════════════════════════════════════════════════════════ */
 .topbar {
   position: relative;
   min-height: 68px;
@@ -314,12 +543,27 @@ img, svg { display: block; max-width: 100%; }
   height: 1px;
   background: linear-gradient(90deg,
     transparent 0%,
-    rgba(212, 173, 84, 0.42) 12%,
+    rgba(212, 173, 84, 0.48) 12%,
     rgba(212, 173, 84, 0.10) 42%,
     transparent 62%);
   pointer-events: none;
 }
 
+.topbar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 92px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  filter: drop-shadow(0 0 6px rgba(212, 173, 84, 0.42));
+  pointer-events: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   BRAND
+   ───────────────────────────────────────────────────────────────────────── */
 .brand {
   display: flex;
   flex-direction: column;
@@ -345,41 +589,50 @@ img, svg { display: block; max-width: 100%; }
   line-height: 0.95;
   font-weight: 780;
   letter-spacing: -0.055em;
-  background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.76) 100%);
+  background: linear-gradient(180deg,
+    #ffffff 0%,
+    rgba(255, 255, 255, 0.86) 48%,
+    rgba(255, 255, 255, 0.68) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.42));
+  filter: drop-shadow(0 4px 22px rgba(0, 0, 0, 0.44));
 }
 
 .brand__title span {
-  background: linear-gradient(180deg, var(--gold-200) 0%, var(--gold-400) 100%);
+  background: linear-gradient(180deg,
+    var(--gold-100) 0%,
+    var(--gold-200) 30%,
+    var(--gold-400) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
-  filter: drop-shadow(0 0 18px rgba(212, 173, 84, 0.22));
+  filter: drop-shadow(0 0 22px rgba(212, 173, 84, 0.28));
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   TOPBAR ACTIONS
+   ───────────────────────────────────────────────────────────────────────── */
 .topbar__actions {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-/* ------------------------------------------------------------
-   7. CHIPS & ICON BUTTONS
-   ------------------------------------------------------------ */
+/* ─────────────────────────────────────────────────────────────────────────
+   STATUS CHIP & ICON BUTTONS
+   ───────────────────────────────────────────────────────────────────────── */
 .status-chip,
 .icon-button {
   height: 42px;
   border: 1px solid var(--line);
   background:
     linear-gradient(180deg,
-      rgba(255, 255, 255, 0.035) 0%,
+      rgba(255, 255, 255, 0.038) 0%,
       rgba(8, 11, 12, 0.58) 100%);
-  backdrop-filter: blur(22px) saturate(130%);
-  -webkit-backdrop-filter: blur(22px) saturate(130%);
+  backdrop-filter: blur(24px) saturate(130%);
+  -webkit-backdrop-filter: blur(24px) saturate(130%);
   border-radius: var(--radius-sm);
   box-shadow:
     var(--shadow-inset-hi),
@@ -435,7 +688,7 @@ img, svg { display: block; max-width: 100%; }
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 0%, rgba(212, 173, 84, 0.16), transparent 70%);
+  background: radial-gradient(circle at 50% 0%, rgba(212, 173, 84, 0.18), transparent 70%);
   opacity: 0;
   transition: opacity var(--dur-med) var(--ease-out);
   pointer-events: none;
@@ -477,9 +730,9 @@ img, svg { display: block; max-width: 100%; }
   stroke-linejoin: round;
 }
 
-/* ------------------------------------------------------------
-   8. HERO
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §07 — HERO
+   ═══════════════════════════════════════════════════════════════════════════ */
 .hero {
   min-height: 420px;
   display: grid;
@@ -534,8 +787,8 @@ img, svg { display: block; max-width: 100%; }
   white-space: nowrap;
   background: linear-gradient(180deg,
     #ffffff 0%,
-    rgba(255, 255, 255, 0.86) 40%,
-    rgba(255, 255, 255, 0.62) 100%);
+    rgba(255, 255, 255, 0.88) 42%,
+    rgba(255, 255, 255, 0.60) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -587,7 +840,7 @@ img, svg { display: block; max-width: 100%; }
   min-width: 128px;
   padding: 10px 14px;
   border-left: 1px solid var(--line-strong);
-  background: linear-gradient(90deg, rgba(10, 13, 14, 0.42), transparent 85%);
+  background: linear-gradient(90deg, rgba(10, 13, 14, 0.44), transparent 85%);
 }
 
 .meta-item::before {
@@ -599,6 +852,7 @@ img, svg { display: block; max-width: 100%; }
   height: 22%;
   background: var(--accent);
   opacity: 0.72;
+  filter: drop-shadow(0 0 4px rgba(212, 173, 84, 0.42));
 }
 
 .meta-item span,
@@ -622,9 +876,9 @@ img, svg { display: block; max-width: 100%; }
 .status-text--ready { color: var(--good); }
 .status-text--warning { color: var(--warn); }
 
-/* ------------------------------------------------------------
-   9. HERO ACTIONS
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §08 — HERO ACTIONS / BUTTON GRID
+   ═══════════════════════════════════════════════════════════════════════════ */
 .hero__actions {
   margin-top: 30px;
   display: grid;
@@ -637,6 +891,9 @@ img, svg { display: block; max-width: 100%; }
   max-width: 100%;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   PRIMARY PLAY BUTTON — layered gold with sheen
+   ───────────────────────────────────────────────────────────────────────── */
 .play-button {
   grid-area: auto;
   position: relative;
@@ -656,7 +913,7 @@ img, svg { display: block; max-width: 100%; }
       rgba(98, 78, 36, 0.34) 100%);
   box-shadow:
     inset 0 1px rgba(255, 255, 255, 0.12),
-    inset 0 -1px rgba(0, 0, 0, 0.32),
+    inset 0 -1px rgba(0, 0, 0, 0.34),
     0 12px 28px rgba(0, 0, 0, 0.26),
     0 0 0 1px rgba(212, 173, 84, 0.05);
   color: var(--text);
@@ -669,7 +926,7 @@ img, svg { display: block; max-width: 100%; }
     box-shadow var(--dur-med) var(--ease-out);
 }
 
-/* Sheen sweep on hover */
+/* Sheen sweep */
 .play-button::before {
   content: "";
   position: absolute;
@@ -685,13 +942,15 @@ img, svg { display: block; max-width: 100%; }
   z-index: 1;
 }
 
-/* Inner glow ring */
+/* Inner top glow */
 .play-button::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(255, 230, 170, 0.14), transparent 65%);
+  background: radial-gradient(ellipse 100% 60% at 50% 0%,
+    rgba(255, 230, 170, 0.14),
+    transparent 65%);
   opacity: 0;
   transition: opacity var(--dur-med) var(--ease-out);
   pointer-events: none;
@@ -705,13 +964,13 @@ img, svg { display: block; max-width: 100%; }
   transform: translateY(-2px);
   background:
     linear-gradient(135deg,
-      rgba(224, 186, 100, 0.34) 0%,
-      rgba(150, 118, 56, 0.40) 48%,
-      rgba(108, 86, 40, 0.42) 100%);
+      rgba(224, 186, 100, 0.36) 0%,
+      rgba(150, 118, 56, 0.42) 48%,
+      rgba(108, 86, 40, 0.44) 100%);
   border-color: rgba(236, 204, 130, 0.88);
   box-shadow:
     inset 0 1px rgba(255, 255, 255, 0.16),
-    inset 0 -1px rgba(0, 0, 0, 0.36),
+    inset 0 -1px rgba(0, 0, 0, 0.38),
     0 18px 40px rgba(0, 0, 0, 0.32),
     0 0 0 1px rgba(212, 173, 84, 0.14),
     0 0 44px rgba(212, 173, 84, 0.16);
@@ -755,6 +1014,9 @@ img, svg { display: block; max-width: 100%; }
   font-weight: 780;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   SECONDARY BUTTON
+   ───────────────────────────────────────────────────────────────────────── */
 .secondary-button {
   grid-area: auto;
   width: 148px;
@@ -792,6 +1054,9 @@ img, svg { display: block; max-width: 100%; }
     0 8px 18px rgba(0, 0, 0, 0.24);
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   HERO SETTINGS BUTTON — rotates on hover
+   ───────────────────────────────────────────────────────────────────────── */
 .hero-settings-button {
   grid-area: auto;
   width: 58px;
@@ -839,6 +1104,9 @@ img, svg { display: block; max-width: 100%; }
   transition: transform var(--dur-slow) var(--ease-spring);
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   HERO SOURCE LINK
+   ───────────────────────────────────────────────────────────────────────── */
 .hero-source-button {
   grid-area: auto;
   width: 108px;
@@ -899,10 +1167,11 @@ img, svg { display: block; max-width: 100%; }
   stroke-linejoin: round;
 }
 
-/* ------------------------------------------------------------
-   10. VERSION PANEL
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §09 — VERSION PANEL (legacy support)
+   ═══════════════════════════════════════════════════════════════════════════ */
 .version-panel {
+  position: relative;
   align-self: center;
   padding: 19px;
   border: 1px solid var(--line);
@@ -913,7 +1182,6 @@ img, svg { display: block; max-width: 100%; }
   box-shadow: var(--shadow-lg);
   backdrop-filter: blur(22px) saturate(120%);
   -webkit-backdrop-filter: blur(22px) saturate(120%);
-  position: relative;
   overflow: hidden;
 }
 
@@ -959,9 +1227,9 @@ img, svg { display: block; max-width: 100%; }
   line-height: 1.6;
 }
 
-/* ------------------------------------------------------------
-   11. PROFILE STRIP / MODES RAIL
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §10 — PROFILE STRIP / MODES RAIL
+   ═══════════════════════════════════════════════════════════════════════════ */
 .profile-strip {
   position: relative;
   display: grid;
@@ -1001,9 +1269,9 @@ img, svg { display: block; max-width: 100%; }
   z-index: 1;
 }
 
-/* ------------------------------------------------------------
-   12. MODE CARDS
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §11 — MODE CARDS
+   ═══════════════════════════════════════════════════════════════════════════ */
 .mode-card,
 .mode-card.is-active {
   position: relative;
@@ -1039,15 +1307,13 @@ img, svg { display: block; max-width: 100%; }
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(115deg, var(--accent-soft), transparent 52%);
+  background: linear-gradient(115deg, var(--accent-soft), transparent 52%);
   opacity: 0;
   transition: opacity var(--dur-med) var(--ease-out);
   pointer-events: none;
   z-index: 0;
 }
 
-/* Top edge shine — subtle glass refraction */
 .mode-card::after {
   content: "";
   position: absolute;
@@ -1158,12 +1424,12 @@ img, svg { display: block; max-width: 100%; }
 
 .mode-card[hidden] { display: none !important; }
 
-/* ------------------------------------------------------------
-   13. ADD MOD CARD / MOD HUB DOCK
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §12 — MOD HUB DOCK
+   ═══════════════════════════════════════════════════════════════════════════ */
 .mod-hub-dock {
   position: relative;
-  z-index: 20;
+  z-index: var(--z-dock);
   min-height: 85px;
   padding: 6px 0 9px 15px;
   display: flex;
@@ -1232,7 +1498,9 @@ img, svg { display: block; max-width: 100%; }
   border-color: var(--accent-hairline);
   background: rgba(24, 21, 14, 0.68);
   color: var(--text);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.24), 0 0 22px rgba(212, 173, 84, 0.08);
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.24),
+    0 0 22px rgba(212, 173, 84, 0.08);
 }
 
 .add-mod-card.has-attention {
@@ -1285,9 +1553,9 @@ img, svg { display: block; max-width: 100%; }
   50% { transform: scale(1.22); opacity: 0.78; }
 }
 
-/* ------------------------------------------------------------
-   14. FOOTER (hidden by default)
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §13 — FOOTER
+   ═══════════════════════════════════════════════════════════════════════════ */
 .footer {
   min-height: 34px;
   display: grid;
@@ -1304,7 +1572,9 @@ img, svg { display: block; max-width: 100%; }
 .footer span:last-child { text-align: right; }
 .footer__center { color: rgba(255, 255, 255, 0.44); }
 
-/* Clean presentation — technical info lives in Settings/Diagnostics */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §14 — CLEAN PRESENTATION (hide legacy elements)
+   ═══════════════════════════════════════════════════════════════════════════ */
 .brand__eyebrow,
 .status-chip,
 .hero__kicker,
@@ -1319,22 +1589,24 @@ img, svg { display: block; max-width: 100%; }
 
 .modal__header small { display: none; }
 
-/* ------------------------------------------------------------
-   15. TOAST
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §15 — TOAST NOTIFICATIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
 .toast {
   position: fixed;
   left: 50%;
   top: max(18px, env(safe-area-inset-top));
   bottom: auto;
-  z-index: 60;
+  z-index: var(--z-toast);
   min-width: min(420px, calc(100vw - 32px));
   max-width: min(620px, calc(100vw - 32px));
   padding: 13px 20px;
   transform: translate(-50%, -18px) scale(0.985);
   border: 1px solid rgba(212, 173, 84, 0.26);
   background:
-    linear-gradient(180deg, rgba(14, 17, 18, 0.96), rgba(8, 10, 10, 0.94));
+    linear-gradient(180deg,
+      rgba(14, 17, 18, 0.96) 0%,
+      rgba(8, 10, 10, 0.94) 100%);
   box-shadow:
     0 18px 56px rgba(0, 0, 0, 0.52),
     inset 0 1px rgba(255, 255, 255, 0.05),
@@ -1371,13 +1643,13 @@ img, svg { display: block; max-width: 100%; }
   box-shadow: 0 0 12px rgba(240, 209, 134, 0.42);
 }
 
-/* ------------------------------------------------------------
-   16. MODAL — full-screen pages
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §16 — MODAL / FULL-SCREEN PAGE
+   ═══════════════════════════════════════════════════════════════════════════ */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 30;
+  z-index: var(--z-modal);
   display: block;
   padding: 0;
   background: #06090a;
@@ -1416,16 +1688,19 @@ img, svg { display: block; max-width: 100%; }
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.03;
+  opacity: 0.032;
   mix-blend-mode: overlay;
   background-image:
-    radial-gradient(circle at 30% 40%, rgba(255, 255, 255, 0.7) 0.5px, transparent 1px),
-    radial-gradient(circle at 70% 72%, rgba(255, 255, 255, 0.5) 0.5px, transparent 1px);
+    radial-gradient(circle at 30% 40%, rgba(255, 255, 255, 0.72) 0.5px, transparent 1px),
+    radial-gradient(circle at 70% 72%, rgba(255, 255, 255, 0.55) 0.5px, transparent 1px);
   background-size: 3px 3px, 4px 4px;
 }
 
 .modal-backdrop.is-visible .modal { transform: translateX(0); }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   MODAL HEADER
+   ───────────────────────────────────────────────────────────────────────── */
 .modal__header {
   position: relative;
   top: auto;
@@ -1465,7 +1740,9 @@ img, svg { display: block; max-width: 100%; }
   font-size: clamp(25px, 3vw, 34px);
   letter-spacing: -0.04em;
   font-weight: 780;
-  background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.78) 100%);
+  background: linear-gradient(180deg,
+    #ffffff 0%,
+    rgba(255, 255, 255, 0.82) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -1534,9 +1811,9 @@ img, svg { display: block; max-width: 100%; }
   to { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
-/* ------------------------------------------------------------
-   17. PAGE HEADER ACTIONS
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §17 — PAGE HEADER ACTIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
 .page-header-action {
   min-height: 40px;
   padding: 0 14px;
@@ -1601,9 +1878,9 @@ img, svg { display: block; max-width: 100%; }
 
 .settings-actions { display: none !important; }
 
-/* ------------------------------------------------------------
-   18. SETTINGS
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §18 — SETTINGS / SECTIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
 .setting-section + .setting-section { margin-top: 23px; }
 
 .setting-section h3 {
@@ -1664,7 +1941,9 @@ img, svg { display: block; max-width: 100%; }
 
 .settings-tab.is-active {
   border-color: var(--accent-edge);
-  background: linear-gradient(135deg, rgba(212, 173, 84, 0.14), rgba(255, 255, 255, 0.025));
+  background: linear-gradient(135deg,
+    rgba(212, 173, 84, 0.14),
+    rgba(255, 255, 255, 0.025));
   color: var(--text);
   box-shadow:
     var(--shadow-inset-hi),
@@ -1691,12 +1970,14 @@ img, svg { display: block; max-width: 100%; }
 .settings-content { width: 100%; box-sizing: border-box; }
 
 .settings-content .setting-section {
+  position: relative;
   width: 100%;
   border: 1px solid rgba(255, 255, 255, 0.07);
   background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.16) 0%, rgba(0, 0, 0, 0.10) 100%);
+    linear-gradient(180deg,
+      rgba(0, 0, 0, 0.16) 0%,
+      rgba(0, 0, 0, 0.10) 100%);
   box-sizing: border-box;
-  position: relative;
   overflow: hidden;
 }
 
@@ -1707,7 +1988,9 @@ img, svg { display: block; max-width: 100%; }
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent 60%);
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, 0.08),
+    transparent 60%);
 }
 
 .settings-content .setting-section h3 {
@@ -1734,9 +2017,9 @@ img, svg { display: block; max-width: 100%; }
   justify-content: flex-end;
 }
 
-/* ------------------------------------------------------------
-   19. FORM CONTROLS
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §19 — FORM CONTROLS
+   ═══════════════════════════════════════════════════════════════════════════ */
 .segment-control {
   display: flex;
   flex-wrap: wrap;
@@ -1838,9 +2121,9 @@ img, svg { display: block; max-width: 100%; }
   font-variant-numeric: tabular-nums;
 }
 
-/* ------------------------------------------------------------
-   20. MOD LIBRARY
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §20 — MOD LIBRARY
+   ═══════════════════════════════════════════════════════════════════════════ */
 .mod-library {
   width: 100%;
   max-width: none;
@@ -1876,7 +2159,9 @@ img, svg { display: block; max-width: 100%; }
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.085);
   background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.22) 0%, rgba(0, 0, 0, 0.14) 100%);
+    linear-gradient(180deg,
+      rgba(0, 0, 0, 0.22) 0%,
+      rgba(0, 0, 0, 0.14) 100%);
   box-sizing: border-box;
   transition:
     border-color var(--dur-fast) var(--ease-out),
@@ -1891,14 +2176,18 @@ img, svg { display: block; max-width: 100%; }
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.10), transparent 55%);
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, 0.10),
+    transparent 55%);
   pointer-events: none;
 }
 
 .mod-library-card:hover {
   border-color: rgba(255, 255, 255, 0.14);
   background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.26) 0%, rgba(0, 0, 0, 0.16) 100%);
+    linear-gradient(180deg,
+      rgba(0, 0, 0, 0.26) 0%,
+      rgba(0, 0, 0, 0.16) 100%);
   box-shadow:
     var(--shadow-sm),
     inset 0 1px rgba(255, 255, 255, 0.03);
@@ -1989,7 +2278,9 @@ img, svg { display: block; max-width: 100%; }
   text-decoration: none;
   font-size: 10px;
   font-weight: 700;
-  transition: color var(--dur-fast) var(--ease-out), text-shadow var(--dur-fast) var(--ease-out);
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    text-shadow var(--dur-fast) var(--ease-out);
 }
 
 .mod-author-link:hover {
@@ -2157,9 +2448,9 @@ img, svg { display: block; max-width: 100%; }
   font-size: inherit !important;
 }
 
-/* ------------------------------------------------------------
-   21. DOWNLOAD PANEL
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §21 — DOWNLOAD PANEL
+   ═══════════════════════════════════════════════════════════════════════════ */
 .mod-download-panel {
   position: relative;
   padding: 13px 18px 15px;
@@ -2265,9 +2556,9 @@ img, svg { display: block; max-width: 100%; }
   background: rgba(176, 65, 54, 0.12);
 }
 
-/* ------------------------------------------------------------
-   22. DIAGNOSTICS
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §22 — DIAGNOSTICS
+   ═══════════════════════════════════════════════════════════════════════════ */
 .diagnostics-page { width: 100%; box-sizing: border-box; }
 
 .diagnostics-note {
@@ -2334,7 +2625,9 @@ img, svg { display: block; max-width: 100%; }
   padding: 16px;
   border: 1px solid rgba(255, 255, 255, 0.075);
   background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.32) 0%, rgba(0, 0, 0, 0.22) 100%);
+    linear-gradient(180deg,
+      rgba(0, 0, 0, 0.32) 0%,
+      rgba(0, 0, 0, 0.22) 100%);
   color: rgba(228, 233, 224, 0.74);
   font: 11px/1.78 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   white-space: pre-line;
@@ -2349,17 +2642,19 @@ img, svg { display: block; max-width: 100%; }
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, rgba(212, 173, 84, 0.24), transparent 55%);
+  background: linear-gradient(90deg,
+    rgba(212, 173, 84, 0.24),
+    transparent 55%);
   pointer-events: none;
 }
 
-/* ------------------------------------------------------------
-   23. CONFIRM DIALOG
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §23 — CONFIRM DIALOG
+   ═══════════════════════════════════════════════════════════════════════════ */
 .confirm-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 70;
+  z-index: var(--z-confirm);
   display: grid;
   place-items: center;
   padding: 24px;
@@ -2503,9 +2798,9 @@ img, svg { display: block; max-width: 100%; }
   box-shadow: 0 0 24px rgba(215, 104, 89, 0.18);
 }
 
-/* ------------------------------------------------------------
-   24. MOTION / PRESS FEEDBACK
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §24 — MOTION & PRESS FEEDBACK
+   ═══════════════════════════════════════════════════════════════════════════ */
 .hero h1,
 .hero p {
   transition:
@@ -2554,9 +2849,9 @@ img, svg { display: block; max-width: 100%; }
 .icon-button.is-muted { color: rgba(255, 255, 255, 0.32); }
 .icon-button.is-muted svg { opacity: 0.55; }
 
-/* ------------------------------------------------------------
-   25. DOWNLOAD BORDER SWEEP (profile cards)
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §25 — DOWNLOAD BORDER SWEEP (profile cards)
+   ═══════════════════════════════════════════════════════════════════════════ */
 .mode-card.is-downloading .mode-card__content { padding-right: 54px; }
 
 .mode-card__download-percent {
@@ -2624,7 +2919,6 @@ img, svg { display: block; max-width: 100%; }
   to { transform: translateZ(0) rotate(360deg); }
 }
 
-/* Pending-install tactical grid */
 .mode-card.is-download-pending::before {
   opacity: 1;
   background:
@@ -2642,7 +2936,6 @@ img, svg { display: block; max-width: 100%; }
   background-size: auto, 18px 18px, 18px 18px;
 }
 
-/* Completion flash */
 .mode-card.is-download-complete::after {
   content: "";
   position: absolute;
@@ -2672,9 +2965,9 @@ img, svg { display: block; max-width: 100%; }
   100% { opacity: 0; }
 }
 
-/* ------------------------------------------------------------
-   26. REORDER MODE
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §26 — REORDER MODE
+   ═══════════════════════════════════════════════════════════════════════════ */
 .profile-order-toggle.is-active {
   border-color: rgba(212, 173, 84, 0.55);
   background: rgba(212, 173, 84, 0.12);
@@ -2755,7 +3048,7 @@ img, svg { display: block; max-width: 100%; }
   position: fixed !important;
   left: var(--reorder-left) !important;
   top: var(--reorder-top) !important;
-  z-index: 100 !important;
+  z-index: var(--z-floating) !important;
   width: var(--reorder-width) !important;
   height: var(--reorder-height) !important;
   min-width: 0 !important;
@@ -2775,9 +3068,9 @@ img, svg { display: block; max-width: 100%; }
 
 .mode-card.is-reorder-floating .profile-order-grip { display: grid; }
 
-/* ------------------------------------------------------------
-   27. MOD HUB HEADER CONTROLS
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §27 — MOD HUB HEADER CONTROLS
+   ═══════════════════════════════════════════════════════════════════════════ */
 .mod-channel-control--header { flex-wrap: nowrap; }
 
 .mod-channel-control--header button {
@@ -2826,9 +3119,9 @@ img, svg { display: block; max-width: 100%; }
   to { transform: rotate(360deg); }
 }
 
-/* ------------------------------------------------------------
-   28. RESPONSIVE
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §28 — RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 980px) {
   :root { --tile: 620px; }
 
@@ -3001,9 +3294,9 @@ img, svg { display: block; max-width: 100%; }
   }
 }
 
-/* ------------------------------------------------------------
-   29. REDUCED MOTION
-   ------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   §29 — REDUCED MOTION
+   ═══════════════════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
   .battlefield__tile { animation: none !important; }
 
@@ -3024,3 +3317,24 @@ img, svg { display: block; max-width: 100%; }
   .mod-download-track span::after { animation: none; }
   .play-button::before { display: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §30 — PRINT
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media print {
+  .battlefield,
+  .toast,
+  .modal-backdrop,
+  .confirm-backdrop { display: none !important; }
+
+  body,
+  .app-shell,
+  .launcher {
+    background: #fff !important;
+    color: #000 !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   END OF STYLESHEET — GENERALS X · COMMAND PROTOCOL
+   ═══════════════════════════════════════════════════════════════════════════ */
