@@ -8,7 +8,6 @@
 
 #include <SDL3/SDL.h>
 
-namespace {
 constexpr NSTimeInterval kIdleBeforeFade = 3.0;
 constexpr NSTimeInterval kFadeDuration = 2.0;
 constexpr NSTimeInterval kShowDuration = 0.20;
@@ -26,6 +25,12 @@ constexpr NSTimeInterval kShowDuration = 0.20;
 @property(nonatomic, strong) NSTimer *idleTimer;
 @property(nonatomic, assign) SDL_Window *sdlWindow;
 @property(nonatomic, assign) BOOL shuttingDown;
+
+- (void)showAndRestartIdleTimer;
+- (void)scheduleIdleFade;
+- (void)beginIdleFade:(NSTimer *)timer;
+- (void)escPressed:(id)sender;
+- (void)shutdown;
 @end
 
 static UIWindow *s_overlayWindow = nil;
