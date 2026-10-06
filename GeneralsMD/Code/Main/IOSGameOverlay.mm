@@ -1,4 +1,9 @@
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
 #import <UIKit/UIKit.h>
+#import <QuartzCore/QuartzCore.h>
+#include <dispatch/dispatch.h>
 #include <SDL3/SDL.h>
 
 #include "IOSGameOverlay.h"
@@ -9,173 +14,186 @@ static UIButton *s_escButton = nil;
 static SDL_Window *s_sdlWindow = nullptr;
 static SDL_WindowID s_windowID = 0;
 static id s_keyWindowObserver = nil;
-static BOOL s_escInitialFadeScheduled = NO;
-static NSUInteger s_escFadeGeneration = 0;
+static bool s_eventWatchInstalled = false;
+static NSUInteger s_activityGeneration = 0;
+
+static constexpr NSTimeInterval kIdleBeforeFade = 3.0;
+static constexpr NSTimeInterval kFadeDuration = 2.0;
+static constexpr NSTimeInterval kShowDuration = 0.20;
+
+@interface GXEscButton : UIButton
+@end
 
 static UIWindow *GXFindSDLWindow(void)
 {
     if (s_sdlWindow != nullptr) {
         SDL_PropertiesID props = SDL_GetWindowProperties(s_sdlWindow);
         if (props != 0) {
-            UIWindow *uiWindow =
-                (__bridge UIWindow *)SDL_GetPointerProperty(
-                    props,
-                    SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER,
-                    nullptr);
-            if (uiWindow != nil && !uiWindow.hidden) {
-                return uiWindow;
-            }
+            UIWindow *window = (__bridge UIWindow *)SDL_GetPointerProperty(
+                props, SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER, nullptr);
+            if (window != nil && !window.hidden)
+                return window;
         }
     }
 
-    UIApplication *application = UIApplication.sharedApplication;
-
-    for (UIScene *scene in application.connectedScenes) {
-        if (![scene isKindOfClass:[UIWindowScene class]]) {
+    for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+        if (![scene isKindOfClass:[UIWindowScene class]])
             continue;
-        }
-
         UIWindowScene *windowScene = (UIWindowScene *)scene;
         if (windowScene.activationState != UISceneActivationStateForegroundActive &&
-            windowScene.activationState != UISceneActivationStateForegroundInactive) {
+            windowScene.activationState != UISceneActivationStateForegroundInactive)
             continue;
-        }
-
         for (UIWindow *window in windowScene.windows) {
-            if (window.isKeyWindow && !window.hidden) {
+            if (window.isKeyWindow && !window.hidden)
                 return window;
-            }
         }
     }
-
     return nil;
 }
 
 static void GXPushEscapeEvent(bool down)
 {
+    if (s_windowID == 0)
+        return;
+
     SDL_Event event;
     SDL_zero(event);
-
     event.type = down ? SDL_EVENT_KEY_DOWN : SDL_EVENT_KEY_UP;
+    event.key.timestamp = SDL_GetTicksNS();
     event.key.windowID = s_windowID;
-    event.key.which = 0;
     event.key.scancode = SDL_SCANCODE_ESCAPE;
     event.key.key = SDLK_ESCAPE;
     event.key.mod = SDL_KMOD_NONE;
     event.key.raw = 0;
     event.key.down = down;
     event.key.repeat = false;
-
     SDL_PushEvent(&event);
 }
 
-static void GXShowEscButton(void)
+static void GXFadeEscButton(void)
 {
-    if (s_escButton == nil) {
+    if (s_escButton == nil)
         return;
-    }
 
-    // Stop the 3-second hide animation and bring ESC back visually.
-    // The UIButton itself is never hidden or disabled, so even at alpha 0
-    // the same hit area remains available for the next tap.
-    [s_escButton.layer removeAllAnimations];
-    [s_escButton.superview.layer removeAllAnimations];
-
-    s_escButton.hidden = NO;
-    s_escButton.userInteractionEnabled = YES;
-
-    [UIView animateWithDuration:0.25
-                          delay:0.0
-                        options:UIViewAnimationOptionBeginFromCurrentState |
-                                UIViewAnimationOptionAllowUserInteraction |
-                                UIViewAnimationOptionCurveEaseOut
-                     animations:^{
-        s_escButton.alpha = 1.0;
-        s_escButton.layer.opacity = 1.0;
-    }
-                     completion:nil];
-}
-
-static void GXFadeEscButtonAfterUse(void)
-{
-    if (s_escButton == nil) {
-        return;
-    }
-
-    // Keep the control alive and hittable. Only its visual opacity changes.
-    [UIView animateWithDuration:3.0
+    [UIView animateWithDuration:kFadeDuration
                           delay:0.0
                         options:UIViewAnimationOptionBeginFromCurrentState |
                                 UIViewAnimationOptionAllowUserInteraction |
                                 UIViewAnimationOptionCurveEaseInOut
                      animations:^{
         s_escButton.alpha = 0.0;
-        s_escButton.layer.opacity = 0.0;
-    }
-                     completion:nil];
+    } completion:nil];
 }
 
-@interface GXEscButton : UIButton
-@end
+static void GXScheduleIdleFade(void)
+{
+    const NSUInteger generation = ++s_activityGeneration;
+    dispatch_after(
+        dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kIdleBeforeFade * NSEC_PER_SEC)),
+        dispatch_get_main_queue(), ^{
+            if (s_windowID != 0 && s_escButton != nil &&
+                generation == s_activityGeneration) {
+                GXFadeEscButton();
+            }
+        });
+}
+
+static void GXShowEscButtonAndRestartTimer(void)
+{
+    if (s_escButton == nil)
+        return;
+
+    ++s_activityGeneration;
+    [s_escButton.layer removeAllAnimations];
+    s_escButton.hidden = NO;
+    s_escButton.userInteractionEnabled = YES;
+
+    [UIView animateWithDuration:kShowDuration
+                          delay:0.0
+                        options:UIViewAnimationOptionBeginFromCurrentState |
+                                UIViewAnimationOptionAllowUserInteraction |
+                                UIViewAnimationOptionCurveEaseOut
+                     animations:^{
+        s_escButton.alpha = 1.0;
+    } completion:nil];
+
+    GXScheduleIdleFade();
+}
+
+static bool SDLCALL GXEscSDLActivityWatch(void *, SDL_Event *event)
+{
+    if (event == nullptr || s_windowID == 0)
+        return true;
+
+    bool activity = false;
+    SDL_WindowID eventWindow = 0;
+
+    switch (event->type) {
+        case SDL_EVENT_FINGER_DOWN:
+        case SDL_EVENT_FINGER_MOTION:
+        case SDL_EVENT_FINGER_UP:
+        case SDL_EVENT_FINGER_CANCELED:
+            eventWindow = event->tfinger.windowID;
+            activity = true;
+            break;
+        case SDL_EVENT_MOUSE_MOTION:
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        case SDL_EVENT_MOUSE_BUTTON_UP:
+        case SDL_EVENT_MOUSE_WHEEL:
+            eventWindow = event->motion.windowID;
+            activity = true;
+            break;
+        case SDL_EVENT_KEY_DOWN:
+        case SDL_EVENT_KEY_UP:
+            eventWindow = event->key.windowID;
+            activity = true;
+            break;
+        default:
+            break;
+    }
+
+    if (activity && (eventWindow == 0 || eventWindow == s_windowID)) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (s_windowID != 0 && s_escButton != nil)
+                GXShowEscButtonAndRestartTimer();
+        });
+    }
+    return true;
+}
 
 @implementation GXEscButton
 
-// UIKit normally stops hit-testing a view whose effective alpha is <= 0.01.
-// ESC must remain clickable even when its visual opacity has faded to 0%,
-// so bypass that alpha check and keep the same 50x50 touch target alive.
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
 {
-    if (self.hidden || !self.userInteractionEnabled) {
+    if (self.hidden || !self.userInteractionEnabled)
         return nil;
-    }
-
-    if ([self pointInside:point withEvent:event]) {
-        return self;
-    }
-
-    return nil;
+    return [self pointInside:point withEvent:event] ? self : nil;
 }
 
 - (void)escTouchDown:(UIButton *)sender
 {
     (void)sender;
-
-    // Any real ESC press cancels the initial idle-fade timer and
-    // starts the required 0% -> 100% visual reveal.
-    ++s_escFadeGeneration;
-    GXShowEscButton();
-
-    // Do not change alpha here: GXShowEscButton() is the visual 0% -> 100% reveal.
-    // The touch target stays active throughout the animation.
+    GXShowEscButtonAndRestartTimer();
     GXPushEscapeEvent(true);
 }
 
 - (void)escTouchUp:(UIButton *)sender
 {
     (void)sender;
-
-    self.layer.opacity = 1.0;
-    self.alpha = 1.0;
+    GXShowEscButtonAndRestartTimer();
     GXPushEscapeEvent(false);
-
-    // After every real ESC use, fade only the visual appearance
-    // 100% -> 0% over exactly 3 seconds. The hit target remains active.
-    GXFadeEscButtonAfterUse();
 }
 
 @end
 
 static void GXAttachEscButtonToSDLWindow(void)
 {
-    if (s_windowID == 0) {
+    if (s_windowID == 0)
         return;
-    }
 
     UIWindow *hostWindow = GXFindSDLWindow();
-    if (hostWindow == nil) {
-        fprintf(stderr, "WARNING: iOS ESC overlay: SDL UIKit window is not ready yet\n");
+    if (hostWindow == nil)
         return;
-    }
 
     const CGFloat buttonSize = 50.0;
     const CGFloat left = 5.0;
@@ -188,12 +206,10 @@ static void GXAttachEscButtonToSDLWindow(void)
         button.layer.borderWidth = 1.25;
         button.layer.cornerRadius = 2.0;
         button.clipsToBounds = YES;
-
         [button setTitle:@"ESC" forState:UIControlStateNormal];
         [button setTitleColor:[UIColor colorWithWhite:1.0 alpha:0.92]
                      forState:UIControlStateNormal];
-        button.titleLabel.font =
-            [UIFont systemFontOfSize:14.0 weight:UIFontWeightSemibold];
+        button.titleLabel.font = [UIFont systemFontOfSize:14.0 weight:UIFontWeightSemibold];
         button.accessibilityLabel = @"Escape";
         button.accessibilityTraits = UIAccessibilityTraitButton;
         [button addTarget:button action:@selector(escTouchDown:)
@@ -202,84 +218,52 @@ static void GXAttachEscButtonToSDLWindow(void)
          forControlEvents:UIControlEventTouchUpInside |
                          UIControlEventTouchUpOutside |
                          UIControlEventTouchCancel];
-        button.autoresizingMask =
-            UIViewAutoresizingFlexibleRightMargin |
-            UIViewAutoresizingFlexibleBottomMargin;
-
         s_escButton = button;
-        s_escButton.alpha = 1.0;
-        s_escButton.layer.opacity = 1.0;
         s_escButton.userInteractionEnabled = YES;
         s_escButton.multipleTouchEnabled = NO;
     }
 
     s_escButton.frame = CGRectMake(left, top, buttonSize, buttonSize);
-
     if (s_escButton.superview != hostWindow) {
         [s_escButton removeFromSuperview];
         [hostWindow addSubview:s_escButton];
     }
-
     [hostWindow bringSubviewToFront:s_escButton];
 
-    // The button always starts a new game session at 100% visual opacity.
-    // The only automatic change is the single initial 3-second idle fade above.
-    if (!s_escInitialFadeScheduled) {
+    if (s_activityGeneration == 0) {
         s_escButton.alpha = 1.0;
-        s_escButton.layer.opacity = 1.0;
+        GXScheduleIdleFade();
     }
 
-    // Start the initial idle cycle exactly once per game session:
-    // ESC is fully visible for 3 seconds, then only its visual opacity
-    // fades from 100% to 0%. The button remains hit-testable at 0%.
-    if (!s_escInitialFadeScheduled) {
-        s_escInitialFadeScheduled = YES;
-        const NSUInteger fadeGeneration = s_escFadeGeneration;
-
-        dispatch_after(
-            dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)),
-            dispatch_get_main_queue(), ^{
-                // If ESC was pressed during the first 3 seconds, that press
-                // owns the visibility cycle and this initial fade is cancelled.
-                if (s_windowID != 0 &&
-                    s_escButton != nil &&
-                    fadeGeneration == s_escFadeGeneration) {
-                    GXFadeEscButtonAfterUse();
-                }
-            });
-    }
-
-    fprintf(stderr,
-            "INFO: iOS in-game ESC overlay attached to SDL UIWindow at x=%.0f y=%.0f size=%.0fx%.0f\n",
-            left, top, buttonSize, buttonSize);
+    fprintf(stderr, "INFO: iOS in-game ESC overlay attached at x=%.0f y=%.0f size=%.0f\n",
+            left, top, buttonSize);
 }
 
 extern "C" void GeneralsXInstallIOSEscOverlay(SDL_Window *window)
 {
-    if (window == nullptr) {
+    if (window == nullptr)
         return;
-    }
 
     s_sdlWindow = window;
     s_windowID = SDL_GetWindowID(window);
 
+    if (!s_eventWatchInstalled) {
+        s_eventWatchInstalled = SDL_AddEventWatch(GXEscSDLActivityWatch, nullptr);
+        if (!s_eventWatchInstalled)
+            fprintf(stderr, "WARNING: iOS ESC overlay: SDL event watch install failed: %s\n",
+                    SDL_GetError());
+    }
+
     dispatch_async(dispatch_get_main_queue(), ^{
         GXAttachEscButtonToSDLWindow();
 
-        // SDL/iOS can finish exposing the UIKit window one run-loop turn later.
-        // Retry briefly so the control cannot accidentally attach to the launcher
-        // window before the actual game window is ready.
         const double delays[] = {0.10, 0.30, 0.75, 1.50};
-        const size_t delayCount = sizeof(delays) / sizeof(delays[0]);
-
-        for (size_t i = 0; i < delayCount; ++i) {
-            const double delay = delays[i];
+        for (double delay : delays) {
             dispatch_after(
                 dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)),
                 dispatch_get_main_queue(), ^{
-                    if (s_windowID != 0) {
+                    if (s_windowID != 0)
                         GXAttachEscButtonToSDLWindow();
-                    }
                 });
         }
 
@@ -289,11 +273,9 @@ extern "C" void GeneralsXInstallIOSEscOverlay(SDL_Window *window)
                     addObserverForName:UIWindowDidBecomeKeyNotification
                                 object:nil
                                  queue:[NSOperationQueue mainQueue]
-                            usingBlock:^(NSNotification *note) {
-                (void)note;
-                if (s_windowID != 0) {
+                            usingBlock:^(NSNotification *) {
+                if (s_windowID != 0)
                     GXAttachEscButtonToSDLWindow();
-                }
             }];
         }
     });
@@ -302,10 +284,16 @@ extern "C" void GeneralsXInstallIOSEscOverlay(SDL_Window *window)
 extern "C" void GeneralsXRemoveIOSEscOverlay(void)
 {
     dispatch_async(dispatch_get_main_queue(), ^{
+        ++s_activityGeneration;
+
         if (s_keyWindowObserver != nil) {
-            [[NSNotificationCenter defaultCenter]
-                removeObserver:s_keyWindowObserver];
+            [[NSNotificationCenter defaultCenter] removeObserver:s_keyWindowObserver];
             s_keyWindowObserver = nil;
+        }
+
+        if (s_eventWatchInstalled) {
+            SDL_RemoveEventWatch(GXEscSDLActivityWatch, nullptr);
+            s_eventWatchInstalled = false;
         }
 
         if (s_escButton != nil) {
@@ -316,8 +304,7 @@ extern "C" void GeneralsXRemoveIOSEscOverlay(void)
 
         s_sdlWindow = nullptr;
         s_windowID = 0;
-        s_escInitialFadeScheduled = NO;
-        s_escFadeGeneration = 0;
+        s_activityGeneration = 0;
     });
 }
 
