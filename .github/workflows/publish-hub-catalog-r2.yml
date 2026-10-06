@@ -6,8 +6,10 @@ on:
     branches:
       - main
       - feature/generals-hub-online
+      - a13-ios-build
     paths:
       - 'ios/hub/HubCatalog.json'
+      - 'launcher_web/**'
       - '.github/workflows/publish-hub-catalog-r2.yml'
 
 permissions:
@@ -50,6 +52,32 @@ jobs:
       - name: Install AWS CLI
         if: steps.r2.outputs.enabled == 'true'
         run: python3 -m pip install --disable-pip-version-check awscli
+
+      - name: Install AWS CLI
+        if: steps.r2.outputs.enabled == 'true'
+        run: python3 -m pip install --disable-pip-version-check awscli
+
+      - name: Publish web launcher to R2
+        if: steps.r2.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          for channel in stable beta; do
+            DEST="s3://${R2_BUCKET}/launcher/${channel}"
+            aws s3 sync launcher_web "${DEST}" \
+              --endpoint-url "https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+              --region auto \
+              --delete \
+              --exclude '*.html' --exclude '*.js' --exclude '*.css' --exclude 'README.md' \
+              --cache-control 'public,max-age=86400' \
+              --no-progress
+            for name in index.html app.js styles.css; do
+              aws s3 cp "launcher_web/${name}" "${DEST}/${name}" \
+                --endpoint-url "https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+                --region auto \
+                --cache-control 'no-cache, no-store, must-revalidate' \
+                --no-progress
+            done
+          done
 
       - name: Upload catalog
         if: steps.r2.outputs.enabled == 'true'
