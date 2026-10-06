@@ -13,6 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 FOUNDATION_EXPORT NSString *GXHubModsRootPath(void);
 FOUNDATION_EXPORT NSString *GXHubInstalledProfilePath(NSString *profileId);
 FOUNDATION_EXPORT BOOL GXHubProfileInstalled(NSString *profileId);
+FOUNDATION_EXPORT NSDictionary<NSString *, id> *GXHubProfileIntegrity(NSString *profileId);
 FOUNDATION_EXPORT NSDictionary<NSString *, id> * _Nullable GXHubInstalledManifest(NSString *profileId);
 FOUNDATION_EXPORT NSString *GXHubCatalogChannel(void);
 FOUNDATION_EXPORT void GXHubSetCatalogChannel(NSString *channel);
