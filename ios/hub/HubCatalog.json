@@ -1,18 +1,18 @@
 {
   "schemaVersion": 2,
-  "catalogVersion": 43,
+  "catalogVersion": 55,
   "defaultChannel": "stable",
   "remoteCatalogURL": "https://pub-08941af8fe30421ba31f2314049303cb.r2.dev/catalog.json",
   "hub": {
     "name": "Generals Hub",
     "channels": {
       "stable": {
-        "version": "1.4.11",
-        "build": 37433558031,
-        "packageURL": "https://pub-08941af8fe30421ba31f2314049303cb.r2.dev/hub/stable/1.4.11/GeneralsZH-Hub-Online-unsigned.ipa",
-        "sha256": "033b298c0303382d2aa89d65dfe6ba9e1212f2b8598dac01c8e4f209371df509",
-        "packageBytes": 49324757,
-        "releaseNotes": "Fix generic catalog profile launching so installed Contra 007 and future catalog mods can start. Diagnostics now list all installed Hub mods. Preserve the original 32-bit Windows BitFlags CRC width on 64-bit Apple builds to improve Generals Online retail CRC parity."
+        "version": "1.4.14",
+        "build": 37462006010,
+        "packageURL": "https://pub-08941af8fe30421ba31f2314049303cb.r2.dev/hub/stable/1.4.14/GeneralsZH-Hub-Online-unsigned.ipa",
+        "sha256": "c1d37693f82e21656e7688631a380e90c3be584c18d9d37fc286a55086b22e88",
+        "packageBytes": 49324408,
+        "releaseNotes": "Fix Hub version compatibility checks to use the installed bundle version and support catalog-driven launcher profiles including Contra 009."
       },
       "beta": {
         "version": "0.1.0",
@@ -68,7 +68,9 @@
           "minHubVersion": "0.1.0",
           "releaseNotes": "No newer beta is published yet."
         }
-      }
+      },
+      "author": "Acoustic Alpha",
+      "sourceURL": "https://www.moddb.com/mods/cc-generals-zero-hour-enhanced"
     },
     {
       "profileId": "contra-x",
@@ -91,7 +93,9 @@
           "minHubVersion": "0.1.0",
           "releaseNotes": "No newer beta is published yet."
         }
-      }
+      },
+      "author": "Contra Mod Team",
+      "sourceURL": "https://www.moddb.com/mods/contra"
     },
     {
       "profileId": "contra-007",
@@ -99,12 +103,12 @@
       "description": "Classic Contra 0.07 with official Fixed AI and Map Fix patches.",
       "channels": {
         "stable": {
-          "version": "0.07+FixedAI+MapFix",
-          "packageURL": "https://pub-08941af8fe30421ba31f2314049303cb.r2.dev/mods/contra-007/stable/0.07+FixedAI+MapFix.gxmod",
-          "sha256": "e10f9902ab267bb05ab249ac27dc9d7ab4f1bed3f47e4f2f5870d4a5d7421ae7",
+          "version": "0.07+FixedAI2+MapFix",
+          "packageURL": "https://pub-08941af8fe30421ba31f2314049303cb.r2.dev/mods/contra-007/stable/0.07+FixedAI2+MapFix.gxmod",
+          "sha256": "48d7c594d3bb21e04e65e801151c5054123b22554cec41f23089fcc613c461d1",
           "packageBytes": 296867840,
-          "minHubVersion": "1.4.11",
-          "releaseNotes": "Contra 0.07 with official Fixed AI and Map Fix patches. English profile."
+          "minHubVersion": "1.4.12",
+          "releaseNotes": "Fixed AI and MapCache patches are now loaded from the active Contra 007 mod profile."
         },
         "beta": {
           "version": "0.07+FixedAI+MapFix",
@@ -114,18 +118,45 @@
           "minHubVersion": "1.4.11",
           "releaseNotes": "No newer beta is published yet."
         }
+      },
+      "author": "Contra Mod Team",
+      "sourceURL": "https://www.moddb.com/mods/contra/downloads/contra-007"
+    },
+    {
+      "profileId": "contra-009",
+      "name": "Contra 009",
+      "description": "Contra 009 Final with Patch 1-3 and official Patch 3 Hotfix 1-4. English Legacy text, English unit voices and Contra music.",
+      "author": "Contra Mod Team",
+      "sourceURL": "https://www.moddb.com/mods/contra",
+      "channels": {
+        "stable": {
+          "version": "009-Final+P3-HF4",
+          "packageURL": "https://pub-08941af8fe30421ba31f2314049303cb.r2.dev/mods/contra-009/stable/009-Final+P3-HF4.gxmod",
+          "sha256": "f149f647ea8476322dca33633e5f746b5c31a5a3fb4f950884bdc109ee85366c",
+          "packageBytes": 2111344640,
+          "minHubVersion": "1.4.13",
+          "releaseNotes": "Contra 009 Final + Patch 1-3 + official Patch 3 Hotfix 1-4. English Legacy text, English unit voices, Contra music."
+        },
+        "beta": {
+          "version": "009-Final+P3-HF4",
+          "packageURL": "",
+          "sha256": "",
+          "packageBytes": 0,
+          "minHubVersion": "1.4.13",
+          "releaseNotes": "No newer beta is published yet."
+        }
       }
     }
   ],
-  "updatedAt": "2026-10-06T08:21:37Z",
+  "updatedAt": "2026-10-06T14:10:12Z",
   "launcherWeb": {
     "stable": {
-      "version": "0.2.0-web.9",
+      "version": "0.2.0-web.12",
       "indexURL": "https://pub-08941af8fe30421ba31f2314049303cb.r2.dev/launcher/stable/index.html",
       "bridgeSchema": 6
     },
     "beta": {
-      "version": "0.2.0-web.9",
+      "version": "0.2.0-web.12",
       "indexURL": "https://pub-08941af8fe30421ba31f2314049303cb.r2.dev/launcher/beta/index.html",
       "bridgeSchema": 6
     }
