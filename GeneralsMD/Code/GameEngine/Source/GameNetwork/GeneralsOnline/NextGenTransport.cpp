@@ -6,6 +6,7 @@
 
 #include "GameNetwork/GeneralsOnline/NGMP_include.h"
 #include "GameNetwork/GeneralsOnline/NGMP_interfaces.h"
+#include "GameNetwork/GeneralsOnline/NetworkMesh.h"
 #include <steam/steamnetworkingtypes.h>
 #include "GameNetwork/GeneralsOnline/PluginInterfaces.h"
 
@@ -81,6 +82,12 @@ Bool NextGenTransport::update(void)
 
 Bool NextGenTransport::doRecv(void)
 {
+    // ConnectionManager::liteupdate() calls doRecv()/doSend() directly during the
+    // blocking map-transfer loop, bypassing NGMP_OnlineServicesManager::Tick().
+    // Pump Steam callbacks here so ClosedByPeer/ProblemDetectedLocally is handled
+    // immediately and native ICE/STUN work cannot linger on stale connections.
+    NetworkMeshLibrary::Tick();
+
     bool bRet = FALSE;
     int numRead = 0;
 
