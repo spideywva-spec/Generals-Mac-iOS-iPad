@@ -43,6 +43,9 @@
 #include "StdDevice/Common/StdLocalFileSystem.h"
 #include "StdDevice/Common/StdBIGFileSystem.h"
 #include "Common/GlobalData.h"
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+#include "SDL3Device/IOSGameOverlay.h"
+#endif
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 #include <cstdio>
@@ -683,6 +686,9 @@ SDL3GameEngine::SDL3GameEngine()
 
 SDL3GameEngine::~SDL3GameEngine()
 {
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+	IOSGameOverlayShutdown();
+#endif
 	if (m_SDLWindow && m_IsTextInputActive) {
 		SDL_StopTextInput(m_SDLWindow);
 		m_IsTextInputActive = false;
@@ -722,6 +728,7 @@ void SDL3GameEngine::init(void)
 
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 	SDL_AddEventWatch(iosLifecycleWatcher, nullptr);
+	IOSGameOverlayInit(m_SDLWindow);
 #endif
 
 	fprintf(stderr, "INFO: SDL3GameEngine using pre-initialized window\n");
@@ -776,6 +783,22 @@ void SDL3GameEngine::pollSDL3Events(void)
 
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+		if (event.type == SDL_EVENT_FINGER_DOWN ||
+		    event.type == SDL_EVENT_FINGER_MOTION ||
+		    event.type == SDL_EVENT_FINGER_UP ||
+		    event.type == SDL_EVENT_FINGER_CANCELED ||
+		    event.type == SDL_EVENT_MOUSE_MOTION ||
+		    event.type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
+		    event.type == SDL_EVENT_MOUSE_BUTTON_UP ||
+		    event.type == SDL_EVENT_MOUSE_WHEEL ||
+		    event.type == SDL_EVENT_KEY_DOWN ||
+		    event.type == SDL_EVENT_KEY_UP)
+		{
+			IOSGameOverlayNoteActivity();
+		}
+		IOSGameOverlayHandleSDLKeyEvent(&event);
+#endif
 		switch (event.type) {
 			case SDL_EVENT_QUIT:
 				m_quitting = true;
