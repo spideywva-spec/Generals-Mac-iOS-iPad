@@ -50,6 +50,7 @@
 #include "Common/DataChunk.h"
 #include "Common/GameState.h"
 #include "Common/GlobalData.h"
+#include "Common/LocalFileSystem.h"
 #include "Common/PlayerTemplate.h"
 #include "Common/WellKnownKeys.h"
 #include "Common/Xfer.h"
@@ -532,8 +533,24 @@ void SidesList::prepareForMP_or_Skirmish()
 		DEBUG_LOG(("Skirmish map using standard scripts"));
 		m_skirmishTeamrec.clear();
 		CachedFileInputStream theInputStream;
-		// Loose retail scripts must not shadow the active mod's AI. Keep normal
-		// filesystem precedence unless the winning archive belongs to that mod.
+		// An explicit mod may ship a loose AI hotfix beside its BIG archives.
+		// Prefer that exact file, but never let unrelated loose retail data shadow mod AI.
+		AsciiString modLoosePath;
+		Bool modLoose = false;
+		if (TheGlobalData && TheGlobalData->m_modDir.isNotEmpty() && TheLocalFileSystem)
+		{
+			modLoosePath = TheGlobalData->m_modDir;
+			const Int length = modLoosePath.getLength();
+			if (length > 0)
+			{
+				const Char tail = modLoosePath.str()[length - 1];
+				if (tail != '/' && tail != '\\')
+					modLoosePath.concat('/');
+			}
+			modLoosePath.concat(path);
+			modLoose = TheLocalFileSystem->doesFileExist(modLoosePath.str());
+		}
+
 		ArchiveFile *archive = TheArchiveFileSystem ? TheArchiveFileSystem->getArchiveFile(path, 0) : nullptr;
 		Bool modArchive = false;
 		if (archive && TheGlobalData && TheGlobalData->m_modDir.isNotEmpty())
@@ -548,10 +565,14 @@ void SidesList::prepareForMP_or_Skirmish()
 					|| modDir.str()[length - 1] == '/' || modDir.str()[length - 1] == '\\';
 			}
 		}
-		fprintf(stderr, "[AI-SCRIPT-SOURCE] source=%s archive='%s'\n",
-		        modArchive ? "mod-archive" : "default-filesystem",
-		        archive ? archive->getName().str() : "<none>");
-		if (theInputStream.open(path, modArchive)) {
+
+		const AsciiString sourcePath = modLoose ? modLoosePath : path;
+		const Bool archiveOnly = !modLoose && modArchive;
+		fprintf(stderr, "[AI-SCRIPT-SOURCE] source=%s archive='%s' path='%s'\n",
+		        modLoose ? "mod-loose" : (modArchive ? "mod-archive" : "default-filesystem"),
+		        archive ? archive->getName().str() : "<none>",
+		        sourcePath.str());
+		if (theInputStream.open(sourcePath, archiveOnly)) {
 #ifdef ALLOW_DEBUG_UTILS
 				fprintf(stderr, "[SKIRMISH_DIAG] Opened SkirmishScripts.scb successfully\n");
 				fflush(stderr);
