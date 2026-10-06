@@ -990,11 +990,20 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
     fprintf(stderr, "[HUB-WEB] loading bundled launcher path='%s'\n", local.path.UTF8String);
 }
 
+- (NSString *)russianWebLauncherScript
+{
+    return @"(function(){const map={'Settings':'Настройки','Graphics':'Графика','Diagnostics':'Диагностика','Friends':'Друзья','Online':'Онлайн','LAN':'LAN','Start Game':'Запустить игру','Play':'Играть','Install':'Установить','Installed':'Установлено','Update':'Обновить','Download':'Скачать','Refresh':'Обновить','Save':'Сохранить','Reset':'Сбросить','Cancel':'Отмена','Back':'Назад','Remove':'Удалить','Close':'Закрыть','Mods':'Моды','Mods & Updates':'Моды и обновления','Add mod':'Добавить мод','Clear logs':'Очистить логи','Share report + logs':'Поделиться отчётом и логами','Save to Files':'Сохранить в Файлы','Page actions':'Действия страницы','Stable':'Стабильная','Beta':'Бета','Current':'Текущая','READY':'ГОТОВО','NOT INSTALLED':'НЕ УСТАНОВЛЕНО','Downloading':'Скачивание','Updating':'Обновление','Download complete':'Скачивание завершено','Download failed':'Ошибка скачивания','Camera / Performance':'Камера / производительность','Maximum camera height':'Максимальная высота камеры','Minimum camera height':'Минимальная высота камеры','Camera pitch':'Наклон камеры','Keyboard / edge scroll speed':'Скорость прокрутки клавиатурой / у края','Terrain draw distance':'Дальность прорисовки местности','FPS limit':'Ограничение FPS','Frames per second':'Кадров в секунду','3D shadows':'Тени 3D','2D shadows':'Тени 2D','Cloud shadows':'Тени облаков','Ground lighting':'Освещение земли','Smooth water borders':'Сглаженные границы воды','Units behind buildings':'Юниты за зданиями','Small props / trees':'Мелкие объекты / деревья','Extra animations':'Дополнительные анимации','Dynamic LOD':'Динамический LOD','Heat effects':'Эффекты жары','Texture quality':'Качество текстур','Particles':'Частицы','Texture filtering':'Фильтрация текстур','Anisotropy':'Анизотропия','English':'Английский','Russian':'Русский','Default':'По умолчанию','High':'Высокое','Medium':'Среднее','Low':'Низкое','Standard':'Стандарт','Enhanced':'Улучшенный','Original':'Оригинал','Native':'Родной','Funny':'Забавные','Off':'Выкл.','Bilinear':'Билинейная','Trilinear':'Трилинейная','Anisotropic':'Анизотропная'};function tr(n){if(n.nodeType===3){const v=n.nodeValue.trim();if(map[v])n.nodeValue=n.nodeValue.replace(v,map[v]);return;}if(n.nodeType!==1)return;['title','aria-label','placeholder'].forEach(a=>{const v=n.getAttribute(a);if(v&&map[v])n.setAttribute(a,map[v]);});n.childNodes&&n.childNodes.forEach(tr);}function run(){if(document.body)tr(document.body);}run();new MutationObserver(run).observe(document.documentElement,{childList:true,subtree:true,characterData:true});})();";
+}
 - (void)buildWebLauncher
 {
     WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
     configuration.websiteDataStore = WKWebsiteDataStore.defaultDataStore;
     [configuration.userContentController addScriptMessageHandler:self name:@"generalsX"];
+    WKUserScript *russianScript = [[WKUserScript alloc]
+        initWithSource:[self russianWebLauncherScript]
+        injectionTime:WKUserScriptInjectionTimeAtDocumentEnd
+        forMainFrameOnly:NO];
+    [configuration.userContentController addUserScript:russianScript];
 
     self.webView = [[WKWebView alloc] initWithFrame:CGRectZero configuration:configuration];
     self.webView.translatesAutoresizingMaskIntoConstraints = NO;
