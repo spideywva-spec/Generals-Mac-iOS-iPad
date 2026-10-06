@@ -67,8 +67,10 @@ button {
 .battlefield__tile {
   position: absolute;
   inset: -90px;
-  background-repeat: repeat;
-  background-position: 0 0;
+  background-image: url("./assets/bg.png");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
   background-size: var(--tile) var(--tile);
   opacity: 0;
   filter: saturate(0.84) contrast(1.04) brightness(0.65);
