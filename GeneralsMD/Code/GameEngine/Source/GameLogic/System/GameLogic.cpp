@@ -4333,9 +4333,33 @@ UnsignedInt GameLogic::getCRC( Int mode, AsciiString deepCRCFileName )
 
 	marker = "MARKER:Objects";
 	xferCRC->xferAsciiString(&marker);
-	for( obj = m_objList; obj; obj=obj->getNextObject() )
+	Int onlineObjectTraceIndex = 0;
+	for( obj = m_objList; obj; obj=obj->getNextObject(), ++onlineObjectTraceIndex )
 	{
+#if defined(GENERALS_ONLINE)
+		const Bool traceObjectBoundary = isInGameLogicUpdate() && (m_frame == 100 || m_frame == 200);
+		const UnsignedInt crcBeforeObject = traceObjectBoundary ? xferCRC->getCRC() : 0;
+#endif
 		xferCRC->xferSnapshot( obj );
+#if defined(GENERALS_ONLINE)
+		if (traceObjectBoundary)
+		{
+			Player *owner = obj->getControllingPlayer();
+			const Coord3D *pos = obj->getPosition();
+			fprintf(stderr,
+			        "[ONLINE-CRC-OBJECT] frame=%d index=%d id=%d owner=%d template='%s' before=0x%08X after=0x%08X pos=%.6f,%.6f,%.6f\n",
+			        m_frame,
+			        onlineObjectTraceIndex,
+			        (int)obj->getID(),
+			        owner != nullptr ? owner->getPlayerIndex() : -1,
+			        obj->getTemplate() != nullptr ? obj->getTemplate()->getName().str() : "<none>",
+			        crcBeforeObject,
+			        xferCRC->getCRC(),
+			        pos != nullptr ? pos->x : 0.0f,
+			        pos != nullptr ? pos->y : 0.0f,
+			        pos != nullptr ? pos->z : 0.0f);
+		}
+#endif
 	}
 	UnsignedInt seed = GetGameLogicRandomSeedCRC();
 #if defined(GENERALS_ONLINE)
