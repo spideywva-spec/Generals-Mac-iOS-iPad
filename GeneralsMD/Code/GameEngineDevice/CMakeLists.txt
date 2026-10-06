@@ -221,6 +221,26 @@ endif()
 
 add_library(z_gameenginedevice STATIC)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    # Native in-game ESC overlay. It is deliberately separate from the launcher UI.
+    target_sources(z_gameenginedevice PRIVATE
+        Include/SDL3Device/IOSGameOverlay.h
+        Source/SDL3Device/IOSGameOverlay.mm
+    )
+    set_source_files_properties(Source/SDL3Device/IOSGameOverlay.mm PROPERTIES
+        SKIP_PRECOMPILE_HEADERS ON
+        COMPILE_OPTIONS "-fobjc-arc"
+    )
+    find_library(GX_UIKIT_FRAMEWORK UIKit REQUIRED)
+    find_library(GX_FOUNDATION_FRAMEWORK Foundation REQUIRED)
+    find_library(GX_OBJC_LIBRARY objc REQUIRED)
+    target_link_libraries(z_gameenginedevice PRIVATE
+        ${GX_UIKIT_FRAMEWORK}
+        ${GX_FOUNDATION_FRAMEWORK}
+        ${GX_OBJC_LIBRARY}
+    )
+endif()
+
 target_sources(z_gameenginedevice PRIVATE ${GAMEENGINEDEVICE_SRC})
 
 target_include_directories(z_gameenginedevice PUBLIC
