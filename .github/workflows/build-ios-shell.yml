@@ -145,14 +145,34 @@ jobs:
           ADAPTER="references/fbraz3-dxvk/src/dxvk/dxvk_adapter.cpp"
           DEVICE="references/fbraz3-dxvk/src/dxvk/dxvk_device.cpp"
 
-          # Apple A12/A13: samplerMirrorClampToEdge is advertised as an extension
-          # but the core 1.2 feature bit is not enableable. Disable ONLY that bit
-          # so vkCreateDevice succeeds while Vulkan 1.2/1.3 stay enabled.
+          # Apple A12/A13 (GPU Family 6): the core Vulkan 1.2 bit
+          # samplerMirrorClampToEdge is not enableable even though the
+          # VK_KHR_sampler_mirror_clamp_to_edge extension is advertised.
+          # DXVK hardcodes VK_TRUE for it, which makes vkCreateDevice fail 3
+          # times in a row, after which DXVK throws and the game dies.
+          #
+          # Force ONLY this single feature bit to VK_FALSE. Everything else
+          # in Vulkan 1.2/1.3 remains enabled, so shadows, fog, reflections
+          # and depth-based effects keep working.
           sed -i '' -E 's/(samplerMirrorClampToEdge[[:space:]]*=[[:space:]]*)[^;]+;/\1VK_FALSE;/g' "$DEVICE"
           sed -i '' -E 's/(samplerMirrorClampToEdge[[:space:]]*=[[:space:]]*)[^;]+;/\1VK_FALSE;/g' "$ADAPTER"
 
-          echo "DXVK A12/A13 minimal patch scan:"
-          grep -nE 'samplerMirrorClampToEdge[[:space:]]*=' "$DEVICE" "$ADAPTER" || true
+          echo "=== Verify the fix landed ==="
+          FOUND=0
+          for f in "$DEVICE" "$ADAPTER"; do
+            if grep -nE 'samplerMirrorClampToEdge[[:space:]]*=' "$f"; then
+              FOUND=1
+            fi
+          done
+          if [ "$FOUND" -eq 0 ]; then
+            echo "ERROR: samplerMirrorClampToEdge line not found in either file."
+            echo "--- dumping every mention in the DXVK source ---"
+            grep -rn "samplerMirrorClampToEdge" references/fbraz3-dxvk/src/ || true
+            exit 1
+          fi
+
+          echo "=== Confirm Vulkan 1.2/1.3 are NOT being disabled ==="
+          grep -nE 'm_hasVulkan12|m_hasVulkan13' "$ADAPTER" || echo "(no m_hasVulkan* assignments found — good)"
 
           echo "A12/A13 DXVK patch applied: samplerMirrorClampToEdge forced FALSE, Vulkan 1.2/1.3 left enabled."
 
