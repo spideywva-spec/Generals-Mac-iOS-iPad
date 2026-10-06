@@ -4,43 +4,101 @@
 
 #import <UIKit/UIKit.h>
 #import <QuartzCore/QuartzCore.h>
-#import <TargetConditionals.h>
-
 #include <dispatch/dispatch.h>
 
-namespace
-{
+#include <SDL3/SDL.h>
+
+namespace {
 constexpr NSTimeInterval kIdleBeforeFade = 3.0;
 constexpr NSTimeInterval kFadeDuration = 2.0;
 constexpr NSTimeInterval kShowDuration = 0.20;
 
-@interface GXOverlayView : UIView
-@property(nonatomic, weak) UIButton *escButton;
+@interface GXEscButton : UIButton
 @end
 
-@implementation GXOverlayView
-
-- (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event
-{
-    UIButton *button = self.escButton;
-    if (button != nil && !button.hidden && button.alpha > 0.01 &&
-        CGRectContainsPoint(button.frame, point))
-        return YES;
-
-    // The overlay is transparent everywhere except the ESC button, so normal
-    // touches continue to reach the SDL game view underneath it.
-    return NO;
-}
-
+@interface GXOverlayView : UIView
+@property(nonatomic, weak) GXEscButton *escButton;
 @end
 
 @interface GXGameOverlayController : UIViewController
 @property(nonatomic, strong) GXOverlayView *overlayView;
-@property(nonatomic, strong) UIButton *escButton;
+@property(nonatomic, strong) GXEscButton *escButton;
 @property(nonatomic, strong) NSTimer *idleTimer;
 @property(nonatomic, assign) SDL_Window *sdlWindow;
 @property(nonatomic, assign) BOOL shuttingDown;
 @end
+
+static UIWindow *s_overlayWindow = nil;
+static GXGameOverlayController *s_overlayController = nil;
+static bool s_eventWatchInstalled = false;
+
+@implementation GXEscButton
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
+{
+    if (self.hidden || !self.userInteractionEnabled) return nil;
+    return [self pointInside:point withEvent:event] ? self : nil;
+}
+@end
+
+@implementation GXOverlayView
+- (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event
+{
+    GXEscButton *button = self.escButton;
+    return button != nil && !button.hidden &&
+           CGRectContainsPoint(button.frame, point);
+}
+@end
+
+static void GXPushEscape(SDL_Window *window, bool down)
+{
+    if (window == nullptr) return;
+    SDL_Event event;
+    SDL_zero(event);
+    event.type = down ? SDL_EVENT_KEY_DOWN : SDL_EVENT_KEY_UP;
+    event.key.timestamp = SDL_GetTicksNS();
+    event.key.windowID = SDL_GetWindowID(window);
+    event.key.scancode = SDL_SCANCODE_ESCAPE;
+    event.key.key = SDLK_ESCAPE;
+    event.key.mod = SDL_KMOD_NONE;
+    event.key.raw = 0;
+    event.key.down = down;
+    event.key.repeat = false;
+    SDL_PushEvent(&event);
+}
+
+static bool SDLCALL GXEscSDLActivityWatch(void *, SDL_Event *event)
+{
+    if (event == nullptr || s_overlayController == nil) return true;
+
+    SDL_WindowID target = SDL_GetWindowID(s_overlayController.sdlWindow);
+    SDL_WindowID eventWindow = 0;
+    bool activity = false;
+
+    switch (event->type) {
+        case SDL_EVENT_FINGER_DOWN:
+        case SDL_EVENT_FINGER_MOTION:
+        case SDL_EVENT_FINGER_UP:
+        case SDL_EVENT_FINGER_CANCELED:
+            eventWindow = event->tfinger.windowID; activity = true; break;
+        case SDL_EVENT_MOUSE_MOTION:
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        case SDL_EVENT_MOUSE_BUTTON_UP:
+        case SDL_EVENT_MOUSE_WHEEL:
+            eventWindow = event->motion.windowID; activity = true; break;
+        case SDL_EVENT_KEY_DOWN:
+        case SDL_EVENT_KEY_UP:
+            eventWindow = event->key.windowID; activity = true; break;
+        default: break;
+    }
+
+    if (activity && (eventWindow == 0 || eventWindow == target)) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (s_overlayController != nil)
+                [s_overlayController showAndRestartIdleTimer];
+        });
+    }
+    return true;
+}
 
 @implementation GXGameOverlayController
 
@@ -56,83 +114,52 @@ constexpr NSTimeInterval kShowDuration = 0.20;
 {
     [super viewDidLoad];
 
-    UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
-    self.escButton = button;
-    self.overlayView.escButton = button;
+    self.escButton = [GXEscButton buttonWithType:UIButtonTypeSystem];
+    self.overlayView.escButton = self.escButton;
 
-    [button setTitle:@"ESC" forState:UIControlStateNormal];
-    button.titleLabel.font = [UIFont systemFontOfSize:11.0 weight:UIFontWeightBlack];
-    [button setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
-    button.backgroundColor = [UIColor colorWithWhite:0.02 alpha:0.78];
-    button.layer.cornerRadius = 9.0;
-    button.layer.borderWidth = 1.0;
-    button.layer.borderColor =
-        [UIColor colorWithRed:0.18 green:0.50 blue:0.93 alpha:0.85].CGColor;
-    button.accessibilityLabel = @"ESC";
-    button.accessibilityHint = @"Нажать Escape";
+    [self.escButton setTitle:@"ESC" forState:UIControlStateNormal];
+    self.escButton.titleLabel.font = [UIFont systemFontOfSize:14.0 weight:UIFontWeightSemibold];
+    [self.escButton setTitleColor:[UIColor colorWithWhite:1.0 alpha:0.92]
+                          forState:UIControlStateNormal];
+    self.escButton.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.18];
+    self.escButton.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.78].CGColor;
+    self.escButton.layer.borderWidth = 1.25;
+    self.escButton.layer.cornerRadius = 2.0;
+    self.escButton.accessibilityLabel = @"Escape";
+    self.escButton.accessibilityTraits = UIAccessibilityTraitButton;
 
-    [button addTarget:self
-               action:@selector(escPressed:)
-     forControlEvents:UIControlEventTouchUpInside];
+    [self.escButton addTarget:self action:@selector(escPressed:)
+              forControlEvents:UIControlEventTouchUpInside |
+                              UIControlEventTouchUpOutside |
+                              UIControlEventTouchCancel];
+    [self.overlayView addSubview:self.escButton];
 
-    [self.overlayView addSubview:button];
+    // Keep the overlay view itself fully hit-testable; only the button fades.
     self.overlayView.alpha = 1.0;
+    self.escButton.alpha = 1.0;
     [self scheduleIdleFade];
 }
 
 - (void)viewDidLayoutSubviews
 {
     [super viewDidLayoutSubviews];
-
-    UIEdgeInsets insets = self.view.safeAreaInsets;
-    CGFloat width = 56.0;
-    CGFloat height = 42.0;
-    CGFloat x = MAX(10.0, insets.left + 10.0);
-    CGFloat y = self.view.bounds.size.height - insets.bottom - height - 12.0;
-
-    self.escButton.frame = CGRectMake(x, y, width, height);
+    const CGFloat size = 50.0;
+    const CGFloat left = 5.0;
+    const CGFloat top = 25.0;
+    self.escButton.frame = CGRectMake(left, top, size, size);
 }
 
 - (void)escPressed:(id)sender
 {
-    // Pressing ESC is activity. It always remains available and gets a fresh
-    // three-second visible period instead of disappearing permanently.
+    (void)sender;
     [self showAndRestartIdleTimer];
-
-    SDL_Window *window = self.sdlWindow;
-    if (window == nullptr)
-        return;
-
-    SDL_Event event;
-    SDL_zero(event);
-    event.type = SDL_EVENT_KEY_DOWN;
-    event.key.timestamp = SDL_GetTicksNS();
-    event.key.windowID = SDL_GetWindowID(window);
-    event.key.scancode = SDL_SCANCODE_ESCAPE;
-    event.key.key = SDLK_ESCAPE;
-    event.key.mod = SDL_KMOD_NONE;
-    event.key.raw = 0;
-    event.key.down = true;
-    event.key.repeat = false;
-    SDL_PushEvent(&event);
-
-    SDL_zero(event);
-    event.type = SDL_EVENT_KEY_UP;
-    event.key.timestamp = SDL_GetTicksNS();
-    event.key.windowID = SDL_GetWindowID(window);
-    event.key.scancode = SDL_SCANCODE_ESCAPE;
-    event.key.key = SDLK_ESCAPE;
-    event.key.mod = SDL_KMOD_NONE;
-    event.key.raw = 0;
-    event.key.down = false;
-    event.key.repeat = false;
-    SDL_PushEvent(&event);
+    GXPushEscape(self.sdlWindow, true);
+    GXPushEscape(self.sdlWindow, false);
 }
 
 - (void)showAndRestartIdleTimer
 {
-    if (self.shuttingDown)
-        return;
+    if (self.shuttingDown) return;
 
     [self.idleTimer invalidate];
     self.idleTimer = nil;
@@ -143,9 +170,8 @@ constexpr NSTimeInterval kShowDuration = 0.20;
                                 UIViewAnimationOptionAllowUserInteraction |
                                 UIViewAnimationOptionCurveEaseOut
                      animations:^{
-                         self.overlayView.alpha = 1.0;
-                     }
-                     completion:nil];
+        self.escButton.alpha = 1.0;
+    } completion:nil];
 
     [self scheduleIdleFade];
 }
@@ -162,8 +188,8 @@ constexpr NSTimeInterval kShowDuration = 0.20;
 
 - (void)beginIdleFade:(NSTimer *)timer
 {
-    if (self.shuttingDown)
-        return;
+    (void)timer;
+    if (self.shuttingDown) return;
 
     [UIView animateWithDuration:kFadeDuration
                           delay:0.0
@@ -171,9 +197,8 @@ constexpr NSTimeInterval kShowDuration = 0.20;
                                 UIViewAnimationOptionAllowUserInteraction |
                                 UIViewAnimationOptionCurveEaseInOut
                      animations:^{
-                         self.overlayView.alpha = 0.0;
-                     }
-                     completion:nil];
+        self.escButton.alpha = 0.0;
+    } completion:nil];
 }
 
 - (void)shutdown
@@ -188,50 +213,37 @@ constexpr NSTimeInterval kShowDuration = 0.20;
 
 @end
 
-UIWindow *s_overlayWindow = nil;
-GXGameOverlayController *s_overlayController = nil;
-
-UIWindowScene *GXActiveWindowScene(void)
+static UIWindowScene *GXActiveWindowScene(void)
 {
-    for (UIScene *scene in UIApplication.sharedApplication.connectedScenes)
-    {
-        if (![scene isKindOfClass:[UIWindowScene class]])
-            continue;
-
+    for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+        if (![scene isKindOfClass:[UIWindowScene class]]) continue;
         UISceneActivationState state = scene.activationState;
         if (state == UISceneActivationStateForegroundActive ||
             state == UISceneActivationStateForegroundInactive)
             return (UIWindowScene *)scene;
     }
-
     return nil;
 }
 
-void GXRunOnMain(dispatch_block_t block)
+static void GXRunOnMain(dispatch_block_t block)
 {
-    if ([NSThread isMainThread])
-        block();
-    else
-        dispatch_async(dispatch_get_main_queue(), block);
-}
+    if ([NSThread isMainThread]) block();
+    else dispatch_async(dispatch_get_main_queue(), block);
 }
 
 void IOSGameOverlayInit(SDL_Window *window)
 {
-    if (window == nullptr)
-        return;
+    if (window == nullptr) return;
 
     GXRunOnMain(^{
-        if (s_overlayController != nil)
-        {
+        if (s_overlayController != nil) {
             s_overlayController.sdlWindow = window;
             [s_overlayController showAndRestartIdleTimer];
             return;
         }
 
         UIWindowScene *scene = GXActiveWindowScene();
-        if (scene == nil)
-        {
+        if (scene == nil) {
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)),
                            dispatch_get_main_queue(), ^{
                 IOSGameOverlayInit(window);
@@ -249,8 +261,12 @@ void IOSGameOverlayInit(SDL_Window *window)
         s_overlayWindow.hidden = NO;
         s_overlayWindow.alpha = 1.0;
 
-        // Never make the overlay the key window: keyboard/IME focus must stay with the game.
-        s_overlayWindow.hidden = NO;
+        if (!s_eventWatchInstalled) {
+            s_eventWatchInstalled = SDL_AddEventWatch(GXEscSDLActivityWatch, nullptr);
+            if (!s_eventWatchInstalled)
+                fprintf(stderr, "WARNING: iOS ESC overlay: SDL event watch install failed: %s\n",
+                        SDL_GetError());
+        }
 
         [s_overlayController showAndRestartIdleTimer];
     });
@@ -259,9 +275,12 @@ void IOSGameOverlayInit(SDL_Window *window)
 void IOSGameOverlayShutdown()
 {
     GXRunOnMain(^{
+        if (s_eventWatchInstalled) {
+            SDL_RemoveEventWatch(GXEscSDLActivityWatch, nullptr);
+            s_eventWatchInstalled = false;
+        }
         [s_overlayController shutdown];
         s_overlayController = nil;
-
         s_overlayWindow.hidden = YES;
         s_overlayWindow.rootViewController = nil;
         s_overlayWindow = nil;
@@ -270,19 +289,16 @@ void IOSGameOverlayShutdown()
 
 void IOSGameOverlayNoteActivity()
 {
-    if (s_overlayController == nil)
-        return;
-
     GXRunOnMain(^{
-        [s_overlayController showAndRestartIdleTimer];
+        if (s_overlayController != nil)
+            [s_overlayController showAndRestartIdleTimer];
     });
 }
 
 void IOSGameOverlayHandleSDLKeyEvent(const SDL_Event *event)
 {
     if (event != nullptr &&
-        event->type == SDL_EVENT_KEY_DOWN &&
-        event->key.key == SDLK_ESCAPE)
+        (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP))
         IOSGameOverlayNoteActivity();
 }
 
