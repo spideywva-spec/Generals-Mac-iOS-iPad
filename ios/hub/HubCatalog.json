@@ -177,12 +177,12 @@
   "launcherWeb": {
     "stable": {
       "version": "0.2.0-web.14",
-      "indexURL": "https://pub-08941af8fe30421ba31f2314049303cb.r2.dev/launcher/stable/index.html",
+      "indexURL": "https://generals-zh-launcher.onrender.com",
       "bridgeSchema": 6
     },
     "beta": {
       "version": "0.2.0-web.14",
-      "indexURL": "https://pub-08941af8fe30421ba31f2314049303cb.r2.dev/launcher/beta/index.html",
+      "indexURL": "https://generals-zh-launcher.onrender.com",
       "bridgeSchema": 6
     }
   }
