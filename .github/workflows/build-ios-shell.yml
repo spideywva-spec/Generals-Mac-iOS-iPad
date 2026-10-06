@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+      - a13-ios-build
     paths:
       - 'GeneralsMD/**'
       - '!GeneralsMD/Code/Main/IOSProfileLauncher.mm'
