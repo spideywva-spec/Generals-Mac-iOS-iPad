@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#080b0d">
-  <title>Generals X — Launcher Demo</title>
+  <meta name="theme-color" content="#0b4ea2">
+  <title>Generals X — Лаунчер</title>
   <link rel="icon" type="image/png" href="./assets/logo.png">
   <link rel="apple-touch-icon" href="./assets/logo.png">
   <link rel="stylesheet" href="./styles.css">
@@ -22,19 +22,19 @@
     <main class="launcher">
       <header class="topbar">
         <div class="brand">
-          <div class="brand__eyebrow">COMMAND HUB</div>
+          <div class="brand__eyebrow">КОМАНДНЫЙ ЦЕНТР</div>
           <div class="brand__title">Generals <span>X</span></div>
         </div>
 
-        <div class="topbar__actions">
-          <button class="icon-button" id="audioToggle" type="button" aria-label="Mute interface sounds" title="Mute interface sounds" aria-pressed="false">
+        <div class="topbar__actions"><button class="icon-button launcher-esc" id="launcherEsc" type="button" aria-label="ESC" title="ESC"><span>ESC</span></button>
+          <button class="icon-button" id="audioToggle" type="button" aria-label="Отключить звуки интерфейса" title="Отключить звуки интерфейса" aria-pressed="false">
             <svg class="lucide lucide-volume-2" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M11 5 6 9H2v6h4l5 4V5z"/>
               <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
               <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
             </svg>
           </button>
-          <button class="icon-button" type="button" data-panel="diagnostics" aria-label="Diagnostics" title="Diagnostics">
+          <button class="icon-button" type="button" data-panel="diagnostics" aria-label="Диагностика" title="Диагностика">
             <svg class="lucide lucide-activity" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
             </svg>
@@ -44,21 +44,21 @@
 
       <section class="hero">
         <div class="hero__copy">
-          <div class="hero__kicker">SELECT EXPERIENCE</div>
+          <div class="hero__kicker">ВЫБЕРИТЕ РЕЖИМ</div>
           <h1 id="modeTitle" class="is-long-title">Zero Hour + Online</h1>
-          <p id="modeDescription">Classic Zero Hour with online multiplayer integrated into the same profile.</p>
+          <p id="modeDescription">Классический Zero Hour с поддержкой сетевой игры в одном профиле.</p>
 
           <div class="hero__meta">
             <div class="meta-item">
-              <span>PROFILE</span>
-              <strong id="profileLabel">ORIGINAL</strong>
+              <span>ПРОФИЛЬ</span>
+              <strong id="profileLabel">ОРИГИНАЛ</strong>
             </div>
             <div class="meta-item">
-              <span>STATUS</span>
-              <strong id="statusLabel" class="status-text status-text--ready">READY</strong>
+              <span>СТАТУС</span>
+              <strong id="statusLabel" class="status-text status-text--ready">ГОТОВО</strong>
             </div>
             <div class="meta-item">
-              <span>PLATFORM</span>
+              <span>ПЛАТФОРМА</span>
               <strong>iPad / Mac</strong>
             </div>
           </div>
@@ -68,9 +68,9 @@
               <svg class="play-button__icon lucide lucide-play" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="m6 3 14 9-14 9V3z"/>
               </svg>
-              <strong id="playLabel">PLAY</strong>
+              <strong id="playLabel">ИГРАТЬ</strong>
             </button>
-            <button class="hero-settings-button" type="button" data-panel="settings" aria-label="Settings" title="Settings">
+            <button class="hero-settings-button" type="button" data-panel="settings" aria-label="Настройки" title="Настройки">
               <svg class="lucide lucide-settings" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
                 <circle cx="12" cy="12" r="3"/>
@@ -84,22 +84,22 @@
               </svg>
               <span>ModDB</span>
             </a>
-            <button class="secondary-button" type="button" id="detailsButton">Profile details</button>
+            <button class="secondary-button" type="button" id="detailsButton">Подробнее о профиле</button>
           </div>
         </div>
 
         <div class="version-panel">
-          <div class="version-panel__title">SYSTEM STATUS</div>
-          <div class="version-row"><span>Engine</span><strong id="systemEngine">0.1.0</strong></div>
-          <div class="version-row"><span>Launcher</span><strong id="systemLauncher">0.1.0</strong></div>
-          <div class="version-row"><span>Game data</span><strong id="systemGameData" class="good">Ready</strong></div>
-          <div class="version-row"><span>Profiles</span><strong id="systemProfiles">1 ready</strong></div>
+          <div class="version-panel__title">СОСТОЯНИЕ СИСТЕМЫ</div>
+          <div class="version-row"><span>Движок</span><strong id="systemEngine">0.1.0</strong></div>
+          <div class="version-row"><span>Лаунчер</span><strong id="systemLauncher">0.1.0</strong></div>
+          <div class="version-row"><span>Файлы игры</span><strong id="systemGameData" class="good">Готово</strong></div>
+          <div class="version-row"><span>Профили</span><strong id="systemProfiles">1 ready</strong></div>
           <div class="version-panel__line"></div>
-          <div class="version-panel__note">Remote-first launcher UI · native bridge · offline fallback.</div>
+          <div class="version-panel__note">Нативный интерфейс лаунчера · системный мост · автономный режим.</div>
         </div>
       </section>
 
-      <section class="modes" aria-label="Game profiles">
+      <section class="modes" aria-label="Игровые профили">
         <button class="mode-card is-active" type="button" hidden
           data-id="zero-hour-online"
           data-title="Zero Hour + Online"
@@ -160,13 +160,13 @@
             <path d="M12 22V12"/>
             <path d="M17 18h6M20 15v6"/>
           </svg>
-          <span>Add Mod</span>
+          <span>Добавить мод</span>
         </button>
       </section>
 
       <footer class="footer">
         <span>GENERALS X</span>
-        <span class="footer__center">Native launcher concept · visual demo</span>
+        <span class="footer__center">Нативный лаунчер · iOS / iPad</span>
         <span id="footerBuild">BUILD DEMO-01</span>
       </footer>
     </main>
@@ -176,7 +176,7 @@
     <div class="modal-backdrop" id="modalBackdrop" hidden>
       <section class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="modal__header">
-          <button class="modal__close" id="modalClose" type="button" aria-label="Back" title="Back">
+          <button class="modal__close" id="modalClose" type="button" aria-label="Назад" title="Назад">
             <svg class="lucide lucide-arrow-left" viewBox="0 0 24 24" aria-hidden="true">
               <path d="m15 18-6-6 6-6"/>
               <path d="M21 12H9"/>
