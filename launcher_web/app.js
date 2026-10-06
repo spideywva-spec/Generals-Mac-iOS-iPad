@@ -8,7 +8,7 @@ const downloadMetrics = new Map();
 
 window.GeneralsXNative = {
   request(action, payload = {}, timeoutMs = 20000) {
-    if (!hasNativeBridge) return Promise.reject(new Error("Нативный мост недоступен"));
+    if (!hasNativeBridge) return Promise.reject(new Error("Native bridge is unavailable"));
     const id = `gx-${Date.now()}-${++nativeRequestCounter}`;
     return new Promise((resolve, reject) => {
       const timer = window.setTimeout(() => {
@@ -135,7 +135,7 @@ function syncNativeSystemСтатус() {
   const profile = nativeProfileState(currentProfileId);
   const installed = Boolean(profile?.installed);
   const updateAvailable = Boolean(profile?.updateAvailable);
-  statusLabel.textContent = installed ? (updateAvailable ? "ОБНОВИТЬ" : "ГОТОВО") : "NOT УСТАНОВИТЬED";
+  statusLabel.textContent = installed ? (updateAvailable ? "ОБНОВИТЬ" : "READY") : "NOT УСТАНОВИТЬED";
   statusLabel.classList.toggle("status-text--warning", !installed || updateAvailable);
   statusLabel.classList.toggle("status-text--готово", installed && !updateAvailable);
   playLabel.textContent = !installed ? "УСТАНОВИТЬ" : (updateAvailable ? "ОБНОВИТЬ" : "ИГРАТЬ");
@@ -330,7 +330,7 @@ const modCatalog = [
   {
     id: "contra-007",
     title: "Contra 007",
-    description: "Классический Contra 0.07 с официальными исправлениями ИИ и карт.",
+    description: "Classic Contra 0.07 with official Fixed AI and Map Fix patches.",
     author: "Contra Mod Team",
     moddbUrl: "https://www.moddb.com/mods/contra/downloads/contra-007"
   }
@@ -440,7 +440,7 @@ function syncModeCardВерсияs() {
     const card = cards.find(item => item.dataset.id === mod.id);
     const small = card?.querySelector("small");
     if (!small) return;
-    small.textContent = mod.installedВерсия || mod.version || (mod.id === "contra-x" ? "Beta 2 · Patch 1" : "Установлено");
+    small.textContent = mod.installedВерсия || mod.version || (mod.id === "contra-x" ? "Beta 2 · Patch 1" : "Installed");
   });
 }
 
@@ -514,9 +514,9 @@ const settingsDefaults = {
     controlBar: "Contra",
     cameos: "Standard",
     music: "Standard",
-    voices: "Английский",
+    voices: "English",
     hotkeys: "Original",
-    hotkeyLanguage: "Английский",
+    hotkeyLanguage: "English",
     portraits: "Standard",
     fogEffects: false,
     waterEffects: true,
@@ -610,7 +610,7 @@ playButton.addEventListener("click", async () => {
           fraction: 0
         });
         setHomeСкачатьProgress(profileId, 0, true);
-        showToast(`${updateAvailable ? "Обновление" : "Скачатьing"} ${activeCard.dataset.title}…`);
+        showToast(`${updateAvailable ? "Updating" : "Скачатьing"} ${activeCard.dataset.title}…`);
         await nativeRequest("install", { profileId });
         await syncNativeState();
       } else {
@@ -678,7 +678,7 @@ function openPanel(type) {
         const scope = profileId === "enhanced" ? "enhanced" : profileId === "contra-x" ? "contra" : "game";
         settingsState[scope] = { ...settingsDefaults[scope], ...(nativeНастройки?.values || {}) };
       } catch (error) {
-        showToast(error.message || "Не удалось загрузить настройки");
+        showToast(error.message || "Unable to load settings");
       }
     }
     renderНастройки(profileId);
@@ -844,7 +844,7 @@ function modСкачатьPanel(mod) {
       <div class="mod-download-status" data-download-status="${mod.id}">${downloadСтатусText(mod.id)}</div>
       <div class="mod-download-controls">
         <button type="button" class="mod-download-control" data-download-toggle="${mod.id}">
-          ${metrics.paused ? "Продолжить" : "Пауза"}
+          ${metrics.paused ? "Продолжить" : "Pause"}
         </button>
         <button type="button" class="mod-download-control mod-download-control--cancel" data-download-cancel="${mod.id}">Отмена</button>
       </div>
@@ -865,7 +865,7 @@ function updateСкачатьPanel(profileId) {
   const fraction = Math.max(0, Math.min(1, Number(metrics.fraction || 0)));
   if (bar) bar.style.width = `${Math.round(fraction * 100)}%`;
   if (status) status.textContent = downloadСтатусText(profileId);
-  if (toggle) toggle.textContent = metrics.paused ? "Продолжить" : "Пауза";
+  if (toggle) toggle.textContent = metrics.paused ? "Продолжить" : "Pause";
 }
 
 function renderModLibrary() {
@@ -873,12 +873,12 @@ function renderModLibrary() {
     <div class="mod-library">
       <div class="mod-library__toolbar">
         <div class="segment-control mod-channel-control">
-          <button type="button" data-channel="stable" class="${(nativeState?.channel || "stable") === "stable" ? "is-selected" : ""}">Стабильная</button>
-          <button type="button" data-channel="beta" class="${nativeState?.channel === "beta" ? "is-selected" : ""}">Бета</button>
+          <button type="button" data-channel="stable" class="${(nativeState?.channel || "stable") === "stable" ? "is-selected" : ""}">Stable</button>
+          <button type="button" data-channel="beta" class="${nativeState?.channel === "beta" ? "is-selected" : ""}">Beta</button>
         </div>
-        <button type="button" class="diagnostics-action" data-catalog-refresh>Обновить</button>
+        <button type="button" class="diagnostics-action" data-catalog-refresh>Refresh</button>
       </div>
-      <p class="mod-library__intro">Устанавливайте или обновляйте профили из каталога Generals X. Одновременно скачивается только один большой пакет.</p>
+      <p class="mod-library__intro">Install or update profiles from the Generals X catalog. Only one large package is downloaded at a time.</p>
       ${modCatalog.map(mod => `
         <div class="mod-library-card" data-mod-card="${mod.id}">
           <div class="mod-library-card__main">
@@ -918,7 +918,7 @@ function renderModLibrary() {
       try {
         const state = await nativeRequest("remove", { profileId: button.dataset.modУдалить });
         applyNativeState(state);
-        showToast("Мод удалён");
+        showToast("Mod removed");
       } catch (error) {
         showToast(error.message || "Удалить failed");
       }
@@ -963,7 +963,7 @@ function renderModLibrary() {
         applyNativeState(await nativeRequest("setChannel", { channel: button.dataset.channel }));
         showToast(`${button.dataset.channel.toUpperCase()} channel active`);
       } catch (error) {
-        showToast(error.message || "Не удалось сменить канал");
+        showToast(error.message || "Channel switch failed");
       }
     });
   });
@@ -972,9 +972,9 @@ function renderModLibrary() {
     if (!hasNativeBridge) return;
     try {
       applyNativeState(await nativeRequest("refreshCatalog"));
-      showToast("Каталог обновлён");
+      showToast("Catalog refreshed");
     } catch (error) {
-      showToast(error.message || "Не удалось обновить");
+      showToast(error.message || "Refresh failed");
     }
   });
 
@@ -982,7 +982,7 @@ function renderModLibrary() {
     button.addEventListener("click", () => {
       if (hasNativeBridge) {
         nativeRequest("chooseFile", { profileId: button.dataset.modFile })
-          .catch(error => showToast(error.message || "Не удалось открыть выбор файла"));
+          .catch(error => showToast(error.message || "File picker failed"));
         return;
       }
       const input = modalBody.querySelector(`[data-mod-file-input="${button.dataset.modFile}"]`);
@@ -1074,13 +1074,13 @@ Base shell run: local
 CONTENT
 GameData: Installed
 Zero Hour + Online: Installed
-Enhanced: ${isModInstalled("enhanced") ? "Установлено" : "Не установлено"}
-Contra X: ${isModInstalled("contra") ? "Установлено" : "Не установлено"}
+Enhanced: ${isModInstalled("enhanced") ? "Installed" : "Не установлено"}
+Contra X: ${isModInstalled("contra") ? "Installed" : "Не установлено"}
 
 FILES
 iPad settings: Present
-Настройки Enhanced: ${isModInstalled("enhanced") ? "Есть" : "n/a"}
-Contra settings: ${isModInstalled("contra") ? "Есть" : "n/a"}
+Настройки Enhanced: ${isModInstalled("enhanced") ? "Present" : "n/a"}
+Contra settings: ${isModInstalled("contra") ? "Present" : "n/a"}
 Текущая session: Yes
 Session logs: 1/10`;
 }
@@ -1090,10 +1090,10 @@ function renderДиагностика() {
     <p class="diagnostics-note">Build, installed content and crash logs. A copy is saved automatically to Files > On My iPad > Generals ZH > Диагностика.</p>
     <div class="diagnostic-block" id="diagnosticReport">${diagnosticsReport()}</div>
     <div class="diagnostics-actions">
-      <button type="button" class="diagnostics-action" data-diagnostics-refresh>Обновить</button>
-      <button type="button" class="diagnostics-action" data-diagnostics-export>Сохранить в Файлы</button>
-      <button type="button" class="diagnostics-action" data-diagnostics-share>Поделиться отчётом и логами</button>
-      <button type="button" class="diagnostics-action diagnostics-action--danger" data-diagnostics-clear>Очистить логи</button>
+      <button type="button" class="diagnostics-action" data-diagnostics-refresh>Refresh</button>
+      <button type="button" class="diagnostics-action" data-diagnostics-export>Save to Files</button>
+      <button type="button" class="diagnostics-action" data-diagnostics-share>Share report + logs</button>
+      <button type="button" class="diagnostics-action diagnostics-action--danger" data-diagnostics-clear>Clear logs</button>
     </div>
   `;
 
@@ -1106,7 +1106,7 @@ function renderДиагностика() {
     try {
       const result = await nativeRequest("diagnostics");
       nativeДиагностикаText = result?.report || "";
-      modalBody.querySelector("#diagnosticReport").textContent = nativeДиагностикаText || "Диагностика недоступна.";
+      modalBody.querySelector("#diagnosticReport").textContent = nativeДиагностикаText || "No diagnostics available.";
       if (result?.exportPath) showToast(`Диагностика saved: ${result.exportPath}`);
     } catch (error) {
       modalBody.querySelector("#diagnosticReport").textContent = error.message || "Диагностика failed";
@@ -1118,37 +1118,37 @@ function renderДиагностика() {
 
   modalBody.querySelector("[data-diagnostics-export]").addEventListener("click", async () => {
     if (!hasNativeBridge) {
-      showToast("Нативный мост недоступен");
+      showToast("Native bridge is unavailable");
       return;
     }
-    showToast("Сохранение диагностики в Файлы…");
+    showToast("Saving diagnostics to Files…");
     try {
       const result = await nativeRequest("exportДиагностика");
       showToast(`Saved ${result?.fileCount || 0} files · ${result?.path || "Диагностика"}`);
     } catch (error) {
-      showToast(error.message || "Не удалось сохранить");
+      showToast(error.message || "Save failed");
     }
   });
 
   modalBody.querySelector("[data-diagnostics-share]").addEventListener("click", async () => {
     if (hasNativeBridge) {
-      showToast("Открытие меню «Поделиться»…");
+      showToast("Opening share sheet…");
       try {
         await nativeRequest("shareДиагностика");
       } catch (error) {
-        showToast(error.message || "Не удалось поделиться");
+        showToast(error.message || "Share failed");
       }
       return;
     }
     const report = diagnosticsReport();
     try {
       if (navigator.share) {
-        await navigator.share({ title: "Диагностика Generals X", text: report });
+        await navigator.share({ title: "Generals X diagnostics", text: report });
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(report);
-        showToast("Отчёт скопирован");
+        showToast("Report copied");
       } else {
-        showToast("Поделиться в этом браузере невозможно");
+        showToast("Share is unavailable in this browser");
       }
     } catch {
       // User cancellation is not an error for this demo.
@@ -1159,12 +1159,12 @@ function renderДиагностика() {
     if (hasNativeBridge) {
       try {
         await nativeRequest("clearДиагностика");
-        showToast("Открыто окно очистки");
+        showToast("Clear dialog opened");
       } catch (error) {
-        showToast(error.message || "Не удалось очистить");
+        showToast(error.message || "Clear failed");
       }
     } else {
-      showToast("Демо-логи очищены");
+      showToast("Demo logs cleared");
     }
   });
 }
@@ -1206,34 +1206,34 @@ function settingRow(label, control) {
 function renderGameНастройки() {
   return `
     <div class="setting-section">
-      <h3>Графика</h3>
-      ${settingRow("Тени 3D", toggleControl("game", "shadow3D"))}
-      ${settingRow("Тени 2D", toggleControl("game", "shadow2D"))}
-      ${settingRow("Тени облаков", toggleControl("game", "cloudShadows"))}
-      ${settingRow("Освещение земли", toggleControl("game", "groundLighting"))}
-      ${settingRow("Сглаженные границы воды", toggleControl("game", "softWater"))}
-      ${settingRow("Юниты за зданиями", toggleControl("game", "buildingOcclusion"))}
-      ${settingRow("Мелкие объекты / деревья", toggleControl("game", "showProps"))}
-      ${settingRow("Дополнительные анимации", toggleControl("game", "extraAnimations"))}
-      ${settingRow("Динамический LOD", toggleControl("game", "dynamicLOD"))}
-      ${settingRow("Эффекты жары", toggleControl("game", "heatEffects"))}
-      ${settingRow("Качество текстур", segmentControl("game", "textureQuality", ["Высокое", "Среднее", "Низкое"]))}
-      ${settingRow("Частицы", segmentControl("game", "particles", ["Низкое", "Среднее", "Высокое"]))}
-      ${settingRow("Фильтрация текстур", segmentControl("game", "textureFilter", ["Билинейная", "Трилинейная", "Анизотропная"]))}
-      ${settingRow("Анизотропия", segmentControl("game", "anisotropy", ["2x", "4x", "8x", "16x"]))}
-      ${settingRow("MSAA", segmentControl("game", "msaa", ["Выкл.", "2x", "4x", "8x"]))}
+      <h3>Graphics</h3>
+      ${settingRow("3D shadows", toggleControl("game", "shadow3D"))}
+      ${settingRow("2D shadows", toggleControl("game", "shadow2D"))}
+      ${settingRow("Cloud shadows", toggleControl("game", "cloudShadows"))}
+      ${settingRow("Ground lighting", toggleControl("game", "groundLighting"))}
+      ${settingRow("Smooth water borders", toggleControl("game", "softWater"))}
+      ${settingRow("Units behind buildings", toggleControl("game", "buildingOcclusion"))}
+      ${settingRow("Small props / trees", toggleControl("game", "showProps"))}
+      ${settingRow("Extra animations", toggleControl("game", "extraAnimations"))}
+      ${settingRow("Dynamic LOD", toggleControl("game", "dynamicLOD"))}
+      ${settingRow("Heat effects", toggleControl("game", "heatEffects"))}
+      ${settingRow("Texture quality", segmentControl("game", "textureQuality", ["High", "Medium", "Low"]))}
+      ${settingRow("Particles", segmentControl("game", "particles", ["Low", "Medium", "High"]))}
+      ${settingRow("Texture filtering", segmentControl("game", "textureFilter", ["Bilinear", "Trilinear", "Anisotropic"]))}
+      ${settingRow("Anisotropy", segmentControl("game", "anisotropy", ["2x", "4x", "8x", "16x"]))}
+      ${settingRow("MSAA", segmentControl("game", "msaa", ["Off", "2x", "4x", "8x"]))}
     </div>
 
     <div class="setting-section">
-      <h3>Камера / производительность</h3>
-      ${settingRow("Максимальная высота камеры", rangeControl("game", "maxCamera", 300, 800, 10))}
-      ${settingRow("Минимальная высота камеры", rangeControl("game", "minCamera", 40, 150, 5))}
-      ${settingRow("Наклон камеры", rangeControl("game", "cameraPitch", 20, 60, 1, "°"))}
-      ${settingRow("Ограничить максимальную высоту камеры", toggleControl("game", "enforceMax"))}
-      ${settingRow("Скорость прокрутки клавиатурой / у края", rangeControl("game", "scrollSpeed", 0.5, 2, 0.1, "×"))}
-      ${settingRow("Дальность прорисовки местности", rangeControl("game", "drawDistance", 0.5, 2, 0.05, "×"))}
-      ${settingRow("Ограничение FPS", toggleControl("game", "fpsLimit"))}
-      ${settingRow("Кадров в секунду", rangeControl("game", "fps", 30, 120, 5, " FPS"))}
+      <h3>Camera / Performance</h3>
+      ${settingRow("Maximum camera height", rangeControl("game", "maxCamera", 300, 800, 10))}
+      ${settingRow("Minimum camera height", rangeControl("game", "minCamera", 40, 150, 5))}
+      ${settingRow("Camera pitch", rangeControl("game", "cameraPitch", 20, 60, 1, "°"))}
+      ${settingRow("Enforce maximum camera height", toggleControl("game", "enforceMax"))}
+      ${settingRow("Keyboard / edge scroll speed", rangeControl("game", "scrollSpeed", 0.5, 2, 0.1, "×"))}
+      ${settingRow("Terrain draw distance", rangeControl("game", "drawDistance", 0.5, 2, 0.05, "×"))}
+      ${settingRow("FPS limit", toggleControl("game", "fpsLimit"))}
+      ${settingRow("Frames per second", rangeControl("game", "fps", 30, 120, 5, " FPS"))}
     </div>
   `;
 }
@@ -1242,11 +1242,11 @@ function renderEnhancedНастройки() {
   return `
     <div class="setting-section">
       <h3>Enhanced</h3>
-      ${settingRow("Текстуры фракций", segmentControl("enhanced", "textureResolution", ["Оригинал", "Высокое"]))}
-      ${settingRow("Качество интерфейса", segmentControl("enhanced", "uiQuality", ["HD", "FHD", "QHD"]))}
-      ${settingRow("Иконки пехоты", segmentControl("enhanced", "infantryIconScale", ["100%", "75%", "50%"]))}
+      ${settingRow("Faction textures", segmentControl("enhanced", "textureResolution", ["Vanilla", "High"]))}
+      ${settingRow("UI quality", segmentControl("enhanced", "uiQuality", ["HD", "FHD", "QHD"]))}
+      ${settingRow("Infantry icons", segmentControl("enhanced", "infantryIconScale", ["100%", "75%", "50%"]))}
       ${settingRow("Cameos", segmentControl("enhanced", "cameos", ["SD", "HD"]))}
-      ${settingRow("Скрипты ИИ", segmentControl("enhanced", "aiScripts", ["По умолчанию", "Ограниченный", "Скайнет"]))}
+      ${settingRow("AI scripts", segmentControl("enhanced", "aiScripts", ["Default", "Restrained", "Skynet"]))}
     </div>
   `;
 }
@@ -1255,16 +1255,16 @@ function renderContraНастройки() {
   return `
     <div class="setting-section">
       <h3>Contra X</h3>
-      ${settingRow("Панель управления", segmentControl("contra", "controlBar", ["Contra", "Профессиональный", "Стандарт"]))}
-      ${settingRow("Качество иконок / камео", segmentControl("contra", "cameos", ["Standard", "HD"]))}
-      ${settingRow("Музыка", segmentControl("contra", "music", ["Standard", "Enhanced", "Саундтрек"]))}
-      ${settingRow("Голоса юнитов", segmentControl("contra", "voices", ["Английский", "Родной"]))}
-      ${settingRow("Горячие клавиши", segmentControl("contra", "hotkeys", ["Original", "Leikeze"]))}
-      ${settingRow("Язык горячих клавиш", segmentControl("contra", "hotkeyLanguage", ["Английский", "Russian"]))}
-      ${settingRow("Портреты генералов", segmentControl("contra", "portraits", ["Standard", "Забавные"]))}
-      ${settingRow("Эффекты тумана", toggleControl("contra", "fogEffects"))}
-      ${settingRow("Эффекты воды", toggleControl("contra", "waterEffects"))}
-      ${settingRow("Дополнительные объекты зданий", toggleControl("contra", "extraBuildingProps"))}
+      ${settingRow("Control Bar", segmentControl("contra", "controlBar", ["Contra", "Pro", "Standard"]))}
+      ${settingRow("Icon / cameo quality", segmentControl("contra", "cameos", ["Standard", "HD"]))}
+      ${settingRow("Music", segmentControl("contra", "music", ["Standard", "Enhanced", "The Score"]))}
+      ${settingRow("Unit voices", segmentControl("contra", "voices", ["English", "Native"]))}
+      ${settingRow("Hotkeys", segmentControl("contra", "hotkeys", ["Original", "Leikeze"]))}
+      ${settingRow("Hotkey language", segmentControl("contra", "hotkeyLanguage", ["English", "Russian"]))}
+      ${settingRow("General portraits", segmentControl("contra", "portraits", ["Standard", "Funny"]))}
+      ${settingRow("Fog effects", toggleControl("contra", "fogEffects"))}
+      ${settingRow("Water effects", toggleControl("contra", "waterEffects"))}
+      ${settingRow("Extra building props", toggleControl("contra", "extraBuildingProps"))}
     </div>
   `;
 }
@@ -1292,8 +1292,8 @@ function renderНастройки(profileId = "zero-hour-online") {
 
   if (modalHeaderActions) {
     modalHeaderActions.innerHTML = `
-      <button type="button" class="page-header-action" data-settings-reset>Сбросить</button>
-      <button type="button" class="page-header-action page-header-action--primary" data-settings-save>Сохранить</button>
+      <button type="button" class="page-header-action" data-settings-reset>Reset</button>
+      <button type="button" class="page-header-action page-header-action--primary" data-settings-save>Save</button>
     `;
   }
 
@@ -1343,7 +1343,7 @@ function renderНастройки(profileId = "zero-hour-online") {
   modalHeaderActions?.querySelector("[data-settings-reset]")?.addEventListener("click", () => {
     settingsState[scope] = { ...settingsDefaults[scope] };
     renderНастройки(profileId);
-    showToast("Настройки по умолчанию загружены");
+    showToast("Default settings loaded");
   });
 }
 
@@ -1509,7 +1509,7 @@ if (audioToggle) {
     try { localStorage.setItem("generals-x-ui-sound", uiSoundEnabled ? "on" : "off"); } catch {}
     syncAudioToggle();
     if (uiSoundEnabled) playUISound("confirm");
-    showToast(uiSoundEnabled ? "Звуки интерфейса включены" : "Звуки интерфейса выключены");
+    showToast(uiSoundEnabled ? "Interface sounds on" : "Interface sounds off");
   });
 }
 
