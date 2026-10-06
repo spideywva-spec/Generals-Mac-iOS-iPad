@@ -28,6 +28,7 @@
 
 #include "Common/AsciiString.h"
 #include "Common/GameMemory.h"
+#include "Common/GlobalData.h"
 #include "Common/PerfTimer.h"
 #include "StdDevice/Common/StdLocalFileSystem.h"
 #include "StdDevice/Common/StdLocalFile.h"
@@ -71,6 +72,23 @@ static std::filesystem::path fixFilenameFromWindowsPath(const Char *filename, In
 	if (!std::filesystem::exists(path, ec) &&
 		((!(access & File::WRITE)) || ((access & File::WRITE) && !std::filesystem::exists(path.parent_path(), ec))))
 	{
+		// GeneralsX @feature dvorovrus 06/10/2026 Generic -mod profiles may contain loose files
+		// exactly like a classic Windows "copy over Zero Hour" mod. Resolve those first so
+		// Data\Scripts, Data\English\generals.csf, movies and similar assets can override
+		// the base install without changing cwd or mutating shared GameData.
+		if (!(access & File::WRITE) && TheGlobalData != nullptr &&
+		    TheGlobalData->m_modDir.isNotEmpty() && path.is_relative()) {
+			std::string modRootString(TheGlobalData->m_modDir.str());
+			std::replace(modRootString.begin(), modRootString.end(), '\\', '/');
+			std::filesystem::path modPath = std::filesystem::path(std::move(modRootString)) / path;
+			std::error_code ecMod;
+			if (std::filesystem::exists(modPath, ecMod)) {
+				DEBUG_LOG(("StdLocalFileSystem::fixFilenameFromWindowsPath - resolved mod-local loose file %s -> %s",
+					filename, modPath.string().c_str()));
+				return modPath;
+			}
+		}
+
 		// GeneralsX @bugfix felipebraz 23/03/2026 Before attempting expensive case-insensitive cwd traversal,
 		// check if the relative path resolves directly from the asset root (e.g. CNC_GENERALS_ZH_PATH).
 		// On Windows cwd == install dir so this is never needed; on Linux/macOS they are separate.
