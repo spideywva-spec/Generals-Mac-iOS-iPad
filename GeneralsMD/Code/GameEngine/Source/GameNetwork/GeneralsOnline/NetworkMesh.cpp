@@ -777,11 +777,9 @@ NetworkMesh::NetworkMesh()
 		: k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_All;
 
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
-	// iOS: do not start native STUN probing. The native ICE backend can crash in
-	// its background STUN send path on iOS after remote host/srflx candidates
-	// arrive (SIGSEGV in ICESessionInterface::SendPacketGather). TURN relay is
-	// already configured for every lobby, so relay-only keeps online connectivity
-	// without entering the unstable STUN path.
+	// iOS: keep ICE restricted to TURN relay candidates. TURN still uses STUN
+	// control packets internally, so the GNS overlay also guards queued STUN
+	// sends during ICE/socket teardown.
 	m_iceEnable = k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_Relay;
 	NetworkLog(ELogVerbosity::LOG_RELEASE, "NetworkMesh: iOS forcing TURN relay-only ICE (STUN disabled)");
 #endif
