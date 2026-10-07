@@ -122,8 +122,6 @@ struct TouchState {
 
 	bool firstFingerMoved = false;
 
-	// Двухпальцевый жест: зум (расстояние), поворот (угол), панорама
-	// (движение центроида). Все три работают параллельно.
 	float pinchCurrentDistance = 0.0f;
 	float pinchCurrentAngle = 0.0f;
 	float twoCentroidLastX = 0.0f;
@@ -142,33 +140,39 @@ float s_synthX = 0.0f;
 float s_synthY = 0.0f;
 bool  s_haveSynth = false;
 
-// Панорама одним пальцем: масштаб считается один раз при касании.
 bool  s_panValid = false;
 float s_panScaleX = 0.0f;
 float s_panScaleY = 0.0f;
 
-constexpr Uint64 kSelectionHoldMs   = 250;
-constexpr Uint64 kBuildRotateHoldMs = 200;
-constexpr Uint64 kDoubleTapMs       = 300;
+float s_pendingPanDx = 0.0f;
+float s_pendingPanDy = 0.0f;
+float s_pendingZoomPx = 0.0f;
+float s_pendingRotateRad = 0.0f;
+
+// Watchdog против залипаний.
+constexpr Uint64 kStuckTimeoutMs = 2000;
+Uint64 s_lastTouchEventTicks = 0;
+
+// Подкрученные константы для удобства.
+constexpr Uint64 kSelectionHoldMs   = 180;
+constexpr Uint64 kBuildRotateHoldMs = 180;
+constexpr Uint64 kDoubleTapMs       = 350;
 constexpr Uint64 kTwoFingerTapMs    = 300;
 
-constexpr float kMoveDeadzonePx     = 5.0f;
+constexpr float kMoveDeadzonePx     = 8.0f;
 constexpr float kDoubleTapDistPx    = 40.0f;
 constexpr float kTwoFingerTapMaxPx  = 20.0f;
 constexpr float kPinchMinMovePx     = 1.0f;
-constexpr float kRotateThresholdDeg = 25.0f;
+constexpr float kRotateThresholdDeg = 20.0f;
 
-// Зум: сколько world units зума даёт один пиксель движения пальцев.
-// Больше — быстрее зум.
-constexpr float kZoomWorldPerPixel  = 3.0f;
-
-// Поворот: множитель угла поворота пальцев в угол поворота камеры.
+constexpr float kZoomWorldPerPixel  = 0.75f;
 constexpr float kRotateScale        = 1.0f;
-
-// Порог мёртвой зоны для поворота пальцев.
 constexpr float kRotateTwistEps     = 0.001f;
-
 constexpr float kPi = 3.14159265358979323846f;
+
+constexpr float kBuildEdgeScrollSpeedPxPerSec = 1100.0f;
+constexpr float kBuildEdgeZonePx               = 120.0f;
+Uint64 s_lastFrameTicks = 0;
 
 static bool isBuildingPlacementMode()
 {
@@ -195,9 +199,6 @@ static float normalizedAngleDelta(float current, float previous)
 	return d;
 }
 
-// === ПРЯМОЕ УПРАВЛЕНИЕ КАМЕРОЙ ==========================================
-
-// Считаем масштаб панорамы один раз при касании.
 static void startTouchPan(float px, float py)
 {
 	s_panValid  = false;
@@ -219,7 +220,6 @@ static void startTouchPan(float px, float py)
 	s_panValid  = true;
 }
 
-// Сдвиг камеры на дельту пальца. Знак минус — карта едет ЗА пальцем.
 static void applyTouchPan(float dxPx, float dyPx)
 {
 	if (!TheTacticalView) return;
@@ -229,30 +229,21 @@ static void applyTouchPan(float dxPx, float dyPx)
 	camPos.x -= dxPx * s_panScaleX;
 	camPos.y -= dyPx * s_panScaleY;
 	TheTacticalView->userSetPosition(camPos);
-	TheTacticalView->forceRedraw();
 }
 
-// Зум напрямую через TheTacticalView->userZoom().
 static void applyCameraZoom(float distDeltaPx)
 {
 	if (!TheTacticalView) return;
-
 	const Real zoomDelta = -distDeltaPx * kZoomWorldPerPixel;
 	TheTacticalView->userZoom(zoomDelta);
-	TheTacticalView->forceRedraw();
 }
 
-// Поворот напрямую через TheTacticalView->getAngle()/userSetAngle().
 static void applyCameraRotate(float deltaRad)
 {
 	if (!TheTacticalView) return;
-
 	const Real newAngle = TheTacticalView->getAngle() + deltaRad * kRotateScale;
 	TheTacticalView->userSetAngle(newAngle);
-	TheTacticalView->forceRedraw();
 }
-
-// === СИНТЕТИЧЕСКАЯ МЫШЬ (для тапов, выделения, стройки) ================
 
 static void sendMouseExplicit(SDL3Mouse *mouse, SDL_Window *window,
                               Uint32 type, float x, float y,
@@ -329,6 +320,12 @@ static void resetTouchState()
 	s_touch.haveLastTap = hlt;
 	s_haveSynth = false;
 	s_panValid  = false;
+	s_pendingPanDx = 0.0f;
+	s_pendingPanDy = 0.0f;
+	s_pendingZoomPx = 0.0f;
+	s_pendingRotateRad = 0.0f;
+	s_lastFrameTicks = 0;
+	s_lastTouchEventTicks = SDL_GetTicks();
 }
 
 static void emitTap(SDL3Mouse *mouse, SDL_Window *window, float x, float y)
@@ -369,6 +366,19 @@ static void updateTouchFrame(SDL3Mouse *mouse, SDL_Window *window)
 {
 	if (!mouse || !window) return;
 
+	// Watchdog против залипаний: если фаза не Idle, но давно нет событий —
+	// принудительно всё отпускаем. Спасает от потери FINGER_UP.
+	if (s_touch.phase != TouchState::Idle) {
+		const Uint64 now = SDL_GetTicks();
+		if (s_lastTouchEventTicks != 0 &&
+		    (now - s_lastTouchEventTicks) > kStuckTimeoutMs) {
+			releaseAllButtons(mouse, window);
+			resetTouchState();
+			if (TheTacticalView) TheTacticalView->forceRedraw();
+			return;
+		}
+	}
+
 	if (s_touch.phase == TouchState::BuildPending &&
 	    s_touch.finger1 != 0 &&
 	    !s_touch.firstFingerMoved &&
@@ -379,11 +389,79 @@ static void updateTouchFrame(SDL3Mouse *mouse, SDL_Window *window)
 		sendMotionNoDelta(mouse, window, s_touch.downX, s_touch.downY);
 		sendBtnDown(mouse, window, s_touch.downX, s_touch.downY, SDL_BUTTON_LEFT);
 	}
+
+	bool changed = false;
+
+	if (s_touch.phase == TouchState::BuildMoving && TheTacticalView) {
+		const Uint64 now = SDL_GetTicks();
+		if (s_lastFrameTicks == 0) s_lastFrameTicks = now;
+		float dt = (now - s_lastFrameTicks) / 1000.0f;
+		if (dt > 0.1f) dt = 0.1f;
+		s_lastFrameTicks = now;
+
+		if (dt > 0.0f && s_panValid) {
+			int winW = 0, winH = 0;
+			SDL_GetWindowSize(window, &winW, &winH);
+
+			const float fx = s_touch.lastX;
+			const float fy = s_touch.lastY;
+
+			float scrollPxX = 0.0f;
+			float scrollPxY = 0.0f;
+
+			if (fx < kBuildEdgeZonePx) {
+				scrollPxX = -(1.0f - fx / kBuildEdgeZonePx);
+			} else if (fx > winW - kBuildEdgeZonePx) {
+				scrollPxX =  (1.0f - (winW - fx) / kBuildEdgeZonePx);
+			}
+
+			if (fy < kBuildEdgeZonePx) {
+				scrollPxY = -(1.0f - fy / kBuildEdgeZonePx);
+			} else if (fy > winH - kBuildEdgeZonePx) {
+				scrollPxY =  (1.0f - (winH - fy) / kBuildEdgeZonePx);
+			}
+
+			if (scrollPxX != 0.0f || scrollPxY != 0.0f) {
+				const float dx = scrollPxX * kBuildEdgeScrollSpeedPxPerSec * dt;
+				const float dy = scrollPxY * kBuildEdgeScrollSpeedPxPerSec * dt;
+				applyTouchPan(dx, dy);
+				changed = true;
+			}
+		}
+	} else {
+		s_lastFrameTicks = 0;
+	}
+
+	if (s_pendingPanDx != 0.0f || s_pendingPanDy != 0.0f) {
+		applyTouchPan(s_pendingPanDx, s_pendingPanDy);
+		s_pendingPanDx = 0.0f;
+		s_pendingPanDy = 0.0f;
+		changed = true;
+	}
+
+	if (s_pendingZoomPx != 0.0f) {
+		applyCameraZoom(s_pendingZoomPx);
+		s_pendingZoomPx = 0.0f;
+		changed = true;
+	}
+
+	if (s_pendingRotateRad != 0.0f) {
+		applyCameraRotate(s_pendingRotateRad);
+		s_pendingRotateRad = 0.0f;
+		changed = true;
+	}
+
+	if (changed && TheTacticalView) {
+		TheTacticalView->forceRedraw();
+	}
 }
 
 static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Event &event)
 {
 	if (!mouse || !window) return;
+
+	// Обновляем метку watchdog на каждое касание.
+	s_lastTouchEventTicks = SDL_GetTicks();
 
 	int width = 0, height = 0;
 	SDL_GetWindowSize(window, &width, &height);
@@ -420,6 +498,9 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 			s_touch.phase = isBuildingPlacementMode()
 				? TouchState::BuildPending
 				: TouchState::OnePending;
+			if (s_touch.phase == TouchState::BuildPending) {
+				startTouchPan(x, y);
+			}
 			sendMotionNoDelta(mouse, window, x, y);
 			return;
 		}
@@ -432,6 +513,7 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 			s_touch.f1y = event.tfinger.y;
 			s_touch.downTicks = SDL_GetTicks();
 			s_touch.firstFingerMoved = false;
+			startTouchPan(x, y);
 			sendMotionNoDelta(mouse, window, x, y);
 			return;
 		}
@@ -451,7 +533,6 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 			s_touch.rotationArmed = false;
 			s_touch.rotationAccum = 0.0f;
 
-			// Центроид и его масштаб для двухпальцевой панорамы.
 			{
 				const float cx0 = (s_touch.f1x + s_touch.f2x) * 0.5f * (float)width;
 				const float cy0 = (s_touch.f1y + s_touch.f2y) * 0.5f * (float)height;
@@ -495,7 +576,6 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 			s_touch.pinchCurrentDistance = dist;
 			s_touch.pinchCurrentAngle    = angle;
 
-			// --- 1. Панорама: центроид двигается как один палец ---
 			const float cx = (s_touch.f1x + s_touch.f2x) * 0.5f * (float)width;
 			const float cy = (s_touch.f1y + s_touch.f2y) * 0.5f * (float)height;
 			const float dcx = cx - s_touch.twoCentroidLastX;
@@ -510,13 +590,11 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 				TheTacticalView->userSetPosition(camPos);
 			}
 
-			// --- 2. Зум: расстояние между пальцами ---
 			if (SDL_fabsf(distDelta) > kPinchMinMovePx) {
 				s_touch.pinchMoved = true;
-				applyCameraZoom(distDelta);
+				s_pendingZoomPx += distDelta;
 			}
 
-			// --- 3. Поворот: угол между пальцами после порога ---
 			if (!s_touch.rotationArmed) {
 				s_touch.rotationAccum += angleDelta;
 				const float deg = SDL_fabsf(s_touch.rotationAccum) * (180.0f / kPi);
@@ -526,11 +604,9 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 				}
 			} else {
 				if (SDL_fabsf(angleDelta) > kRotateTwistEps) {
-					applyCameraRotate(angleDelta);
+					s_pendingRotateRad += angleDelta;
 				}
 			}
-
-			if (TheTacticalView) TheTacticalView->forceRedraw();
 			return;
 		}
 
@@ -566,6 +642,7 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 			if (isBuildingPlacementMode()) {
 				s_touch.firstFingerMoved = true;
 				s_touch.phase = TouchState::BuildMoving;
+				startTouchPan(s_touch.downX, s_touch.downY);
 				sendMotionNoDelta(mouse, window, x, y);
 				s_touch.lastX = x; s_touch.lastY = y;
 				return;
@@ -584,14 +661,16 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 			} else {
 				s_touch.phase = TouchState::CameraPan;
 				startTouchPan(s_touch.downX, s_touch.downY);
-				applyTouchPan(x - s_touch.downX, y - s_touch.downY);
+				s_pendingPanDx += x - s_touch.downX;
+				s_pendingPanDy += y - s_touch.downY;
 				s_touch.lastX = x; s_touch.lastY = y;
 			}
 			return;
 		}
 
 		if (s_touch.phase == TouchState::CameraPan) {
-			applyTouchPan(x - s_touch.lastX, y - s_touch.lastY);
+			s_pendingPanDx += x - s_touch.lastX;
+			s_pendingPanDy += y - s_touch.lastY;
 			s_touch.lastX = x; s_touch.lastY = y;
 			return;
 		}
@@ -641,6 +720,7 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 			s_touch.finger1 = 0;
 			s_touch.firstFingerMoved = false;
 			s_touch.phase = TouchState::BuildPending;
+			startTouchPan(x, y);
 			return;
 		}
 
@@ -803,6 +883,10 @@ void SDL3GameEngine::reset(void)
 		m_IsTextInputActive = false;
 		m_TextInputFocusWindow = nullptr;
 	}
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+	// Выход из матча — очищаем всё состояние касаний.
+	resetTouchState();
+#endif
 	GameEngine::reset();
 }
 
@@ -867,12 +951,26 @@ void SDL3GameEngine::pollSDL3Events(void)
 					m_TextInputFocusWindow = nullptr;
 				}
 				if (TheMouse) { TheMouse->loseFocus(); }
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+				// Сворачивание или потеря фокуса — отпускаем всё зажатое.
+				{
+					SDL3Mouse* mouse = dynamic_cast<SDL3Mouse*>(TheMouse);
+					if (mouse) releaseAllButtons(mouse, m_SDLWindow);
+					resetTouchState();
+				}
+#endif
 				break;
 
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 			case SDL_EVENT_DID_ENTER_BACKGROUND:
 				m_IsActive = false;
 				if (TheMouse) { TheMouse->loseFocus(); }
+				// Уход в фон — отпускаем всё зажатое.
+				{
+					SDL3Mouse* mouse = dynamic_cast<SDL3Mouse*>(TheMouse);
+					if (mouse) releaseAllButtons(mouse, m_SDLWindow);
+					resetTouchState();
+				}
 				break;
 
 			case SDL_EVENT_DID_ENTER_FOREGROUND:
