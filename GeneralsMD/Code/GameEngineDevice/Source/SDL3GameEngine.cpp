@@ -126,6 +126,8 @@ struct TouchState {
 	bool  rotationArmed = false;
 	float rotationAccum = 0.0f;
 	Uint64 twoFingerDownTicks = 0;
+	Uint64 lastFingerMotionTicks = 0;
+	bool cameraButtonDown = false;
 };
 
 TouchState s_touch;
@@ -309,6 +311,17 @@ static void updateTouchFrame(SDL3Mouse *mouse, SDL_Window *window)
 {
 	if (!mouse || !window) return;
 
+	// Touch camera is a direct-delta gesture: when the finger stops producing
+	// FINGER_MOTION events, release the synthetic RMB immediately. This prevents
+	// edge scrolling / held-drag logic from continuing to move the camera after
+	// the finger has stopped on the screen.
+	if (s_touch.phase == TouchState::CameraPan &&
+	    s_touch.cameraButtonDown &&
+	    (SDL_GetTicks() - s_touch.lastFingerMotionTicks) > 32) {
+		sendBtnUp(mouse, window, s_camX, s_camY, SDL_BUTTON_RIGHT);
+		s_touch.cameraButtonDown = false;
+	}
+
 	if (s_touch.phase == TouchState::BuildPending &&
 	    s_touch.finger1 != 0 &&
 	    !s_touch.firstFingerMoved &&
@@ -357,6 +370,8 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 			s_touch.f1y = event.tfinger.y;
 			s_touch.downTicks = SDL_GetTicks();
 			s_touch.firstFingerMoved = false;
+			s_touch.lastFingerMotionTicks = s_touch.downTicks;
+			s_touch.cameraButtonDown = false;
 			s_touch.phase = isBuildingPlacementMode()
 				? TouchState::BuildPending
 				: TouchState::OnePending;
@@ -502,6 +517,7 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 				s_camX = s_touch.downX; s_camY = s_touch.downY;
 				sendMotionNoDelta(mouse, window, s_touch.downX, s_touch.downY);
 				sendBtnDown(mouse, window, s_touch.downX, s_touch.downY, SDL_BUTTON_RIGHT);
+				s_touch.cameraButtonDown = true;
 
 				s_camX -= dx;
 				s_camY -= dy;
@@ -514,6 +530,11 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 		}
 
 		if (s_touch.phase == TouchState::CameraPan) {
+			if (!s_touch.cameraButtonDown) {
+				sendMotionNoDelta(mouse, window, s_camX, s_camY);
+				sendBtnDown(mouse, window, s_camX, s_camY, SDL_BUTTON_RIGHT);
+				s_touch.cameraButtonDown = true;
+			}
 			const float dx = x - s_touch.lastX;
 			const float dy = y - s_touch.lastY;
 			s_camX -= dx;
@@ -592,7 +613,10 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 		}
 
 		if (s_touch.phase == TouchState::CameraPan) {
-			sendBtnUp(mouse, window, s_camX, s_camY, SDL_BUTTON_RIGHT);
+			if (s_touch.cameraButtonDown) {
+				sendBtnUp(mouse, window, s_camX, s_camY, SDL_BUTTON_RIGHT);
+				s_touch.cameraButtonDown = false;
+			}
 			resetTouchState();
 			return;
 		}
