@@ -1,2 +1,0 @@
-1.4.15
-# Installed Hub CFBundleShortVersionString must match this release.
