@@ -414,6 +414,7 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 	case SDL_EVENT_FINGER_MOTION:
 	{
 		const SDL_FingerID id = event.tfinger.fingerID;
+		s_touch.lastFingerMotionTicks = SDL_GetTicks();
 
 		if (id == s_touch.finger1) { s_touch.f1x = event.tfinger.x; s_touch.f1y = event.tfinger.y; }
 		else if (id == s_touch.finger2) { s_touch.f2x = event.tfinger.x; s_touch.f2y = event.tfinger.y; }
