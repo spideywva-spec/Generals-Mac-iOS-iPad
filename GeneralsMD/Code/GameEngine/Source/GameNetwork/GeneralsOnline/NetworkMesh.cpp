@@ -26,6 +26,7 @@ UnsignedInt m_exeCRCOriginal = 0;
 // async Steam callbacks.
 static std::mutex g_pendingDeletionMutex;
 static std::vector<void*> g_pendingConnSignalingDeletions;
+static std::vector<ISignalingClient*> g_pendingSignalingClientDeletions;
 
 // Clean up pending ConnectionSignaling objects that were deferred during Release()
 
@@ -48,6 +49,11 @@ static void CleanupPendingConnSignalingDeletions()
 // m_mapConnections is accessed here without m_mapConnectionsMutex.
 void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t* pInfo)
 {
+	if (pInfo == nullptr)
+	{
+		return;
+	}
+
 	CleanupPendingConnSignalingDeletions();
 
 	NetworkMesh* pMesh = NGMP_OnlineServicesManager::GetNetworkMesh();
@@ -484,8 +490,30 @@ public:
 
 		// Silence warnings
 		(void)errMsg;
-		int64_t user_id = std::stoll(identityPeer.GetGenericString());
-		return new ConnectionSignaling(this, user_id);
+
+		const char* identity = identityPeer.GetGenericString();
+		if (identity == nullptr || identity[0] == '\0')
+		{
+			NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING] Rejecting signalling peer with empty identity");
+			return nullptr;
+		}
+
+		try
+		{
+			size_t parsedChars = 0;
+			const int64_t user_id = std::stoll(identity, &parsedChars);
+			if (parsedChars != std::strlen(identity) || user_id <= 0)
+			{
+				NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING] Rejecting invalid signalling identity '%s'", identity);
+				return nullptr;
+			}
+			return new ConnectionSignaling(this, user_id);
+		}
+		catch (const std::exception&)
+		{
+			NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING] Rejecting unparsable signalling identity '%s'", identity);
+			return nullptr;
+		}
 	}
 
 	inline int HexDigitVal(char c)
@@ -661,10 +689,35 @@ void NetworkMeshLibrary::Shutdown()
 		return;
 	}
 
+	// Stop callbacks before tearing down sockets.  Signalling objects may still be
+	// referenced by Steam until GameNetworkingSockets_Kill() completes.
 	SteamNetworkingUtils()->SetGlobalCallback_SteamNetConnectionStatusChanged(nullptr);
 	GameNetworkingSockets_Kill();
 
+	CleanupPendingConnSignalingDeletions();
+
+	std::vector<ISignalingClient*> clientsToDelete;
+	{
+		std::scoped_lock<std::mutex> lock(g_pendingDeletionMutex);
+		clientsToDelete.swap(g_pendingSignalingClientDeletions);
+	}
+	for (ISignalingClient* pClient : clientsToDelete)
+	{
+		delete pClient;
+	}
+
 	s_bInitialized = false;
+}
+
+void NetworkMeshLibrary::QueueSignalingClientForDeferredDeletion(ISignalingClient* pClient)
+{
+	if (pClient == nullptr)
+	{
+		return;
+	}
+
+	std::scoped_lock<std::mutex> lock(g_pendingDeletionMutex);
+	g_pendingSignalingClientDeletions.push_back(pClient);
 }
 
 void NetworkMeshLibrary::Tick()
@@ -780,7 +833,10 @@ void NetworkMesh::Flush()
 	{
 		for (auto& connectionData : m_mapConnections)
 		{
-			SteamNetworkingSockets()->FlushMessagesOnConnection(connectionData.second.m_hSteamConnection);
+			if (connectionData.second.m_hSteamConnection != k_HSteamNetConnection_Invalid)
+			{
+				SteamNetworkingSockets()->FlushMessagesOnConnection(connectionData.second.m_hSteamConnection);
+			}
 		}
 	}
 }
