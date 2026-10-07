@@ -59,10 +59,14 @@ NGMPGame::NGMPGame()
 
 NGMPGame::~NGMPGame()
 {
-	// Force camera to update from config
-    TheTacticalView->setDefaultView(DEG_TO_RADF(TheGlobalData->m_cameraPitch),
-        DEG_TO_RADF(TheGlobalData->m_cameraYaw),
-        1.0f);
+	// Online teardown can happen while the tactical view is already being destroyed.
+	// Do not dereference it during shutdown/recreation.
+	if (TheTacticalView != nullptr && TheGlobalData != nullptr)
+	{
+		TheTacticalView->setDefaultView(DEG_TO_RADF(TheGlobalData->m_cameraPitch),
+			DEG_TO_RADF(TheGlobalData->m_cameraYaw),
+			1.0f);
+	}
 }
 
 void NGMPGame::SyncWithLobby(LobbyEntry& lobby)
