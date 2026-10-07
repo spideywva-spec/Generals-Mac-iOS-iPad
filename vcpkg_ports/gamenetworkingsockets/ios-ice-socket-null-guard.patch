@@ -30,3 +30,42 @@
 +
      if ( !addrRelay.IsValid() )
          return m_pSocket->BSendRawPacketGather( nChunks, pChunks, addrPeer );
+--- a/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.h
++++ b/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.h
+@@ -567,6 +567,13 @@
+         // Each entry represents one usable local address.  Rebuilt whenever
+         // m_bInterfaceListStale is set.
+         std_vector< std::unique_ptr<ICESessionInterface> > m_vecInterfaces;
++
++        // Retired interfaces stay alive until the ICE session is destroyed. STUN
++        // requests are thinker objects and retain a raw m_pInterface pointer.
++        // Keeping the owner alive prevents a queued thinker from dereferencing
++        // a freed interface/socket during network-interface churn.
++        std_vector< std::unique_ptr<ICESessionInterface> > m_vecRetiredInterfaces;
+ 
+         // Resolved addresses of STUN servers, populated once at construction from the
+         // config string.  Used to discover server-reflexive candidates and to dispatch
+         // STUN responses back to the correct server.
+--- a/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.cpp
++++ b/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.cpp
+@@ -1530,6 +1530,7 @@
+     m_vecPendingPeerRequests.clear();
+ 
+     m_vecInterfaces.clear();
++    m_vecRetiredInterfaces.clear();
+ }
+ 
+ bool CSteamNetworkingICESession::SendPacketGather( int nChunks, const iovec *pChunks, int cbSendTotal )
+@@ -1865,7 +1865,13 @@
+             for ( CSteamNetworkingSocketsSTUNRequest *p : intf->m_vecPendingAllocateRequests )
+                 delete p;
+             intf->m_vecPendingAllocateRequests.clear();
+ 
+-            erase_at( m_vecInterfaces, i );
++            // Keep the interface object alive until the ICE session is destroyed.
++            // STUN thinkers retain a raw m_pInterface pointer and may already be
++            // present in the service-thread scheduler when interface churn occurs.
++            m_vecRetiredInterfaces.emplace_back( std::move( m_vecInterfaces[i] ) );
++            erase_at( m_vecInterfaces, i );
+             continue;
+         }
