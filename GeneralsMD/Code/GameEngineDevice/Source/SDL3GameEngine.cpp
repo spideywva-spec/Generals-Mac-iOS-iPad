@@ -33,6 +33,7 @@
 #include "GameClient/Gadget.h"
 #include "GameClient/InGameUI.h"
 #include "GameClient/View.h"
+#include "GameClient/Shell.h"
 #include "W3DDevice/GameLogic/W3DGameLogic.h"
 #include "W3DDevice/GameClient/W3DGameClient.h"
 #include "W3DDevice/Common/W3DModuleFactory.h"
@@ -169,7 +170,7 @@ constexpr float kRotateTwistEps     = 0.001f;
 constexpr float kPi = 3.14159265358979323846f;
 
 constexpr float kBuildEdgeScrollSpeedPxPerSec = 1100.0f;
-constexpr float kBuildEdgeZonePx               = 60.0f;   // было 120 — зона у края уже
+constexpr float kBuildEdgeZonePx               = 60.0f;
 Uint64 s_lastFrameTicks = 0;
 
 static bool isBuildingPlacementMode()
@@ -218,10 +219,13 @@ static void startTouchPan(float px, float py)
 	s_panValid  = true;
 }
 
+// В меню / лобби / настройках камера не двигается — там декоративная
+// карта на том же TheTacticalView, и её нельзя крутить пальцем.
 static void applyTouchPan(float dxPx, float dyPx)
 {
 	if (!TheTacticalView) return;
 	if (!s_panValid) return;
+	if (TheShell && TheShell->isShellActive()) return;
 
 	Coord3D camPos = TheTacticalView->getPosition();
 	camPos.x -= dxPx * s_panScaleX;
@@ -232,6 +236,8 @@ static void applyTouchPan(float dxPx, float dyPx)
 static void applyCameraZoom(float distDeltaPx)
 {
 	if (!TheTacticalView) return;
+	if (TheShell && TheShell->isShellActive()) return;
+
 	const Real zoomDelta = -distDeltaPx * kZoomWorldPerPixel;
 	TheTacticalView->userZoom(zoomDelta);
 }
@@ -239,6 +245,8 @@ static void applyCameraZoom(float distDeltaPx)
 static void applyCameraRotate(float deltaRad)
 {
 	if (!TheTacticalView) return;
+	if (TheShell && TheShell->isShellActive()) return;
+
 	const Real newAngle = TheTacticalView->getAngle() + deltaRad * kRotateScale;
 	TheTacticalView->userSetAngle(newAngle);
 }
@@ -579,10 +587,12 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 			s_touch.twoCentroidLastY = cy;
 
 			if (TheTacticalView && (SDL_fabsf(dcx) > 0.01f || SDL_fabsf(dcy) > 0.01f)) {
-				Coord3D camPos = TheTacticalView->getPosition();
-				camPos.x -= dcx * s_touch.twoPanScaleX;
-				camPos.y -= dcy * s_touch.twoPanScaleY;
-				TheTacticalView->userSetPosition(camPos);
+				if (!(TheShell && TheShell->isShellActive())) {
+					Coord3D camPos = TheTacticalView->getPosition();
+					camPos.x -= dcx * s_touch.twoPanScaleX;
+					camPos.y -= dcy * s_touch.twoPanScaleY;
+					TheTacticalView->userSetPosition(camPos);
+				}
 			}
 
 			if (SDL_fabsf(distDelta) > kPinchMinMovePx) {
