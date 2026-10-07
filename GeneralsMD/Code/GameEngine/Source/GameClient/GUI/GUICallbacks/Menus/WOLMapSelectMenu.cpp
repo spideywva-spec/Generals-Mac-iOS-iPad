@@ -141,14 +141,16 @@ void WOLMapSelectMenuInit( WindowLayout *layout, void *userData )
 	winMapPreviewID = TheNameKeyGenerator->nameToKey( "WOLMapSelectMenu.wnd:WinMapPreview" );
 	winMapPreview = TheWindowManager->winGetWindowFromId(parent, winMapPreviewID);
 
-	const MapMetaData *mmd = TheMapCache->findMap(TheGameSpyGame->getMap());
+	const MapMetaData *mmd = nullptr;
+	if (TheMapCache && TheGameSpyGame)
+		mmd = TheMapCache->findMap(TheGameSpyGame->getMap());
 	if (mmd)
 	{
 		usesSystemMapDir = mmd->m_isOfficial;
 	}
 
 	//if stats are enabled, only official maps can be used
-	if( TheGameSpyInfo->getCurrentStagingRoom()->getUseStats() )
+	if (useStats)
 		usesSystemMapDir = true;
 
 	buttonBack = TheNameKeyGenerator->nameToKey( "WOLMapSelectMenu.wnd:ButtonBack" );
