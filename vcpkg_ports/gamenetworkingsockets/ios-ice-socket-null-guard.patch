@@ -1,15 +1,34 @@
 --- a/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.cpp
 +++ b/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.cpp
+@@ -952,6 +952,13 @@
+ void CSteamNetworkingSocketsSTUNRequest::Think( SteamNetworkingMicroseconds usecNow )
+ {
+ 	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "CSteamNetworkingSocketsSTUNRequest::Think" );
+ 
++	// Defensive iOS guard: connection/interface teardown can invalidate the
++	// raw UDP socket while a queued STUN thinker is still being processed.
++	// Treat that request as failed instead of entering SendPacketGather with
++	// a missing socket.
++	if ( m_pInterface == nullptr || m_pInterface->m_pSocket == nullptr )
++	{
++		delete this;
++		return;
++	}
++
+     if ( m_nRetryCount < m_nMaxRetries )
+     {
+ 
+--- a/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.cpp
++++ b/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.cpp
 @@ -1233,5 +1233,11 @@
  // local candidate is a relay.  For non-relay pairs this is a thin wrapper around
  // BSendRawPacketGather.
  bool ICESessionInterface::SendPacketGather( int nChunks, const iovec *pChunks, int cbPayload, const netadr_t &addrPeer, const netadr_t &addrRelay )
  {
-+    // Defensive iOS guard: an ICE thinker can outlive a socket that has been
-+    // logically closed during interface churn. Never dereference a missing
-+    // raw socket from the Steam networking service thread.
-+    if ( m_pSocket == nullptr )
-+        return false;
++	// Defensive iOS guard: never dereference a raw UDP socket that has already
++	// been logically closed during ICE interface churn.
++	if ( m_pSocket == nullptr )
++		return false;
 +
      if ( !addrRelay.IsValid() )
          return m_pSocket->BSendRawPacketGather( nChunks, pChunks, addrPeer );
