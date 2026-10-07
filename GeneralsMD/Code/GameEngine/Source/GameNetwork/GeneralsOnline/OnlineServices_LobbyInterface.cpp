@@ -1141,6 +1141,28 @@ void NGMP_OnlineServices_LobbyInterface::JoinLobby(LobbyEntry lobbyInfo, std::st
 		return;
 	}
 
+	// A second JoinLobby for the same lobby can arrive after the first join has
+	// already completed (for example from a delayed UI/network callback). Never
+	// build a second NGMP game/mesh for the same lobby; doing so leaves the old
+	// GNS ICE connections alive while a new set is created.
+	if (m_pLobbyMesh != nullptr && m_CurrentLobby.lobbyID == lobbyInfo.lobbyID && IsInLobby())
+	{
+		NetworkLog(ELogVerbosity::LOG_RELEASE,
+			"[NGMP] Ignoring duplicate JoinLobby for lobby %lld; mesh is already active",
+			static_cast<long long>(lobbyInfo.lobbyID));
+		return;
+	}
+
+	// If a different lobby is requested while a previous mesh is still alive,
+	// fully tear down the old local mesh/game before creating a new one.
+	if (m_pLobbyMesh != nullptr)
+	{
+		NetworkLog(ELogVerbosity::LOG_RELEASE,
+			"[NGMP] Tearing down stale mesh before joining lobby %lld",
+			static_cast<long long>(lobbyInfo.lobbyID));
+		LeaveCurrentLobby();
+	}
+
 	const uint64_t lobbyJoinGeneration = ++m_LobbyJoinGeneration;
 
     AnticheatPlugInterface::EndSession();
