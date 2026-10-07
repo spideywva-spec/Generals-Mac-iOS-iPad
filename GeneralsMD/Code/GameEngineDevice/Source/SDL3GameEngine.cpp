@@ -32,6 +32,7 @@
 #include "GameClient/GameWindowManager.h"
 #include "GameClient/Gadget.h"
 #include "GameClient/InGameUI.h"
+#include "GameClient/View.h"
 #include "W3DDevice/GameLogic/W3DGameLogic.h"
 #include "W3DDevice/GameClient/W3DGameClient.h"
 #include "W3DDevice/Common/W3DModuleFactory.h"
@@ -55,6 +56,7 @@
 extern Mouse *TheMouse;
 extern Keyboard *TheKeyboard;
 extern GameWindowManager *TheWindowManager;
+extern View *TheTacticalView;
 
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 #include <atomic>
@@ -126,8 +128,6 @@ struct TouchState {
 	bool  rotationArmed = false;
 	float rotationAccum = 0.0f;
 	Uint64 twoFingerDownTicks = 0;
-	Uint64 lastFingerMotionTicks = 0;
-	bool cameraButtonDown = false;
 };
 
 TouchState s_touch;
@@ -136,16 +136,13 @@ float s_synthX = 0.0f;
 float s_synthY = 0.0f;
 bool  s_haveSynth = false;
 
-float s_camX = 0.0f;
-float s_camY = 0.0f;
-
-// Сколько пикселей пинча даёт один "полный щелчок" колеса (wheelY = 1.0,
-// что в SDL3Mouse превращается в wheelPos = 120). Чем меньше число, тем
-// чувствительнее зум. Отправляем wheel напрямую из FINGER_MOTION
-// дробными порциями — движок сам складывает их в target zoom, никаких
-// накопителей и никаких ступенек.
-constexpr float kPinchPxPerClick    = 6.0f;
-constexpr float kPinchMinMovePx     = 1.0f;
+// Масштаб панорамы. Считается один раз при касании: сколько world units
+// приходится на 1 пиксель экрана. Дальше движение пальца линейное —
+// пиксель пальца в пиксель камеры. Никаких экранных проекций на каждом
+// кадре, никаких искажений около горизонта, никаких разворотов круга.
+bool  s_panValid = false;
+float s_panScaleX = 0.0f;
+float s_panScaleY = 0.0f;
 
 constexpr Uint64 kSelectionHoldMs   = 250;
 constexpr Uint64 kBuildRotateHoldMs = 200;
@@ -155,9 +152,9 @@ constexpr Uint64 kTwoFingerTapMs    = 300;
 constexpr float kMoveDeadzonePx     = 5.0f;
 constexpr float kDoubleTapDistPx    = 40.0f;
 constexpr float kTwoFingerTapMaxPx  = 20.0f;
+constexpr float kPinchPxPerClick    = 6.0f;
+constexpr float kPinchMinMovePx     = 1.0f;
 constexpr float kRotateThresholdDeg = 25.0f;
-// 1 радиан поворота пальцев = 15 px сдвига MMB — медленный, плавный
-// поворот камеры, без резких рывков.
 constexpr float kRotatePixelsPerRad = 15.0f;
 constexpr float kPi = 3.14159265358979323846f;
 
@@ -184,6 +181,43 @@ static float normalizedAngleDelta(float current, float previous)
 	while (d >  kPi) d -= 2.0f * kPi;
 	while (d < -kPi) d += 2.0f * kPi;
 	return d;
+}
+
+// Считаем масштаб один раз при касании. Смотрим куда уходит мир если
+// палец сместить на 60 пикселей вправо-вниз от точки касания.
+static void startTouchPan(float px, float py)
+{
+	s_panValid  = false;
+	s_panScaleX = 0.0f;
+	s_panScaleY = 0.0f;
+	if (!TheTacticalView) return;
+
+	ICoord2D p0, p1;
+	p0.x = (Int)px;         p0.y = (Int)py;
+	p1.x = (Int)(px + 60);  p1.y = (Int)(py + 60);
+
+	Coord3D w0, w1;
+	if (!TheTacticalView->screenToTerrain(&p0, &w0)) return;
+	if (!TheTacticalView->screenToTerrain(&p1, &w1)) return;
+
+	s_panScaleX = (w1.x - w0.x) / 60.0f;
+	s_panScaleY = (w1.y - w0.y) / 60.0f;
+	s_panValid  = true;
+}
+
+// Сдвигаем камеру на дельту пальца. Знак минус — карта едет ЗА пальцем:
+// точка мира под пальцем остаётся под пальцем. Работает для любой
+// траектории — прямая, круг, зигзаг, стрелка.
+static void applyTouchPan(float dxPx, float dyPx)
+{
+	if (!TheTacticalView) return;
+	if (!s_panValid) return;
+
+	Coord3D camPos = TheTacticalView->getPosition();
+	camPos.x -= dxPx * s_panScaleX;
+	camPos.y -= dyPx * s_panScaleY;
+	TheTacticalView->userSetPosition(&camPos);
+	TheTacticalView->forceRedraw();
 }
 
 static void sendMouseExplicit(SDL3Mouse *mouse, SDL_Window *window,
@@ -265,6 +299,7 @@ static void resetTouchState()
 	s_touch.lastTapX = ltx; s_touch.lastTapY = lty;
 	s_touch.haveLastTap = hlt;
 	s_haveSynth = false;
+	s_panValid = false;
 }
 
 static void emitTap(SDL3Mouse *mouse, SDL_Window *window, float x, float y)
@@ -291,9 +326,6 @@ static void emitTap(SDL3Mouse *mouse, SDL_Window *window, float x, float y)
 static void releaseAllButtons(SDL3Mouse *mouse, SDL_Window *window)
 {
 	switch (s_touch.phase) {
-	case TouchState::CameraPan:
-		sendBtnUp(mouse, window, s_camX, s_camY, SDL_BUTTON_RIGHT);
-		break;
 	case TouchState::Selection:
 		sendBtnUp(mouse, window, s_touch.lastX, s_touch.lastY, SDL_BUTTON_LEFT);
 		break;
@@ -304,23 +336,9 @@ static void releaseAllButtons(SDL3Mouse *mouse, SDL_Window *window)
 	}
 }
 
-// Покадровый вызов. Только таймер удержания 200 мс для вращения здания.
-// Зум и поворот шлются сразу из FINGER_MOTION — для плавности нужен
-// максимально низкий отклик, без буферизации.
 static void updateTouchFrame(SDL3Mouse *mouse, SDL_Window *window)
 {
 	if (!mouse || !window) return;
-
-	// Touch camera is a direct-delta gesture: when the finger stops producing
-	// FINGER_MOTION events, release the synthetic RMB immediately. This prevents
-	// edge scrolling / held-drag logic from continuing to move the camera after
-	// the finger has stopped on the screen.
-	if (s_touch.phase == TouchState::CameraPan &&
-	    s_touch.cameraButtonDown &&
-	    (SDL_GetTicks() - s_touch.lastFingerMotionTicks) > 32) {
-		sendBtnUp(mouse, window, s_camX, s_camY, SDL_BUTTON_RIGHT);
-		s_touch.cameraButtonDown = false;
-	}
 
 	if (s_touch.phase == TouchState::BuildPending &&
 	    s_touch.finger1 != 0 &&
@@ -370,8 +388,6 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 			s_touch.f1y = event.tfinger.y;
 			s_touch.downTicks = SDL_GetTicks();
 			s_touch.firstFingerMoved = false;
-			s_touch.lastFingerMotionTicks = s_touch.downTicks;
-			s_touch.cameraButtonDown = false;
 			s_touch.phase = isBuildingPlacementMode()
 				? TouchState::BuildPending
 				: TouchState::OnePending;
@@ -414,7 +430,6 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 	case SDL_EVENT_FINGER_MOTION:
 	{
 		const SDL_FingerID id = event.tfinger.fingerID;
-		s_touch.lastFingerMotionTicks = SDL_GetTicks();
 
 		if (id == s_touch.finger1) { s_touch.f1x = event.tfinger.x; s_touch.f1y = event.tfinger.y; }
 		else if (id == s_touch.finger2) { s_touch.f2x = event.tfinger.x; s_touch.f2y = event.tfinger.y; }
@@ -432,17 +447,11 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 			const float cy = (s_touch.f1y + s_touch.f2y) * 0.5f * (float)height;
 
 			if (!s_touch.rotationArmed) {
-				// Зум. Каждый motion event шлёт свой кусочек wheelY. Движок
-				// складывает их в target zoom, поэтому зум идёт плавно и
-				// скорость его 1:1 зависит от скорости движения пальцев.
-				// Никаких накопителей, никаких задержек на кадр.
 				if (SDL_fabsf(distDelta) > kPinchMinMovePx) {
 					s_touch.pinchMoved = true;
 					const float wheelY = distDelta / kPinchPxPerClick;
 					sendWheel(mouse, window, cx, cy, wheelY);
 				}
-
-				// Порог поворота 25° — до него только зум.
 				s_touch.rotationAccum += angleDelta;
 				const float deg = SDL_fabsf(s_touch.rotationAccum) * (180.0f / kPi);
 				if (deg >= kRotateThresholdDeg) {
@@ -452,10 +461,6 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 					sendBtnDown(mouse, window, cx, cy, SDL_BUTTON_MIDDLE);
 				}
 			} else {
-				// Поворот активен. Каждый motion event даёт свою порцию
-				// MMB drag. kRotatePixelsPerRad мал — поворот плавный,
-				// без резких скачков, скорость пропорциональна скорости
-				// кручения пальцев.
 				if (SDL_fabsf(angleDelta) > 0.0005f) {
 					const float shift = angleDelta * kRotatePixelsPerRad;
 					const float newX = s_synthX + shift;
@@ -513,40 +518,17 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 				s_touch.lastX = x; s_touch.lastY = y;
 				sendMotion(mouse, window, x, y);
 			} else {
+				// Камера. Считаем масштаб один раз, дальше двигаем линейно.
 				s_touch.phase = TouchState::CameraPan;
-				s_touch.lastX = s_touch.downX; s_touch.lastY = s_touch.downY;
-				s_camX = s_touch.downX; s_camY = s_touch.downY;
-				// Camera movement is one discrete gesture event per real touch delta.
-				// Never leave RMB held between frames: otherwise the legacy mouse-camera
-				// code can continue moving while the finger is stationary.
-				s_camX -= dx;
-				s_camY -= dy;
-				s_synthX = s_camX; s_synthY = s_camY; s_haveSynth = true;
-				sendMotionNoDelta(mouse, window, s_camX, s_camY);
-				sendBtnDown(mouse, window, s_camX, s_camY, SDL_BUTTON_RIGHT);
-				sendMouseExplicit(mouse, window, SDL_EVENT_MOUSE_MOTION,
-				                  s_camX, s_camY, -dx, -dy);
-				sendBtnUp(mouse, window, s_camX, s_camY, SDL_BUTTON_RIGHT);
-				s_touch.cameraButtonDown = false;
+				startTouchPan(s_touch.downX, s_touch.downY);
+				applyTouchPan(x - s_touch.downX, y - s_touch.downY);
 				s_touch.lastX = x; s_touch.lastY = y;
 			}
 			return;
 		}
 
 		if (s_touch.phase == TouchState::CameraPan) {
-			const float dx = x - s_touch.lastX;
-			const float dy = y - s_touch.lastY;
-			if (dx != 0.0f || dy != 0.0f) {
-				s_camX -= dx;
-				s_camY -= dy;
-				s_synthX = s_camX; s_synthY = s_camY; s_haveSynth = true;
-				sendMotionNoDelta(mouse, window, s_camX, s_camY);
-				sendBtnDown(mouse, window, s_camX, s_camY, SDL_BUTTON_RIGHT);
-				sendMouseExplicit(mouse, window, SDL_EVENT_MOUSE_MOTION,
-				                  s_camX, s_camY, -dx, -dy);
-				sendBtnUp(mouse, window, s_camX, s_camY, SDL_BUTTON_RIGHT);
-			}
-			s_touch.cameraButtonDown = false;
+			applyTouchPan(x - s_touch.lastX, y - s_touch.lastY);
 			s_touch.lastX = x; s_touch.lastY = y;
 			return;
 		}
@@ -618,10 +600,6 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 		}
 
 		if (s_touch.phase == TouchState::CameraPan) {
-			if (s_touch.cameraButtonDown) {
-				sendBtnUp(mouse, window, s_camX, s_camY, SDL_BUTTON_RIGHT);
-				s_touch.cameraButtonDown = false;
-			}
 			resetTouchState();
 			return;
 		}
