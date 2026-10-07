@@ -964,7 +964,11 @@ void NetworkMesh::StartConnectionSignalling(const char* szMiddlewareID, int64_t 
             return;
         }
 
-        // if we already have a connection to this use, drop it, having a single-direction connection will break signalling
+        // Do not tear down an existing Steam connection just because a duplicate
+        // signalling message arrived. GNS keeps the old ICE/STUN state alive on
+        // its networking thread; closing and erasing the PlayerConnection here
+        // while that state is still active can create two competing P2P
+        // connections and leave ICE/STUN touching stale socket state.
         int previousAttempts = 0;
         auto it = m_mapConnections.find(remoteUserID);
         if (it != m_mapConnections.end())
@@ -973,16 +977,13 @@ void NetworkMesh::StartConnectionSignalling(const char* szMiddlewareID, int64_t 
 
             if (it->second.m_hSteamConnection != k_HSteamNetConnection_Invalid)
             {
-                NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] Closing connection %lld, new connection is being negotiated", remoteUserID);
-                SteamNetworkingSockets()->CloseConnection(it->second.m_hSteamConnection, 0, "Client Disconnecting Gracefully (new connection being negotiated)", false);
-
-                if (TheNetwork != nullptr)
-                {
-                    TheNetwork->GetConnectionManager()->disconnectPlayer(remoteUserID);
-                }
+                NetworkLog(ELogVerbosity::LOG_RELEASE,
+                    "[SIGNAL] Ignoring duplicate signalling for user %lld; existing Steam connection %u is still active",
+                    remoteUserID, it->second.m_hSteamConnection);
+                return;
             }
 
-            NetworkLog(ELogVerbosity::LOG_RELEASE, "[ERASE 3] Removing user %lld", it->second.m_userID);
+            NetworkLog(ELogVerbosity::LOG_DEBUG, "[ERASE] Removing stale invalid connection for user %lld", it->second.m_userID);
             m_mapConnections.erase(it);
         }
 
