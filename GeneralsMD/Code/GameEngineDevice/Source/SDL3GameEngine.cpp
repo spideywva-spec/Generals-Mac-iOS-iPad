@@ -122,8 +122,14 @@ struct TouchState {
 
 	bool firstFingerMoved = false;
 
+	// Двухпальцевый жест: зум (расстояние), поворот (угол), панорама
+	// (движение центроида). Все три работают параллельно.
 	float pinchCurrentDistance = 0.0f;
 	float pinchCurrentAngle = 0.0f;
+	float twoCentroidLastX = 0.0f;
+	float twoCentroidLastY = 0.0f;
+	float twoPanScaleX = 0.0f;
+	float twoPanScaleY = 0.0f;
 	bool  pinchMoved = false;
 	bool  rotationArmed = false;
 	float rotationAccum = 0.0f;
@@ -136,10 +142,7 @@ float s_synthX = 0.0f;
 float s_synthY = 0.0f;
 bool  s_haveSynth = false;
 
-// Масштаб панорамы. Считается один раз при касании: сколько world units
-// приходится на 1 пиксель экрана. Дальше движение пальца линейное —
-// пиксель пальца в пиксель камеры. Никаких экранных проекций на каждом
-// кадре, никаких искажений около горизонта, никаких разворотов круга.
+// Панорама одним пальцем: масштаб считается один раз при касании.
 bool  s_panValid = false;
 float s_panScaleX = 0.0f;
 float s_panScaleY = 0.0f;
@@ -152,10 +155,19 @@ constexpr Uint64 kTwoFingerTapMs    = 300;
 constexpr float kMoveDeadzonePx     = 5.0f;
 constexpr float kDoubleTapDistPx    = 40.0f;
 constexpr float kTwoFingerTapMaxPx  = 20.0f;
-constexpr float kPinchPxPerClick    = 6.0f;
 constexpr float kPinchMinMovePx     = 1.0f;
 constexpr float kRotateThresholdDeg = 25.0f;
-constexpr float kRotatePixelsPerRad = 15.0f;
+
+// Зум: сколько world units зума даёт один пиксель движения пальцев.
+// Больше — быстрее зум.
+constexpr float kZoomWorldPerPixel  = 3.0f;
+
+// Поворот: множитель угла поворота пальцев в угол поворота камеры.
+constexpr float kRotateScale        = 1.0f;
+
+// Порог мёртвой зоны для поворота пальцев.
+constexpr float kRotateTwistEps     = 0.001f;
+
 constexpr float kPi = 3.14159265358979323846f;
 
 static bool isBuildingPlacementMode()
@@ -183,10 +195,9 @@ static float normalizedAngleDelta(float current, float previous)
 	return d;
 }
 
-// Считаем масштаб один раз при касании. Смотрим куда уходит мир если
-// палец сместить на 60 пикселей вправо-вниз от точки касания.
-// screenToTerrain в этом форке возвращает void — пишем результат в
-// подготовленные структуры, без if на возврат.
+// === ПРЯМОЕ УПРАВЛЕНИЕ КАМЕРОЙ ==========================================
+
+// Считаем масштаб панорамы один раз при касании.
 static void startTouchPan(float px, float py)
 {
 	s_panValid  = false;
@@ -208,10 +219,7 @@ static void startTouchPan(float px, float py)
 	s_panValid  = true;
 }
 
-// Сдвигаем камеру на дельту пальца. Знак минус — карта едет ЗА пальцем:
-// точка мира под пальцем остаётся под пальцем. Работает для любой
-// траектории — прямая, круг, зигзаг, стрелка.
-// userSetPosition принимает const Coord3D& — передаём значение, не указатель.
+// Сдвиг камеры на дельту пальца. Знак минус — карта едет ЗА пальцем.
 static void applyTouchPan(float dxPx, float dyPx)
 {
 	if (!TheTacticalView) return;
@@ -223,6 +231,28 @@ static void applyTouchPan(float dxPx, float dyPx)
 	TheTacticalView->userSetPosition(camPos);
 	TheTacticalView->forceRedraw();
 }
+
+// Зум напрямую через TheTacticalView->userZoom().
+static void applyCameraZoom(float distDeltaPx)
+{
+	if (!TheTacticalView) return;
+
+	const Real zoomDelta = -distDeltaPx * kZoomWorldPerPixel;
+	TheTacticalView->userZoom(zoomDelta);
+	TheTacticalView->forceRedraw();
+}
+
+// Поворот напрямую через TheTacticalView->getAngle()/userSetAngle().
+static void applyCameraRotate(float deltaRad)
+{
+	if (!TheTacticalView) return;
+
+	const Real newAngle = TheTacticalView->getAngle() + deltaRad * kRotateScale;
+	TheTacticalView->userSetAngle(newAngle);
+	TheTacticalView->forceRedraw();
+}
+
+// === СИНТЕТИЧЕСКАЯ МЫШЬ (для тапов, выделения, стройки) ================
 
 static void sendMouseExplicit(SDL3Mouse *mouse, SDL_Window *window,
                               Uint32 type, float x, float y,
@@ -288,11 +318,6 @@ static void sendBtnUp(SDL3Mouse *mouse, SDL_Window *window, float x, float y, Ui
 	sendMouseExplicit(mouse, window, SDL_EVENT_MOUSE_BUTTON_UP, x, y, 0.0f, 0.0f, btn, 0.0f, clicks);
 }
 
-static void sendWheel(SDL3Mouse *mouse, SDL_Window *window, float x, float y, float wheelY)
-{
-	sendMouseExplicit(mouse, window, SDL_EVENT_MOUSE_WHEEL, x, y, 0.0f, 0.0f, 0, wheelY);
-}
-
 static void resetTouchState()
 {
 	const Uint64 ltt = s_touch.lastTapTicks;
@@ -303,7 +328,7 @@ static void resetTouchState()
 	s_touch.lastTapX = ltx; s_touch.lastTapY = lty;
 	s_touch.haveLastTap = hlt;
 	s_haveSynth = false;
-	s_panValid = false;
+	s_panValid  = false;
 }
 
 static void emitTap(SDL3Mouse *mouse, SDL_Window *window, float x, float y)
@@ -425,6 +450,29 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 			s_touch.pinchMoved = false;
 			s_touch.rotationArmed = false;
 			s_touch.rotationAccum = 0.0f;
+
+			// Центроид и его масштаб для двухпальцевой панорамы.
+			{
+				const float cx0 = (s_touch.f1x + s_touch.f2x) * 0.5f * (float)width;
+				const float cy0 = (s_touch.f1y + s_touch.f2y) * 0.5f * (float)height;
+				s_touch.twoCentroidLastX = cx0;
+				s_touch.twoCentroidLastY = cy0;
+
+				s_touch.twoPanScaleX = 0.0f;
+				s_touch.twoPanScaleY = 0.0f;
+				if (TheTacticalView) {
+					ICoord2D p0, p1;
+					p0.x = (Int)cx0;         p0.y = (Int)cy0;
+					p1.x = (Int)(cx0 + 60);  p1.y = (Int)(cy0 + 60);
+					Coord3D w0; w0.x = 0.0f; w0.y = 0.0f; w0.z = 0.0f;
+					Coord3D w1; w1.x = 0.0f; w1.y = 0.0f; w1.z = 0.0f;
+					TheTacticalView->screenToTerrain(&p0, &w0);
+					TheTacticalView->screenToTerrain(&p1, &w1);
+					s_touch.twoPanScaleX = (w1.x - w0.x) / 60.0f;
+					s_touch.twoPanScaleY = (w1.y - w0.y) / 60.0f;
+				}
+			}
+
 			s_touch.phase = TouchState::TwoFinger;
 			return;
 		}
@@ -447,30 +495,42 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 			s_touch.pinchCurrentDistance = dist;
 			s_touch.pinchCurrentAngle    = angle;
 
+			// --- 1. Панорама: центроид двигается как один палец ---
 			const float cx = (s_touch.f1x + s_touch.f2x) * 0.5f * (float)width;
 			const float cy = (s_touch.f1y + s_touch.f2y) * 0.5f * (float)height;
+			const float dcx = cx - s_touch.twoCentroidLastX;
+			const float dcy = cy - s_touch.twoCentroidLastY;
+			s_touch.twoCentroidLastX = cx;
+			s_touch.twoCentroidLastY = cy;
 
+			if (TheTacticalView && (SDL_fabsf(dcx) > 0.01f || SDL_fabsf(dcy) > 0.01f)) {
+				Coord3D camPos = TheTacticalView->getPosition();
+				camPos.x -= dcx * s_touch.twoPanScaleX;
+				camPos.y -= dcy * s_touch.twoPanScaleY;
+				TheTacticalView->userSetPosition(camPos);
+			}
+
+			// --- 2. Зум: расстояние между пальцами ---
+			if (SDL_fabsf(distDelta) > kPinchMinMovePx) {
+				s_touch.pinchMoved = true;
+				applyCameraZoom(distDelta);
+			}
+
+			// --- 3. Поворот: угол между пальцами после порога ---
 			if (!s_touch.rotationArmed) {
-				if (SDL_fabsf(distDelta) > kPinchMinMovePx) {
-					s_touch.pinchMoved = true;
-					const float wheelY = distDelta / kPinchPxPerClick;
-					sendWheel(mouse, window, cx, cy, wheelY);
-				}
 				s_touch.rotationAccum += angleDelta;
 				const float deg = SDL_fabsf(s_touch.rotationAccum) * (180.0f / kPi);
 				if (deg >= kRotateThresholdDeg) {
 					s_touch.rotationArmed = true;
 					s_touch.pinchMoved = true;
-					sendMotionNoDelta(mouse, window, cx, cy);
-					sendBtnDown(mouse, window, cx, cy, SDL_BUTTON_MIDDLE);
 				}
 			} else {
-				if (SDL_fabsf(angleDelta) > 0.0005f) {
-					const float shift = angleDelta * kRotatePixelsPerRad;
-					const float newX = s_synthX + shift;
-					sendMotion(mouse, window, newX, s_synthY);
+				if (SDL_fabsf(angleDelta) > kRotateTwistEps) {
+					applyCameraRotate(angleDelta);
 				}
 			}
+
+			if (TheTacticalView) TheTacticalView->forceRedraw();
 			return;
 		}
 
@@ -522,7 +582,6 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 				s_touch.lastX = x; s_touch.lastY = y;
 				sendMotion(mouse, window, x, y);
 			} else {
-				// Камера. Считаем масштаб один раз, дальше двигаем линейно.
 				s_touch.phase = TouchState::CameraPan;
 				startTouchPan(s_touch.downX, s_touch.downY);
 				applyTouchPan(x - s_touch.downX, y - s_touch.downY);
@@ -554,10 +613,6 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 			else if (id == s_touch.finger2) s_touch.finger2 = 0;
 			else return;
 			if (s_touch.finger1 != 0 || s_touch.finger2 != 0) return;
-
-			if (s_touch.rotationArmed) {
-				sendBtnUp(mouse, window, s_synthX, s_synthY, SDL_BUTTON_MIDDLE);
-			}
 
 			const Uint64 held = SDL_GetTicks() - s_touch.twoFingerDownTicks;
 			const bool isTap = (held <= kTwoFingerTapMs) &&
