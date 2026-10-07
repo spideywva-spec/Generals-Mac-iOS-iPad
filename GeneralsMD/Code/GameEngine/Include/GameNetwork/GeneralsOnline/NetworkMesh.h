@@ -12,6 +12,7 @@ class NetRoom_ChatMessagePacket;
 class ISignalingClient
 {
 public:
+	virtual ~ISignalingClient() = default;
 	virtual ISteamNetworkingConnectionSignaling* CreateSignalingForConnection(const SteamNetworkingIdentity& identityPeer, SteamNetworkingErrMsg& errMsg) = 0;
 
 	virtual void Poll() = 0;
@@ -138,6 +139,10 @@ public:
 	// Tears the library down. Safe to call when not initialized.
 	static void Shutdown();
 
+	// NetworkMesh instances defer their signalling-client destruction until after
+	// GameNetworkingSockets has been fully shut down.
+	static void QueueSignalingClientForDeferredDeletion(ISignalingClient* pClient);
+
 	static bool IsInitialized() { return s_bInitialized; }
 
 	// Drives SteamNetworkingSockets()->RunCallbacks(), independent of NetworkMesh lifetime.
@@ -158,7 +163,7 @@ public:
 
 		if (m_pSignaling != nullptr)
 		{
-			delete m_pSignaling;
+			NetworkMeshLibrary::QueueSignalingClientForDeferredDeletion(m_pSignaling);
 			m_pSignaling = nullptr;
 		}
 	}
