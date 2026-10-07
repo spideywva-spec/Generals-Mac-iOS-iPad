@@ -781,7 +781,7 @@ NetworkMesh::NetworkMesh()
 	// control packets internally, so the GNS overlay also guards queued STUN
 	// sends during ICE/socket teardown.
 	m_iceEnable = k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_Relay;
-	NetworkLog(ELogVerbosity::LOG_RELEASE, "NetworkMesh: iOS forcing TURN relay-only ICE (STUN disabled)");
+	NetworkLog(ELogVerbosity::LOG_RELEASE, "NetworkMesh: iOS forcing TURN relay-only ICE (TURN uses STUN control internally)");
 #endif
 
 	// 0 = library default, 1 = native, 2 = WebRTC
