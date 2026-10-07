@@ -1,4 +1,4 @@
-/* 
+/*
 **	Command & Conquer Generals Zero Hour(tm)
 **	Copyright 2025 Electronic Arts Inc.
 **
@@ -149,11 +149,9 @@ float s_pendingPanDy = 0.0f;
 float s_pendingZoomPx = 0.0f;
 float s_pendingRotateRad = 0.0f;
 
-// Watchdog против залипаний.
 constexpr Uint64 kStuckTimeoutMs = 2000;
 Uint64 s_lastTouchEventTicks = 0;
 
-// Подкрученные константы для удобства.
 constexpr Uint64 kSelectionHoldMs   = 180;
 constexpr Uint64 kBuildRotateHoldMs = 180;
 constexpr Uint64 kDoubleTapMs       = 350;
@@ -171,7 +169,7 @@ constexpr float kRotateTwistEps     = 0.001f;
 constexpr float kPi = 3.14159265358979323846f;
 
 constexpr float kBuildEdgeScrollSpeedPxPerSec = 1100.0f;
-constexpr float kBuildEdgeZonePx               = 120.0f;
+constexpr float kBuildEdgeZonePx               = 60.0f;   // было 120 — зона у края уже
 Uint64 s_lastFrameTicks = 0;
 
 static bool isBuildingPlacementMode()
@@ -366,8 +364,6 @@ static void updateTouchFrame(SDL3Mouse *mouse, SDL_Window *window)
 {
 	if (!mouse || !window) return;
 
-	// Watchdog против залипаний: если фаза не Idle, но давно нет событий —
-	// принудительно всё отпускаем. Спасает от потери FINGER_UP.
 	if (s_touch.phase != TouchState::Idle) {
 		const Uint64 now = SDL_GetTicks();
 		if (s_lastTouchEventTicks != 0 &&
@@ -410,15 +406,15 @@ static void updateTouchFrame(SDL3Mouse *mouse, SDL_Window *window)
 			float scrollPxY = 0.0f;
 
 			if (fx < kBuildEdgeZonePx) {
-				scrollPxX = -(1.0f - fx / kBuildEdgeZonePx);
+				scrollPxX =  (1.0f - fx / kBuildEdgeZonePx);
 			} else if (fx > winW - kBuildEdgeZonePx) {
-				scrollPxX =  (1.0f - (winW - fx) / kBuildEdgeZonePx);
+				scrollPxX = -(1.0f - (winW - fx) / kBuildEdgeZonePx);
 			}
 
 			if (fy < kBuildEdgeZonePx) {
-				scrollPxY = -(1.0f - fy / kBuildEdgeZonePx);
+				scrollPxY =  (1.0f - fy / kBuildEdgeZonePx);
 			} else if (fy > winH - kBuildEdgeZonePx) {
-				scrollPxY =  (1.0f - (winH - fy) / kBuildEdgeZonePx);
+				scrollPxY = -(1.0f - (winH - fy) / kBuildEdgeZonePx);
 			}
 
 			if (scrollPxX != 0.0f || scrollPxY != 0.0f) {
@@ -460,7 +456,6 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 {
 	if (!mouse || !window) return;
 
-	// Обновляем метку watchdog на каждое касание.
 	s_lastTouchEventTicks = SDL_GetTicks();
 
 	int width = 0, height = 0;
@@ -884,7 +879,6 @@ void SDL3GameEngine::reset(void)
 		m_TextInputFocusWindow = nullptr;
 	}
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
-	// Выход из матча — очищаем всё состояние касаний.
 	resetTouchState();
 #endif
 	GameEngine::reset();
@@ -952,7 +946,6 @@ void SDL3GameEngine::pollSDL3Events(void)
 				}
 				if (TheMouse) { TheMouse->loseFocus(); }
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
-				// Сворачивание или потеря фокуса — отпускаем всё зажатое.
 				{
 					SDL3Mouse* mouse = dynamic_cast<SDL3Mouse*>(TheMouse);
 					if (mouse) releaseAllButtons(mouse, m_SDLWindow);
@@ -965,7 +958,6 @@ void SDL3GameEngine::pollSDL3Events(void)
 			case SDL_EVENT_DID_ENTER_BACKGROUND:
 				m_IsActive = false;
 				if (TheMouse) { TheMouse->loseFocus(); }
-				// Уход в фон — отпускаем всё зажатое.
 				{
 					SDL3Mouse* mouse = dynamic_cast<SDL3Mouse*>(TheMouse);
 					if (mouse) releaseAllButtons(mouse, m_SDLWindow);
