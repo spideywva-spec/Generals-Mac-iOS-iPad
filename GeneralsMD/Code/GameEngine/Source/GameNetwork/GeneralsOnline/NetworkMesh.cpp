@@ -1545,7 +1545,7 @@ void PlayerConnection::Close()
 {
 	if (m_ConnectionType == EConnectionType::BuiltIn_ValveSockets)
 	{
-        if (SteamNetworkingSockets())
+        if (SteamNetworkingSockets() && m_hSteamConnection != k_HSteamNetConnection_Invalid)
         {
             SteamNetworkingSockets()->CloseConnection(m_hSteamConnection, 0, "Client Disconnecting Gracefully", false);
         }
