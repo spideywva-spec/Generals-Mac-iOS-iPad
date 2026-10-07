@@ -1,6 +1,8 @@
 --- a/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.cpp
 +++ b/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.cpp
-@@ -1234,6 +1234,12 @@
+@@ -1233,5 +1233,11 @@
+ // local candidate is a relay.  For non-relay pairs this is a thin wrapper around
+ // BSendRawPacketGather.
  bool ICESessionInterface::SendPacketGather( int nChunks, const iovec *pChunks, int cbPayload, const netadr_t &addrPeer, const netadr_t &addrRelay )
  {
 +    // Defensive iOS guard: an ICE thinker can outlive a socket that has been
