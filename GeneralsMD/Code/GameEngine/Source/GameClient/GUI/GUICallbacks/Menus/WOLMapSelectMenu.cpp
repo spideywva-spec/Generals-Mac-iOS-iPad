@@ -129,7 +129,8 @@ void WOLMapSelectMenuInit( WindowLayout *layout, void *userData )
 	NameKeyType parentID = TheNameKeyGenerator->nameToKey( "WOLMapSelectMenu.wnd:WOLMapSelectMenuParent" );
 	parent = TheWindowManager->winGetWindowFromId( nullptr, parentID );
 
-	TheWindowManager->winSetFocus( parent );
+	if (parent)
+		TheWindowManager->winSetFocus( parent );
 
 	CustomMatchPreferences pref;
 	Bool usesSystemMapDir = pref.usesSystemMapDir();
@@ -205,7 +206,10 @@ void WOLMapSelectMenuInit( WindowLayout *layout, void *userData )
 	{
 		if (TheMapCache)
 			TheMapCache->updateCache();
-		populateMapListbox( mapList, usesSystemMapDir, TRUE, TheGameSpyGame->getMap() );
+		AsciiString currentMap;
+		if (TheGameSpyGame)
+			currentMap = TheGameSpyGame->getMap();
+		populateMapListbox( mapList, usesSystemMapDir, TRUE, currentMap );
 	}
 
 }
