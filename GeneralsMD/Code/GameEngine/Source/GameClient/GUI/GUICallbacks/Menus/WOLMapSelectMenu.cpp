@@ -43,6 +43,9 @@
 #include "GameNetwork/GameSpyOverlay.h"
 #include "GameClient/MapUtil.h"
 #include "GameNetwork/GUIUtil.h"
+#if defined(GENERALS_ONLINE)
+#include "GameNetwork/GeneralsOnline/NGMP_interfaces.h"
+#endif
 
 
 // PRIVATE DATA ///////////////////////////////////////////////////////////////////////////////////
@@ -209,6 +212,10 @@ void WOLMapSelectMenuInit( WindowLayout *layout, void *userData )
 		AsciiString currentMap;
 		if (TheGameSpyGame)
 			currentMap = TheGameSpyGame->getMap();
+#if defined(GENERALS_ONLINE)
+		else if (TheNGMPGame)
+			currentMap = TheNGMPGame->getMap();
+#endif
 		populateMapListbox( mapList, usesSystemMapDir, TRUE, currentMap );
 	}
 
@@ -424,7 +431,13 @@ WindowMsgHandledType WOLMapSelectMenuSystem( GameWindow *window, UnsignedInt msg
 			{
 				if (TheMapCache)
 					TheMapCache->updateCache();
-				populateMapListbox( mapList, TRUE, TRUE, TheGameSpyGame->getMap() );
+				populateMapListbox( mapList, TRUE, TRUE,
+#if defined(GENERALS_ONLINE)
+				TheNGMPGame ? TheNGMPGame->getMap() : (TheGameSpyGame ? TheGameSpyGame->getMap() : AsciiString::TheEmptyString)
+#else
+				TheGameSpyGame ? TheGameSpyGame->getMap() : AsciiString::TheEmptyString
+#endif
+			);
 				CustomMatchPreferences pref;
 				pref.setUsesSystemMapDir(TRUE);
 				pref.write();
@@ -433,7 +446,13 @@ WindowMsgHandledType WOLMapSelectMenuSystem( GameWindow *window, UnsignedInt msg
 			{
 				if (TheMapCache)
 					TheMapCache->updateCache();
-				populateMapListbox( mapList, FALSE, TRUE, TheGameSpyGame->getMap() );
+				populateMapListbox( mapList, FALSE, TRUE,
+#if defined(GENERALS_ONLINE)
+				TheNGMPGame ? TheNGMPGame->getMap() : (TheGameSpyGame ? TheGameSpyGame->getMap() : AsciiString::TheEmptyString)
+#else
+				TheGameSpyGame ? TheGameSpyGame->getMap() : AsciiString::TheEmptyString
+#endif
+			);
 				CustomMatchPreferences pref;
 				pref.setUsesSystemMapDir(FALSE);
 				pref.write();
@@ -461,20 +480,58 @@ WindowMsgHandledType WOLMapSelectMenuSystem( GameWindow *window, UnsignedInt msg
 						asciiMap = mapFname;
 					else
 						asciiMap.translate( map );
-					TheGameSpyGame->setMap(asciiMap);
 					asciiMap.toLower();
-					std::map<AsciiString, MapMetaData>::iterator it = TheMapCache->find(asciiMap);
-					if (it != TheMapCache->end())
-					{
-						TheGameSpyGame->getGameSpySlot(0)->setMapAvailability(TRUE);
-						TheGameSpyGame->setMapCRC( it->second.m_CRC );
-						TheGameSpyGame->setMapSize( it->second.m_filesize );
-					}
 
-					TheGameSpyGame->adjustSlotsForMap(); // BGC- adjust the slots for the new map.
-					TheGameSpyGame->resetAccepted();
-					TheGameSpyGame->resetStartSpots();
-					TheGameSpyInfo->setGameOptions();
+#if defined(GENERALS_ONLINE)
+					// Generals Online uses NGMPGame/LobbyInterface instead of the
+					// legacy GameSpyGameInfo object. The old WOL menu used to
+					// dereference TheGameSpyGame here even when it was null.
+					if (TheNGMPGame)
+					{
+						const MapMetaData *md = TheMapCache ? TheMapCache->findMap(asciiMap) : nullptr;
+						TheNGMPGame->setMap(asciiMap);
+						if (md)
+						{
+							TheNGMPGame->setMapCRC(md->m_CRC);
+							TheNGMPGame->setMapSize(md->m_filesize);
+						}
+						TheNGMPGame->adjustSlotsForMap();
+						TheNGMPGame->resetAccepted();
+						TheNGMPGame->resetStartSpots();
+
+						NGMP_OnlineServices_LobbyInterface *lobby =
+							NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+						if (lobby && lobby->IsHost() && md)
+						{
+							lobby->UpdateCurrentLobby_Map(
+								md->m_displayName,
+								asciiMap,
+								md->m_isOfficial,
+								md->m_numPlayers);
+						}
+						else if (lobby)
+						{
+							lobby->UpdateCurrentLobby_HasMap();
+						}
+					}
+#else
+					if (TheGameSpyGame)
+					{
+						std::map<AsciiString, MapMetaData>::iterator it = TheMapCache->find(asciiMap);
+						TheGameSpyGame->setMap(asciiMap);
+						if (it != TheMapCache->end())
+						{
+							TheGameSpyGame->getGameSpySlot(0)->setMapAvailability(TRUE);
+							TheGameSpyGame->setMapCRC(it->second.m_CRC);
+							TheGameSpyGame->setMapSize(it->second.m_filesize);
+						}
+						TheGameSpyGame->adjustSlotsForMap();
+						TheGameSpyGame->resetAccepted();
+						TheGameSpyGame->resetStartSpots();
+						if (TheGameSpyInfo)
+							TheGameSpyInfo->setGameOptions();
+					}
+#endif
 
 					WOLDisplaySlotList();
 					WOLDisplayGameOptions();
