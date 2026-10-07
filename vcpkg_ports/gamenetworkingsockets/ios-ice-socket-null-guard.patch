@@ -18,7 +18,7 @@
      if ( m_nRetryCount < m_nMaxRetries )
      {
  
-@@ -1233,5 +1233,11 @@
+@@ -1233,6 +1233,10 @@
  // local candidate is a relay.  For non-relay pairs this is a thin wrapper around
  // BSendRawPacketGather.
  bool ICESessionInterface::SendPacketGather( int nChunks, const iovec *pChunks, int cbPayload, const netadr_t &addrPeer, const netadr_t &addrRelay )
