@@ -1,6 +1,6 @@
 --- a/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.cpp
 +++ b/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.cpp
-@@ -952,6 +952,13 @@
+@@ -952,3 +952,14 @@
  void CSteamNetworkingSocketsSTUNRequest::Think( SteamNetworkingMicroseconds usecNow )
  {
  	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "CSteamNetworkingSocketsSTUNRequest::Think" );
