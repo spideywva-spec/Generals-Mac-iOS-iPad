@@ -185,6 +185,8 @@ static float normalizedAngleDelta(float current, float previous)
 
 // Считаем масштаб один раз при касании. Смотрим куда уходит мир если
 // палец сместить на 60 пикселей вправо-вниз от точки касания.
+// screenToTerrain в этом форке возвращает void — пишем результат в
+// подготовленные структуры, без if на возврат.
 static void startTouchPan(float px, float py)
 {
 	s_panValid  = false;
@@ -196,9 +198,10 @@ static void startTouchPan(float px, float py)
 	p0.x = (Int)px;         p0.y = (Int)py;
 	p1.x = (Int)(px + 60);  p1.y = (Int)(py + 60);
 
-	Coord3D w0, w1;
-	if (!TheTacticalView->screenToTerrain(&p0, &w0)) return;
-	if (!TheTacticalView->screenToTerrain(&p1, &w1)) return;
+	Coord3D w0; w0.x = 0.0f; w0.y = 0.0f; w0.z = 0.0f;
+	Coord3D w1; w1.x = 0.0f; w1.y = 0.0f; w1.z = 0.0f;
+	TheTacticalView->screenToTerrain(&p0, &w0);
+	TheTacticalView->screenToTerrain(&p1, &w1);
 
 	s_panScaleX = (w1.x - w0.x) / 60.0f;
 	s_panScaleY = (w1.y - w0.y) / 60.0f;
@@ -208,6 +211,7 @@ static void startTouchPan(float px, float py)
 // Сдвигаем камеру на дельту пальца. Знак минус — карта едет ЗА пальцем:
 // точка мира под пальцем остаётся под пальцем. Работает для любой
 // траектории — прямая, круг, зигзаг, стрелка.
+// userSetPosition принимает const Coord3D& — передаём значение, не указатель.
 static void applyTouchPan(float dxPx, float dyPx)
 {
 	if (!TheTacticalView) return;
@@ -216,7 +220,7 @@ static void applyTouchPan(float dxPx, float dyPx)
 	Coord3D camPos = TheTacticalView->getPosition();
 	camPos.x -= dxPx * s_panScaleX;
 	camPos.y -= dyPx * s_panScaleY;
-	TheTacticalView->userSetPosition(&camPos);
+	TheTacticalView->userSetPosition(camPos);
 	TheTacticalView->forceRedraw();
 }
 
