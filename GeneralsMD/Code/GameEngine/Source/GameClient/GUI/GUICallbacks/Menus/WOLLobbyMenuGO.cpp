@@ -1509,7 +1509,7 @@ void WOLLobbyMenuInit( WindowLayout *layout, void *userData )
 	}
 
 	// And also initialize it
-    if (buttonBuddy != nullptr && pSocialInterface->GetNumTotalNotifications() > 0)
+    if (buttonBuddy != nullptr && pSocialInterface != nullptr && pSocialInterface->GetNumTotalNotifications() > 0)
     {
         UnicodeString buttonText;
         buttonText.format(L"%s [%d]", TheGameText->fetch("GUI:Buddies").str(), pSocialInterface->GetNumTotalNotifications());
