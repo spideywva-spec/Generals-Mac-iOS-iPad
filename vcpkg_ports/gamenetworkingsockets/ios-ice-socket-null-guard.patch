@@ -1,0 +1,13 @@
+--- a/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.cpp
++++ b/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.cpp
+@@ -1234,6 +1234,12 @@
+ bool ICESessionInterface::SendPacketGather( int nChunks, const iovec *pChunks, int cbPayload, const netadr_t &addrPeer, const netadr_t &addrRelay )
+ {
++    // Defensive iOS guard: an ICE thinker can outlive a socket that has been
++    // logically closed during interface churn. Never dereference a missing
++    // raw socket from the Steam networking service thread.
++    if ( m_pSocket == nullptr )
++        return false;
++
+     if ( !addrRelay.IsValid() )
+         return m_pSocket->BSendRawPacketGather( nChunks, pChunks, addrPeer );
