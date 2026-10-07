@@ -133,6 +133,11 @@ void WOLMapSelectMenuInit( WindowLayout *layout, void *userData )
 
 	CustomMatchPreferences pref;
 	Bool usesSystemMapDir = pref.usesSystemMapDir();
+	// The iOS online launcher can enter this menu before the legacy GameSpy
+	// staging-room object has been created. The old WOL code dereferenced it
+	// unconditionally, which caused the map-picker crash.
+	GameSpyStagingRoom *stagingRoom = TheGameSpyInfo ? TheGameSpyInfo->getCurrentStagingRoom() : nullptr;
+	const Bool useStats = stagingRoom ? stagingRoom->getUseStats() : FALSE;
 	winMapPreviewID = TheNameKeyGenerator->nameToKey( "WOLMapSelectMenu.wnd:WinMapPreview" );
 	winMapPreview = TheWindowManager->winGetWindowFromId(parent, winMapPreviewID);
 
@@ -155,25 +160,37 @@ void WOLMapSelectMenuInit( WindowLayout *layout, void *userData )
 
 	GameWindow *radioButtonSystemMaps = TheWindowManager->winGetWindowFromId( parent, radioButtonSystemMapsID );
 	GameWindow *radioButtonUserMaps = TheWindowManager->winGetWindowFromId( parent, radioButtonUserMapsID );
-	if( TheGameSpyInfo->getCurrentStagingRoom()->getUseStats() )
+	if( useStats )
 	{	//disable unofficial maps if stats are being recorded
-		GadgetRadioSetSelection( radioButtonSystemMaps, FALSE );
-		radioButtonUserMaps->winEnable( FALSE );
+		if (radioButtonSystemMaps)
+			GadgetRadioSetSelection( radioButtonSystemMaps, FALSE );
+		if (radioButtonUserMaps)
+			radioButtonUserMaps->winEnable( FALSE );
 	}
 	else if (usesSystemMapDir)
-		GadgetRadioSetSelection( radioButtonSystemMaps, FALSE );
+	{
+		if (radioButtonSystemMaps)
+			GadgetRadioSetSelection( radioButtonSystemMaps, FALSE );
+	}
 	else
-		GadgetRadioSetSelection( radioButtonUserMaps, FALSE );
+	{
+		if (radioButtonUserMaps)
+			GadgetRadioSetSelection( radioButtonUserMaps, FALSE );
+	}
 
 	AsciiString tmpString;
 	for (Int i = 0; i < MAX_SLOTS; i++)
 	{
 		tmpString.format("WOLMapSelectMenu.wnd:ButtonMapStartPosition%d", i);
 		buttonMapStartPositionID[i] = TheNameKeyGenerator->nameToKey( tmpString );
-		buttonMapStartPosition[i] = TheWindowManager->winGetWindowFromId( winMapPreview, buttonMapStartPositionID[i] );
-		DEBUG_ASSERTCRASH(buttonMapStartPosition[i], ("Could not find the ButtonMapStartPosition[%d]",i ));
-		buttonMapStartPosition[i]->winHide(TRUE);
-		buttonMapStartPosition[i]->winEnable(FALSE);
+		buttonMapStartPosition[i] = winMapPreview
+			? TheWindowManager->winGetWindowFromId( winMapPreview, buttonMapStartPositionID[i])
+			: nullptr;
+		if (buttonMapStartPosition[i])
+		{
+			buttonMapStartPosition[i]->winHide(TRUE);
+			buttonMapStartPosition[i]->winEnable(FALSE);
+		}
 	}
 
 	raiseMessageBoxes = TRUE;
