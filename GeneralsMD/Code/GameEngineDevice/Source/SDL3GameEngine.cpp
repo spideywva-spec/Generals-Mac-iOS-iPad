@@ -516,33 +516,37 @@ static void handleTouchEvent(SDL3Mouse *mouse, SDL_Window *window, const SDL_Eve
 				s_touch.phase = TouchState::CameraPan;
 				s_touch.lastX = s_touch.downX; s_touch.lastY = s_touch.downY;
 				s_camX = s_touch.downX; s_camY = s_touch.downY;
-				sendMotionNoDelta(mouse, window, s_touch.downX, s_touch.downY);
-				sendBtnDown(mouse, window, s_touch.downX, s_touch.downY, SDL_BUTTON_RIGHT);
-				s_touch.cameraButtonDown = true;
-
+				// Camera movement is one discrete gesture event per real touch delta.
+				// Never leave RMB held between frames: otherwise the legacy mouse-camera
+				// code can continue moving while the finger is stationary.
 				s_camX -= dx;
 				s_camY -= dy;
 				s_synthX = s_camX; s_synthY = s_camY; s_haveSynth = true;
+				sendMotionNoDelta(mouse, window, s_camX, s_camY);
+				sendBtnDown(mouse, window, s_camX, s_camY, SDL_BUTTON_RIGHT);
 				sendMouseExplicit(mouse, window, SDL_EVENT_MOUSE_MOTION,
 				                  s_camX, s_camY, -dx, -dy);
+				sendBtnUp(mouse, window, s_camX, s_camY, SDL_BUTTON_RIGHT);
+				s_touch.cameraButtonDown = false;
 				s_touch.lastX = x; s_touch.lastY = y;
 			}
 			return;
 		}
 
 		if (s_touch.phase == TouchState::CameraPan) {
-			if (!s_touch.cameraButtonDown) {
-				sendMotionNoDelta(mouse, window, s_camX, s_camY);
-				sendBtnDown(mouse, window, s_camX, s_camY, SDL_BUTTON_RIGHT);
-				s_touch.cameraButtonDown = true;
-			}
 			const float dx = x - s_touch.lastX;
 			const float dy = y - s_touch.lastY;
-			s_camX -= dx;
-			s_camY -= dy;
-			s_synthX = s_camX; s_synthY = s_camY; s_haveSynth = true;
-			sendMouseExplicit(mouse, window, SDL_EVENT_MOUSE_MOTION,
-			                  s_camX, s_camY, -dx, -dy);
+			if (dx != 0.0f || dy != 0.0f) {
+				s_camX -= dx;
+				s_camY -= dy;
+				s_synthX = s_camX; s_synthY = s_camY; s_haveSynth = true;
+				sendMotionNoDelta(mouse, window, s_camX, s_camY);
+				sendBtnDown(mouse, window, s_camX, s_camY, SDL_BUTTON_RIGHT);
+				sendMouseExplicit(mouse, window, SDL_EVENT_MOUSE_MOTION,
+				                  s_camX, s_camY, -dx, -dy);
+				sendBtnUp(mouse, window, s_camX, s_camY, SDL_BUTTON_RIGHT);
+			}
+			s_touch.cameraButtonDown = false;
 			s_touch.lastX = x; s_touch.lastY = y;
 			return;
 		}
