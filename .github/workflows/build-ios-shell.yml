@@ -7,6 +7,7 @@ on:
     branches:
       - main
       - a13-ios-build
+      - a13-ios-build-v2
     paths:
       - 'GeneralsMD/**'
       - 'launcher_web/**'
