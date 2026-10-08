@@ -1,6 +1,6 @@
 --- a/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.cpp
 +++ b/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.cpp
-@@ -952,4 +952,13 @@ void CSteamNetworkingSocketsSTUNRequest::Think( SteamNetworkingMicroseconds usecNow )
+@@ -952,4 +952,12 @@ void CSteamNetworkingSocketsSTUNRequest::Think( SteamNetworkingMicroseconds usecNow )
  {
  	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "CSteamNetworkingSocketsSTUNRequest::Think" );
  
@@ -16,7 +16,7 @@
 +
      if ( m_nRetryCount < m_nMaxRetries )
      {
-@@ -1233,2 +1233,8 @@ bool ICESessionInterface::SendPacketGather( int nChunks, const iovec *pChunks, int cbPayload, const netadr_t &addrPeer, const netadr_t &addrRelay )
+@@ -1233,2 +1233,7 @@ bool ICESessionInterface::SendPacketGather( int nChunks, const iovec *pChunks, int cbPayload, const netadr_t &addrPeer, const netadr_t &addrRelay )
  {
 +	// Defensive iOS guard: never dereference a raw UDP socket that has already
 +	// been logically closed during ICE interface churn.
@@ -25,13 +25,13 @@
 +
      if ( !addrRelay.IsValid() )
          return m_pSocket->BSendRawPacketGather( nChunks, pChunks, addrPeer );
-@@ -1530,3 +1530,4 @@ CSteamNetworkingICESession::~CSteamNetworkingICESession()
+@@ -1530,3 +1530,5 @@ CSteamNetworkingICESession::~CSteamNetworkingICESession()
      m_vecPendingPeerRequests.clear();
  
      m_vecInterfaces.clear();
 +    m_vecRetiredInterfaces.clear();
  }
-@@ -1865,5 +1865,9 @@ void CSteamNetworkingICESession::GatherInterfaces()
+@@ -1865,5 +1865,10 @@ void CSteamNetworkingICESession::GatherInterfaces()
              for ( CSteamNetworkingSocketsSTUNRequest *p : intf->m_vecPendingAllocateRequests )
                  delete p;
              intf->m_vecPendingAllocateRequests.clear();
@@ -46,7 +46,7 @@
          }
 --- a/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.h
 +++ b/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.h
-@@ -567,4 +567,11 @@ class CSteamNetworkingICESession
+@@ -567,4 +567,12 @@ class CSteamNetworkingICESession
          // Each entry represents one usable local address.  Rebuilt whenever
          // m_bInterfaceListStale is set.
          std_vector< std::unique_ptr<ICESessionInterface> > m_vecInterfaces;
