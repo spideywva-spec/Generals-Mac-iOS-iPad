@@ -783,26 +783,34 @@ NetworkMesh::NetworkMesh()
 		? k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_Relay
 		: k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_All;
 
-#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
-	// iOS: keep ICE restricted to TURN relay candidates. TURN still uses STUN
-	// control packets internally, so the GNS overlay also guards queued STUN
-	// sends during ICE/socket teardown.
-	m_iceEnable = k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_Relay;
-	NetworkLog(ELogVerbosity::LOG_RELEASE, "NetworkMesh: iOS forcing TURN relay-only ICE (TURN uses STUN control internally)");
-#endif
+// Do not force a platform-specific ICE transport here. In the crash log from
+	// the iOS build, the native ICE/STUN worker itself faults in
+	// ICESessionInterface::SendPacketGather while processing a STUN request.
+	// Keeping the transport policy identical to the service configuration avoids
+	// the iOS-only relay/native combination that was triggering that path.
+	NetworkLog(ELogVerbosity::LOG_RELEASE,
+		"NetworkMesh: ICE transport mode=%d (relay=%d)",
+		m_iceEnable, serviceConf.relay_all_traffic ? 1 : 0);
 
-	// 0 = library default, 1 = native, 2 = WebRTC
-	m_iceImplementation = (serviceConf.ice_implementation >= 0 && serviceConf.ice_implementation <= 2) ? serviceConf.ice_implementation : 2;
+	// 0 = library default, 1 = native, 2 = WebRTC.
+	// Apple/iOS must not silently rewrite a configured implementation to 1:
+	// the fault was observed specifically inside the native ICE implementation.
+	m_iceImplementation = (serviceConf.ice_implementation >= 0 && serviceConf.ice_implementation <= 2)
+		? serviceConf.ice_implementation
+		: 0;
 #if defined(__APPLE__)
-	// Apple builds include the native ICE backend, but not the optional WebRTC backend.
-	// Selecting WebRTC makes ConnectP2PCustomSignaling fail before a peer can connect.
 	if (m_iceImplementation == 2)
 	{
-		m_iceImplementation = 1;
-		NetworkLog(ELogVerbosity::LOG_RELEASE, "NetworkMesh: Apple build forcing native ICE implementation 1");
+		// This build does not ship the optional WebRTC backend. Fall back to
+		// the library default instead of explicitly selecting native ICE.
+		m_iceImplementation = 0;
+		NetworkLog(ELogVerbosity::LOG_RELEASE,
+			"NetworkMesh: Apple build cannot use WebRTC ICE; using library-default ICE implementation 0");
 	}
 #endif
-	NetworkLog(ELogVerbosity::LOG_RELEASE, "NetworkMesh: using ICE implementation %d (0=default, 1=native, 2=WebRTC)", m_iceImplementation);
+	NetworkLog(ELogVerbosity::LOG_RELEASE,
+		"NetworkMesh: using ICE implementation %d (0=default, 1=native, 2=WebRTC)",
+		m_iceImplementation);
 
 	m_pSignaling = new CSignalingClient(SteamNetworkingSockets());
 	if (m_pSignaling == nullptr)
