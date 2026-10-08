@@ -7,6 +7,7 @@ on:
     branches:
       - main
       - a13-ios-build
+      - generealss-spideywv
     paths:
       - 'GeneralsMD/**'
       - 'launcher_web/**'
