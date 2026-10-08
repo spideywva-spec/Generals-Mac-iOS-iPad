@@ -25,13 +25,13 @@
 +
      if ( !addrRelay.IsValid() )
          return m_pSocket->BSendRawPacketGather( nChunks, pChunks, addrPeer );
-@@ -1530,3 +1530,5 @@ CSteamNetworkingICESession::~CSteamNetworkingICESession()
+@@ -1530,4 +1530,5 @@ CSteamNetworkingICESession::~CSteamNetworkingICESession()
      m_vecPendingPeerRequests.clear();
  
      m_vecInterfaces.clear();
 +    m_vecRetiredInterfaces.clear();
  }
-@@ -1865,5 +1865,10 @@ void CSteamNetworkingICESession::GatherInterfaces()
+@@ -1865,7 +1865,11 @@ void CSteamNetworkingICESession::GatherInterfaces()
              for ( CSteamNetworkingSocketsSTUNRequest *p : intf->m_vecPendingAllocateRequests )
                  delete p;
              intf->m_vecPendingAllocateRequests.clear();
@@ -46,7 +46,7 @@
          }
 --- a/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.h
 +++ b/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.h
-@@ -567,4 +567,12 @@ class CSteamNetworkingICESession
+@@ -567,7 +567,13 @@ class CSteamNetworkingICESession
          // Each entry represents one usable local address.  Rebuilt whenever
          // m_bInterfaceListStale is set.
          std_vector< std::unique_ptr<ICESessionInterface> > m_vecInterfaces;
