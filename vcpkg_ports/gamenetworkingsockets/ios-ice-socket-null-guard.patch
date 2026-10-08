@@ -1,6 +1,6 @@
 --- a/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.cpp
 +++ b/src/steamnetworkingsockets/clientlib/steamnetworkingsockets_ice_client.cpp
-@@ -952,4 +952,13 @@ void CSteamNetworkingSocketsSTUNRequest::Think( SteamNetworkingMicroseconds usecNow )
+@@ -952,5 +952,15 @@ void CSteamNetworkingSocketsSTUNRequest::Think( SteamNetworkingMicroseconds usecNow )
  {
  	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "CSteamNetworkingSocketsSTUNRequest::Think" );
  
@@ -16,7 +16,7 @@
 +
      if ( m_nRetryCount < m_nMaxRetries )
      {
-@@ -1233,2 +1233,7 @@ bool ICESessionInterface::SendPacketGather( int nChunks, const iovec *pChunks, int cbPayload, const netadr_t &addrPeer, const netadr_t &addrRelay )
+@@ -1233,3 +1233,8 @@ bool ICESessionInterface::SendPacketGather( int nChunks, const iovec *pChunks, int cbPayload, const netadr_t &addrPeer, const netadr_t &addrRelay )
  {
 +	// Defensive iOS guard: never dereference a raw UDP socket that has already
 +	// been logically closed during ICE interface churn.
