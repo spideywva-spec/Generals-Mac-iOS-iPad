@@ -59,7 +59,7 @@ int GeneralsXAppleOnlineStart(const char *apiBase,
                     result = -4;
                 } else {
                     @try {
-                        [session startTunnelWithOptions:nil error:&startError];
+                        [session startVPNTunnelAndReturnError:&startError];
                         result = startError ? -5 : 0;
                     } @catch (NSException *exception) {
                         result = -6;
@@ -80,7 +80,7 @@ void GeneralsXAppleOnlineStop(void)
         (void)error;
         for (NETunnelProviderManager *manager in managers) {
             if ([manager.connection isKindOfClass:[NETunnelProviderSession class]]) {
-                [(NETunnelProviderSession *)manager.connection stopTunnel];
+                [(NETunnelProviderSession *)manager.connection stopVPNTunnel];
             }
         }
     }];
