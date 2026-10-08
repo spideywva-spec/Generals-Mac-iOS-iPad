@@ -18,10 +18,12 @@
 #include <steam/isteamnetworkingsockets.h>
 #include <steam/steamnetworkingsockets.h>
 #include <cstring>
+#include <atomic>
 
 bool g_bForceRelay = false;
 UnsignedInt m_exeCRCOriginal = 0;
 
+// Blocks Steam connection callbacks while a NetworkMesh is tearing down.\n// Closing a P2P connection can synchronously/asynchronously generate a final\n// status callback; without this guard the callback can touch the mesh after\n// its connection map has started being destroyed.\nstatic std::atomic<bool> g_bNetworkMeshDestroying = false;\n
 // Pool for deferred deletion of ConnectionSignaling objects; avoids "delete this" races during
 // async Steam callbacks.
 static std::mutex g_pendingDeletionMutex;
@@ -49,6 +51,11 @@ static void CleanupPendingConnSignalingDeletions()
 // m_mapConnections is accessed here without m_mapConnectionsMutex.
 void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t* pInfo)
 {
+	if (g_bNetworkMeshDestroying.load(std::memory_order_acquire))
+	{
+		return;
+	}
+
 	if (pInfo == nullptr)
 	{
 		return;
@@ -1190,6 +1197,10 @@ void NetworkMesh::Disconnect()
 
 	m_bDisconnected = true;
 
+	// Prevent final Steam connection callbacks from re-entering the mesh while
+	// connections are being closed and the map is cleared.
+	g_bNetworkMeshDestroying.store(true, std::memory_order_release);
+
     for (auto& connectionData : m_mapConnections)
     {
 		connectionData.second.Close();
@@ -1210,6 +1221,8 @@ void NetworkMesh::Disconnect()
 
 		m_hListenSock = k_HSteamListenSocket_Invalid;
 	}
+
+	g_bNetworkMeshDestroying.store(false, std::memory_order_release);
 }
 
 void NetworkMesh::Tick()
