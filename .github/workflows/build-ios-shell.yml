@@ -21,6 +21,7 @@ on:
       - 'CMakeLists.txt'
       - 'CMakePresets.json'
       - 'vcpkg.json'
+      - 'vcpkg_ports/gamenetworkingsockets/**'
       - 'vcpkg-lock.json'
       - 'Patches/dxvk-ios.patch'
       - 'ios/**'
@@ -83,7 +84,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: .ci-cache/vcpkg
-          key: ios-online-vcpkg-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-context.outputs.toolchain }}-${{ hashFiles('vcpkg.json', 'vcpkg-lock.json', 'cmake/**', 'CMakePresets.json', '.github/workflows/build-ios-shell.yml') }}
+          key: ios-online-vcpkg-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-context.outputs.toolchain }}-${{ hashFiles('vcpkg.json', 'vcpkg-lock.json', 'vcpkg_ports/gamenetworkingsockets/**', 'cmake/**', 'CMakePresets.json', '.github/workflows/build-ios-shell.yml') }}
           restore-keys: |
             ios-online-vcpkg-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-context.outputs.toolchain }}-
 
