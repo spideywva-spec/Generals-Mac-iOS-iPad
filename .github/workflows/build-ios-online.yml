@@ -1,11 +1,11 @@
 # iOS-only build with persistent dependency and compiler caches
-name: Online | iPad | Build
+name: A13 iOS Build V2 | Generals Online
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - feature/generals-online-apple
+      - a13-ios-build-v2
     paths:
       - 'GeneralsMD/**'
       - '!GeneralsMD/Code/Main/IOSProfileLauncher.mm'
