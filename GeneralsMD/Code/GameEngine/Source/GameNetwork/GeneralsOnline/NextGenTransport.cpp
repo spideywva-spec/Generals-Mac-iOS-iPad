@@ -685,9 +685,12 @@ Bool NextGenTransport::doSend(void)
                     totalLen,
                     pSlot->m_userID);
 
-            if (sendResult >= 0)
+            // PlayerConnection::SendGamePacket returns Steam EResult values.
+            // EResult failures are positive too, so >= 0 incorrectly treats failures
+            // as successful and clears the outgoing command packet from the queue.
+            if (sendResult == static_cast<int>(k_EResultOK))
             {
-                // Send successful
+                // Send accepted by the transport
                 ++numSent;
                 m_outgoingPackets[m_statisticsSlot]++;
                 m_outgoingBytes[m_statisticsSlot] +=
