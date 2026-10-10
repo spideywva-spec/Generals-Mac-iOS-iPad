@@ -121,3 +121,27 @@
 - В текущем GitHub connector доступны чтение workflow, просмотр run/artifacts/logs и rerun существующих runs; в списке инструментов не обнаружен отдельный workflow_dispatch/start-run action. `mcp__GitHub__fetch` — GET-only. Перед следующим ответом обязательно повторно проверить доступные инструменты, не считать это вечным отсутствием доступа.
 
 - Follow-up 2026-10-10: successfully launched a real iOS shell workflow for PR branch by adding `fix/ios-android-lobby-compat` to the existing `.github/workflows/build-ios-shell.yml` push branch filter and committing on that same PR branch. Run ID `38038325029`, commit `100ea08797c2278bf1ea814662db7525ad8a055e`, event `push`, status was `queued` at confirmation. This is a verified launch; check run status/artifacts next. This changes only the PR branch, not `a13-ios-build`.
+
+
+## Новая проверка игрового лога: подтверждённый desync на frame 111 (2026-10-10)
+
+- Пользователь указал конкретный лог: https://github.com/spideywva-spec/Generals-Mac-iOS-iPad/blob/logs/generals-stderr.log, ветка `logs`. Файл проверен целиком через GitHub file fetch: blob SHA `6ffe1a31fc1fb32529383a4820afe9a6c4063582`, размер 439,683 символа, 2,682 строки. Не утверждать, что он был скачан в локальную файловую систему: в этой сессии его полный текст был получен/проанализирован через GitHub connector.
+- Лог относится к iOS / Apple A13 GPU, runtime 1.4, build 601, `networkVersion=0x00010004`; `[ONLINE-MATH-CRC] value=0x97B538BF platform=apple`.
+- Матч: lobby ID `143118`, match ID `4281908`, карта `Bear Town Beatdown (4)`, 4 игрока; пользователь `weyva`, localSlot 3 / networkSlot 3. Лобби переключилось в state=1 в 14:54:37, после чего игра загрузила матч. SteamNetworking ICE-соединения успешно установились через relay: user 127240 за 1765 ms, user 127244 за 2091 ms, user 74426 за 2852 ms; каждый с signalling attempt 1. Поэтому для этого лога нет основания называть первичной причиной невозможность соединения/TURN: peer connections установились.
+- Ключевое подтверждение: `[ONLINE-DESYNC] detected frame=111 cached=4 connected=4 localPlayerIndex=5 localStateCRC=0xE2830B1B rngBase=0x7A21EEC7 rngCRC=0x5E465A44` (строка 2382).
+- Подробности того же события (строки 2383–2387):
+  - playerIndex=2, networkSlot=0, remote connected=1, CRC `0xC2BDF524`
+  - playerIndex=3, networkSlot=1, remote connected=1, CRC `0xC2BDF524`
+  - playerIndex=4, networkSlot=2, remote connected=1, CRC `0xC2BDF524`
+  - playerIndex=5, networkSlot=3, local=1, connected=1, CRC `0xE5C74D69`
+  - `gameFrame=111 validatedFrame=100 runAhead=10`, RNG base `0x7A21EEC7`, RNG CRC `0x5E465A44`.
+- Следовательно, это уже не просто предположение по тайм-аутам: в этом логе детектор явно фиксирует несовпадение состояния симуляции на кадре 111. Все три удалённых player CRC совпадают друг с другом (`0xC2BDF524`), а локальный CRC отличается (`0xE5C74D69`). Это указывает, что локальное состояние расходится с состоянием, которое сообщают другие игроки. Один лог не позволяет определить конкретную первопричину (FPU/deterministic math, разница игровых данных/версий, RNG/порядок симуляции или сетевые команды) без логов хоста/других клиентов и сравнения одинакового кадра.
+- До desync лог показывает:
+  - frame 0: final CRC `0x52CB1B87`, objectCount 270, rngBase `0x7A21EEC7`, rngCRC `0x799F33C4`.
+  - frame 100: final CRC `0xE5C74D69`, objectCount 270, rngCRC `0x6E724194`; legacy-wide probe повторяет тот же final CRC.
+  - frame 200: final CRC `0x80220A89`, objectCount 271, rngCRC `0x93D629D4`.
+  Эти значения взяты из одного локального лога, поэтому не доказывают cross-device equality сами по себе. Заметь: локальный frame-100 final CRC совпадает с локальным CRC, который напечатан в desync-диагностике; три remote CRC отличаются.
+- Лог содержит `[NGMP] Failed to join lobby: Lobby is full` около 14:54:13 — это отдельная попытка входа в заполненное лобби до фактического матча; не смешивать её с причиной desync в lobby 143118.
+- После frame-200 CRC trace лог продолжает рендер/сброс display; в доступном хвосте нет явной строки Steam peer timeout/disconnect или точного сообщения о закрытии сервера. Пользователь сообщил, что игра всё равно не синхронизируется и сервер/хост закрывает матч; причина закрытия не подтверждена только этим логом.
+- Следующие обязательные действия: сохранить этот факт в памяти проекта; сравнить лог хоста и ещё одного клиента для match 4281908, получить их CRC на frame 100/111/200 и first divergence; проверить build/revision, ExeCRC/IniCRC, map/data files, RNG seeding and simulation commands across platforms; исследовать почему локальный frame 100 CRC `0xE5C74D69` differs from three peer CRCs `0xC2BDF524`. Не считать TURN/connectivity виновником только по этому логу; соединения были установлены. Не менять `a13-ios-build` и не объявлять desync исправленным до реального теста.
+- Постоянное пользовательское правило: когда пользователь даёт ссылку/говорит, что загрузил игровой лог, проверить именно этот файл и записать подтверждённые выводы в этот канонический файл `memory-notes/MEMORY.md` (путь `MEMORY.md`, branch `memory-notes`); не путать с `memory.md`/другими ветками и не выдумывать, что проверка/сборка/тест были выполнены.
