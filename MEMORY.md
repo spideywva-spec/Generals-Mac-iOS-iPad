@@ -534,3 +534,10 @@
 ### Memory SHA correction (2026-10-11)
 - The Overlord header restoration commit referenced in the earlier section is `c34ea17a270a5031370e305011d6ee8df24db916` (not the typo `c34ea17a270a5031370d305011d6ee8df24db916`).
 - Name-key diagnostic newline was corrected in working-branch commit `27a77e016623482a47cdeb9ba07bb152b877aa3c`; it only changes the log string from a literal backslash-n to a proper newline.
+
+
+## 2026-10-11 — PC source reference cross-check
+
+- Compared the changed simulation files against public `Aevienne/GeneralsGameCode/main` in addition to Android. Public source `Core/GameEngine/Include/Common/GameDefines.h` defaults the retail compatibility switches to `1`, and its `ScriptEngine.cpp` still has index-based sequential-script spin detection and `ParkingPlaceBehavior.cpp` still has the delayed-runway tweak.
+- This public repository is **not** the exact current GeneralsOnline PC binary build. MYSOREZ's cross-play lesson records PC replay/checksum experiments against current GeneralsOnline releases and explicitly says those current binary behaviors differ from the public source for these cases. Therefore do not revert the Android fixes just because the public source defaults differ; current PC binary/replay evidence and the Android cross-play lesson are the relevant reference for this target.
+- Public PC `OverlordContain.cpp` does not pin portable riders to the host, matching the direction of the iOS change in commit `a587c957de1a9afb11454a8933414f5f823d215e`. The iOS change is partial because exit guards remain; that limitation is already recorded above.
