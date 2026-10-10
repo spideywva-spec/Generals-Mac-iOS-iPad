@@ -382,3 +382,25 @@
 3. Run one matched iOS-host ↔ Android-host/PC-host game with both sides' logs. Confirm `[ONLINE-MATH-COMPAT]` appears on iOS and compare the first common CRC frames. If CRC still diverges, add/enable per-subsystem/deep-CRC tracing on both builds and inspect the first divergent object/state; do not suppress CRC or merely extend timeouts.
 4. User must confirm the Render workspace before checking whether the launcher/API service is down.
 5. Keep updating this memory after every code edit, CI check, test result, or rollback, including exact commit/run IDs and explicit unknowns.
+
+
+## 2026-10-11 — user clarified in-match LOST SYNC; Android cross-play reference checked
+
+### Exact failure phase (user clarification)
+- The lobby is already fully populated; every player is visible with a network-quality indicator, everyone presses Accept/Ready, host starts the match, countdown 5→1 completes, the game loads into the map, players can move units briefly, then the top-of-screen message appears: “Game has detected a mismatch. This means the multiplayer game has lost synchronization data between the players”. The host/session then closes.
+- Therefore this is **not a lobby roster loading / infinite loading-screen / lobby connectivity problem**. Keep diagnosis focused on deterministic game state/checksum divergence after map start. Four network bars are not proof that all clients' simulation state matches, but they also do not indicate the root cause by themselves.
+
+### Log evidence inspected this session
+- Retrieved the raw log from the repository's `logs` branch via GitHub source fetch (not saved to a local filesystem).
+- At frame 117, log reports 4 connected players. Three remote peers report the same CRC `0xED158F13`; the local iOS client reports `0x9076BDDF`. This is direct evidence of a simulation/checksum disagreement at that checkpoint, not proof of a packet/relay failure.
+- The log contains `ONLINE-MATH-CRC` instrumentation. This alone does not prove the recently added float-math compatibility change is active or correct; inspect exact CRC stage breakdown and runtime `[ONLINE-MATH-COMPAT]` output.
+- No source-code change, new build, or live multiplayer retest was performed in this diagnostic pass.
+
+### MYSOREZ Android reference — important concrete finding
+- Checked `MYSOREZ/GeneralsZH-Android-Port` release `v1.4.0` and its `docs/WORKDIR/lessons/LESSON-cross-play-desync-method.md`.
+- The release notes explicitly say cross-play against GeneralsOnline PC release 100126 previously desynced at frame 100 and was fixed by matching the PC checksum rules. This shows a failure at the start of a match can be a checksum-format/revision mismatch, not necessarily networking or a divergent unit simulation.
+- The Android lesson documents a prior first-checkpoint mismatch where the phone's `crc ai ... afterGroups` already equalled the PC's full checksum; only the trailing `OfficialLogicCRCRevision` tag differed. Android now chooses that revision per data package from `crc_revision=` in `pc_exe_crc_seed.txt`.
+- Android's documented investigation method: at the first mismatching checkpoint, compare the peer CRC against every local `crc parts` / `crc ai` stage **before changing simulation math**. If a stage already equals the peer's full CRC, investigate checksum composition/revision first. If all stages differ, use replay/per-object CRC tracing to find the first divergent object/state. Its replay workflow uses the actual PC `.rep` and every-frame checksums.
+- Reference links: `https://github.com/MYSOREZ/GeneralsZH-Android-Port/releases/tag/v1.4.0`, `https://github.com/MYSOREZ/GeneralsZH-Android-Port/blob/main/docs/WORKDIR/lessons/LESSON-cross-play-desync-method.md`.
+- This is a high-priority candidate to compare with our iOS branch: verify whether our executable/data-package checksum revision matches the PC/Android rules. Do not blindly copy the Android fix without tracing the exact current code and data package.
+- No confirmed fix yet. Do not claim synchronization is repaired until a real mixed-platform match runs past the previous mismatch frame and paired logs agree.
