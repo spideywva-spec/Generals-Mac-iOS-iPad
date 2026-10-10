@@ -604,3 +604,8 @@
 ### Clarification to the user111064 connection sequence (2026-10-11)
 - The local log's earlier Lobby/149312 response at 19:42:28 includes user 111064 (`Android 17`) in slot 4, so this was not an unrelated friend from the beginning. That peer was present during lobby setup, then the service sent `NETWORK_CONNECTION_DISCONNECT_PLAYER` at 19:42:53 and the client closed/erased that connection before the six-player match began. The final six members did not include 111064.
 - Therefore the failed ICE/symmetric-connect assertions are a real pre-match peer connection failure, but the log shows the service eventually removed that peer. They do not establish the cause of the later frame-100 CRC mismatch; do not patch a stale-peer membership guard based on the earlier mistaken interpretation alone.
+
+
+### Lobby executable-CRC handshake confirmed for the latest uploaded log (2026-10-11)
+- The latest local log's lobby response has `ExeCRC=560676586`, which is exactly `0x216B3EEA`, the Apple Windows-parity 60 Hz network CRC prepared by `OnlineServices_Init.cpp`. Its `IniCRC=2180732466` is also accepted by the service. The VersionManifest's `execrc_60=2671734965` is a different server-side executable hash algorithm and must not be compared directly to the lobby CRC.
+- The client joins and starts match 4285915 with these values, so executable-CRC/lobby admission is not the cause of the frame-100 simulation mismatch.
