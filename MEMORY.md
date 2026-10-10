@@ -507,3 +507,10 @@
 - Android's cross-play lesson documents that TheSuperHackers #1297 made aircraft in upper parking spaces skip their first runway reservation attempt; the PC client does not have this tweak. The phone then starts taxiing one frame later and desyncs when the aircraft is in the checksum.
 - Ported the Android/PC reservation behavior on `fix/mods-visible-cross-platform-sync`: `GeneralsMD/Code/GameEngine/Include/GameLogic/Module/ParkingPlaceBehavior.h` commit `136381c7534540d83d7dfa954a254d81533be467` removes the port-only postponed flag from `ParkingPlaceInfo`; `GeneralsMD/Code/GameEngine/Source/GameLogic/Object/Behavior/ParkingPlaceBehavior.cpp` commit `6ee42e9357017e96473996bf99c312ccc058afb7` removes the postponed-reservation helper/call and uses the Android implementation of `reserveRunway`. Verified the new function body matches Android's exact method body and no postponed-flag references remain in the source.
 - Not yet built or runtime-tested. This addresses a known later-match divergence, not necessarily the first frame-100 mismatch.
+
+
+## 2026-10-11 — startup verification for PC upgrade name-key parity
+
+- Added a diagnostic immediately after `TheUpgradeCenter` initialization in `GeneralsMD/Code/GameEngine/Source/Common/GameEngine.cpp`, commit `a6deaeb771a24d4fa9a86f9f439908cf4a18a4af`. Startup now prints `[ONLINE-NAMEKEY-CHECK] Upgrade_AmericaAdvancedControlRods=<key> expected=2265` before port-only GUI names are keyed.
+- This makes the FunctionLexicon compatibility fix testable from the next startup log; expected value is 2265 per Android's PC-replay investigation. The log is diagnostic only and does not alter key assignment.
+- Not yet compiled or checked in a new app run.
