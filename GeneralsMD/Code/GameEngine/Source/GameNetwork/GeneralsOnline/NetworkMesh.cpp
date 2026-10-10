@@ -1404,75 +1404,64 @@ int PlayerConnection::SendGamePacket(void* pBuffer, uint32_t totalDataSize)
         return (int)k_EResultFail;
     }
 
-	if (AnticheatPlugInterface::DoesACPluginProvideSecureGameTransport())
-	{
-		// TODO_EOS: Determine best reliability
-		AnticheatPlugInterface::SendPacket(m_strMiddlewareID.c_str(), m_userID, pBuffer, totalDataSize, ENetworkChannels::Game, EPacketReliability::PACKET_RELIABILITY_RELIABLE_ORDERED);
-	}
-	else
-	{
-		if (m_hSteamConnection == k_HSteamNetConnection_Invalid)
-		{
-			NetworkLog(ELogVerbosity::LOG_RELEASE, "[GAME PACKET] Cannot send game packet - connection is invalid for user %lld", m_userID);
-			return (int)k_EResultFail;
-		}
+    if (AnticheatPlugInterface::DoesACPluginProvideSecureGameTransport())
+    {
+        // A successful dispatch to the transport plugin must not fall through as failure.
+        AnticheatPlugInterface::SendPacket(
+            m_strMiddlewareID.c_str(), m_userID, pBuffer, totalDataSize,
+            ENetworkChannels::Game, EPacketReliability::PACKET_RELIABILITY_RELIABLE_ORDERED);
+        return (int)k_EResultOK;
+    }
 
-		ENetworkChannel netChannel = ENetworkChannel::NETWORK_CHANNEL_GAME;
-		std::vector<BYTE> vecData;
-		vecData.resize(totalDataSize + sizeof(ENetworkChannel));
-		memcpy(vecData.data() + sizeof(ENetworkChannel), pBuffer, totalDataSize);
-		vecData[0] = (BYTE)netChannel;
+    if (m_hSteamConnection == k_HSteamNetConnection_Invalid)
+    {
+        NetworkLog(ELogVerbosity::LOG_RELEASE, "[GAME PACKET] Cannot send game packet - connection is invalid for user %lld", m_userID);
+        return (int)k_EResultFail;
+    }
 
-		int sendFlags = k_nSteamNetworkingSend_Reliable | k_nSteamNetworkingSend_AutoRestartBrokenSession; // default from last patch
+    // Keep the channel prefix identical on both attempts; Recv() expects it.
+    const ENetworkChannel netChannel = ENetworkChannel::NETWORK_CHANNEL_GAME;
+    std::vector<BYTE> vecData(totalDataSize + sizeof(ENetworkChannel));
+    vecData[0] = (BYTE)netChannel;
+    memcpy(vecData.data() + sizeof(ENetworkChannel), pBuffer, totalDataSize);
 
-		ServiceConfig& serviceConf = NGMP_OnlineServicesManager::GetInstance()->GetServiceConfig();
-		int netSendFlags = serviceConf.network_send_flags;
+    int sendFlags = k_nSteamNetworkingSend_Reliable | k_nSteamNetworkingSend_AutoRestartBrokenSession;
+    ServiceConfig& serviceConf = NGMP_OnlineServicesManager::GetInstance()->GetServiceConfig();
+    const int netSendFlags = serviceConf.network_send_flags;
 
-		NetworkLog(ELogVerbosity::LOG_DEBUG, "[GAME PACKET] Sending msg of size %ld to user %lld\n", totalDataSize, m_userID);
-		EResult r = SteamNetworkingSockets()->SendMessageToConnection(
-			m_hSteamConnection, vecData.data(), vecData.size(), sendFlags, nullptr);
+    EResult result = SteamNetworkingSockets()->SendMessageToConnection(
+        m_hSteamConnection, vecData.data(), (int)vecData.size(), sendFlags, nullptr);
+    if (result == k_EResultOK)
+        return (int)result;
 
-		if (r != k_EResultOK)
-		{
-			if (netSendFlags != -1)
-			{
-				if (netSendFlags == 0)
-				{
-					sendFlags = k_nSteamNetworkingSend_Unreliable;
-				}
-				else if (netSendFlags == 1)
-				{
-					sendFlags = k_nSteamNetworkingSend_UnreliableNoNagle;
-				}
-				else if (netSendFlags == 2)
-				{
-					sendFlags = k_nSteamNetworkingSend_UnreliableNoDelay;
-				}
-				else if (netSendFlags == 3)
-				{
-					sendFlags = k_nSteamNetworkingSend_Reliable;
-				}
-				else if (netSendFlags == 4)
-				{
-					sendFlags = k_nSteamNetworkingSend_ReliableNoNagle;
-				}
-			}
+    if (netSendFlags != -1)
+    {
+        if (netSendFlags == 0)
+            sendFlags = k_nSteamNetworkingSend_Unreliable;
+        else if (netSendFlags == 1)
+            sendFlags = k_nSteamNetworkingSend_UnreliableNoNagle;
+        else if (netSendFlags == 2)
+            sendFlags = k_nSteamNetworkingSend_UnreliableNoDelay;
+        else if (netSendFlags == 3)
+            sendFlags = k_nSteamNetworkingSend_Reliable;
+        else if (netSendFlags == 4)
+            sendFlags = k_nSteamNetworkingSend_ReliableNoNagle;
+    }
 
-			NetworkLog(ELogVerbosity::LOG_DEBUG, "[GAME PACKET] Sending msg of size %ld to user %lld\n", totalDataSize, m_userID);
-			EResult r = SteamNetworkingSockets()->SendMessageToConnection(
-				m_hSteamConnection, pBuffer, (int)totalDataSize, sendFlags, nullptr);
+    NetworkLog(ELogVerbosity::LOG_DEBUG,
+        "[GAME PACKET] Default send failed (%d); retrying framed packet with configured flags %d for user %lld",
+        (int)result, sendFlags, (long long)m_userID);
 
-			if (r != k_EResultOK)
-			{
-				NetworkLog(ELogVerbosity::LOG_RELEASE, "[GAME PACKET] Failed to send, err code was %d", r);
-			}
+    result = SteamNetworkingSockets()->SendMessageToConnection(
+        m_hSteamConnection, vecData.data(), (int)vecData.size(), sendFlags, nullptr);
 
-			return (int)r;
-		}
-	}
-
-	return (int)k_EResultFail;
-
+    if (result != k_EResultOK)
+    {
+        NetworkLog(ELogVerbosity::LOG_RELEASE,
+            "[GAME PACKET] Failed to send framed packet, err code was %d for user %lld",
+            (int)result, (long long)m_userID);
+    }
+    return (int)result;
 }
 
 
