@@ -23,7 +23,12 @@
 bool g_bForceRelay = false;
 UnsignedInt m_exeCRCOriginal = 0;
 
-// Blocks Steam connection callbacks while a NetworkMesh is tearing down.\n// Closing a P2P connection can synchronously/asynchronously generate a final\n// status callback; without this guard the callback can touch the mesh after\n// its connection map has started being destroyed.\nstatic std::atomic<bool> g_bNetworkMeshDestroying = false;\n
+// Blocks Steam connection callbacks while a NetworkMesh is tearing down.
+// Closing a P2P connection can synchronously/asynchronously generate a final
+// status callback; without this guard the callback can touch the mesh after
+// its connection map has started being destroyed.
+static std::atomic<bool> g_bNetworkMeshDestroying = false;
+
 // Pool for deferred deletion of ConnectionSignaling objects; avoids "delete this" races during
 // async Steam callbacks.
 static std::mutex g_pendingDeletionMutex;
