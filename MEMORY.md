@@ -584,3 +584,13 @@
 
 ### Local isolated `itoa` test (2026-10-11)
 - Compiled the replacement algorithm locally with clang++ (`-std=c++17 -Wall -Wextra -Werror`) and checked decimal 123, negative decimal -42, hexadecimal 255, and INT_MIN. Output was `123 -42 ff -2147483648`. This verifies the integer conversion routine itself; it is not a full engine build or cross-platform game test.
+
+
+## 2026-10-11 — latest user log downloaded and analyzed locally (authoritative match)
+
+- Materialized the user's Library files `generals-stderr(10).log` and `generals-stderr(20261010-144613).log` into `/mnt/data/generals-logs/`. Both are 425,790 bytes and SHA-256 `53afc78814c81336303cac76a0c00d9e1af63954e25b4f63bacef8a9ccf80b8c`; `cmp` confirms the files are byte-identical. This is a successful local download and local grep/analysis, unlike the earlier raw-GitHub curl attempt that failed DNS.
+- This latest uploaded log is a different match from the older raw `logs/generals-stderr.log` on GitHub. **Do not mix CRC values between them.** The authoritative uploaded log is 4,289 lines; six players; lobby 149312, map `Defcon 6 (6)`, match ID 4285915.
+- Exact mismatch: frame 118 validating frame 100; local player index 5/network slot 3 has CRC `0x0E7332F1`, while remote player indices 2, 3, 4, 6, 7 all report `0x814B4C52`. All six players are connected. Frame-100 local stages: objects `0x8B51C242` (174 objects), RNG stage `0xA9724B55`, RNG CRC `0x93CFC6CF`, partition `0xE340190A`, players `0xCD2D75D8`, AI/final `0x0E7332F1`. Frame 0 final was `0xB7EB1CBA`; frame 200 final later became `0x981E1283`.
+- Local HTTP audit: 136 responses were HTTP 200 and one was HTTP 401. The sole 401 was one request to `Lobby/149312` at 19:42:23 with `{"success":false}`; the same lobby endpoint returned HTTP 200 immediately before and after, later showed all six ready, and transitioned to match ID 4285915. `VersionManifest` and `ServiceConfig` both returned HTTP 200. This isolated 401 is not the lockstep CRC cause. Numerous `ConnectionOutcome` calls returned HTTP 200 with `success:false` while signalling was pending; peers ultimately connected and the match began.
+- The uploaded log has no `HUB-SETTINGS` save lines, so this exact run does not prove that web settings were saved; a different raw log did show save messages. It does prove the remote launcher URL loaded, the R2 catalog refresh succeeded (`schema=2`, 7,818 bytes), the `online` profile was selected, and the GeneralsOnline API was reachable.
+- The log was produced before the new compatibility/logic commits were built. Use it as the baseline for the next build's `ONLINE-CRC-REVISION-PROBE` values and same-frame CRC comparison.
