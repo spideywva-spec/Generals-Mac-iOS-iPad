@@ -82,16 +82,6 @@ public:
 	virtual void onCapture( Player *oldOwner, Player *newOwner ) override; // Our main guy goes with us, but our redirected contain needs to do his thing too
 	virtual void onObjectCreated() override;
 
-	// Existing iOS/POSIX containment overrides; keep declarations aligned with OverlordContain.cpp.
-	virtual Bool isSpecificRiderFreeToExit(Object* obj) override;
-	virtual void exitObjectViaDoor(Object* exitObj, ExitDoorType exitDoor) override;
-	virtual UpdateSleepTime update() override;
-	virtual void containReactToTransformChange() override;
-	virtual void redeployOccupants() override;
-
-private:
-	void syncPortablePosition();
-
 	// Contain stuff we need to override to redirect on a condition
 	virtual void onContaining( Object *obj, Bool wasSelected ) override;		///< object now contains 'obj'
 	virtual void onRemoving( Object *obj ) override;			///< object no longer contains 'obj'
