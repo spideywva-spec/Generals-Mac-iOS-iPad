@@ -474,3 +474,15 @@
 - Current working branch contains these ordered commits: `841b3fbc2c9acdb07feae53503e4dd82099ccb56` (same-frame CRC revision probe), `ce91408d8a63a3b0d078d70919a05a1ad6f4e62e` (Player::initFromDict ordering), `388ff36c61dc851f5acd374432de21b4878b39c3` (PC-compatible sequential-script spin detection), `48e6691fe964965152cf94e2438e650e6211af16` (GeneralsOnline compatibility switches).
 - The probe-only Actions run `38079441713` and Player-order run `38079621843` were cancelled by subsequent pushes. The latest known run before this macro commit was `38079738005` on `388ff36c61dc851f5acd374432de21b4878b39c3`; verify that it is cancelled/replaced and wait for a run whose head SHA is exactly `48e6691fe964965152cf94e2438e650e6211af16` before claiming build success.
 - Rollback the compatibility-switch change alone with `git revert 48e6691fe964965152cf94e2438e650e6211af16` on the working branch if a compiler/runtime regression is evidenced. Do not roll it back simply because an unrelated later test fails; record the exact failure and compare it to the Android reference first.
+
+
+## 2026-10-11 — restored GeneralsOnline name-key ordering for GUI-only functions
+
+- The Android cross-play lesson identifies another real source divergence: ten port-only GUI function names were registered before the upgrade/science stores, shifting name keys sent in lockstep commands. The documented test requires `Upgrade_AmericaAdvancedControlRods=2265`, matching the PC.
+- Current iOS `FunctionLexicon.cpp` lacked Android's `GX_PORT_ONLY_FUNCTIONS` placeholder-key mechanism and delayed-keying method. Ported the method and its declarations into:
+  - `GeneralsMD/Code/GameEngine/Include/Common/FunctionLexicon.h` — commit `a54b1261651e0c1327736b3eac0e9a29686b9323`
+  - `GeneralsMD/Code/GameEngine/Source/Common/System/FunctionLexicon.cpp` — commit `16ea58175e8b1cfef57c1887a068fd58758c03e6`
+  - `GeneralsMD/Code/GameEngine/Source/Common/GameEngine.cpp` — commit `1cbfb462274077ceeaf71e758e390a784794628b`
+- Port-only GUI functions remain in their lookup tables but initially use a placeholder key. `TheFunctionLexicon->gxKeyPortOnlyEntries()` is called immediately after `TheUpgradeCenter` initialization and before `TheGameClient` loads any windows, so upgrade/science name keys retain the PC's numbering without removing the iOS UI functions.
+- Not yet built or runtime-verified. After Actions succeeds, inspect startup log for `Upgrade_AmericaAdvancedControlRods=2265`; do not claim parity without this check.
+- Rollback the three commits individually in reverse order if a compile issue is directly tied to this port; do not revert the PC-compatible `GameDefines.h` correction with them.
