@@ -1,0 +1,19 @@
+# memory.rd — GeneralsX iOS / Android reference audit
+
+Updated: 2026-10-10
+
+## Required workflow
+- Before each GeneralsX/Zero Hour investigation or code change, inspect this file first.
+- Compare claims against the actual repository files and the actual Actions logs; never claim a fix, commit, upload, or successful build unless verified.
+- After every investigation/fix, append what was actually inspected, what changed, the commit/branch, and what remains unverified.
+- Keep protected branch `a13-ios-build` untouched; preserve its A13 Vulkan settings and Russian `IOSProfileLauncher`.
+
+## 2026-10-10 — Android reference audit and iOS linker failure
+- Inspected Android reference repository `MYSOREZ/GeneralsZH-Android-Port`, branch `claude/launcher-ui-refresh`. Its recursive Git tree has 6,415 entries and is not truncated. No file named `memory.rd` exists in that repository tree. No `memory.rd` exists in the current mounted workspace either; this file establishes the requested running record in this repository.
+- Read Android project instructions (`AGENTS.md`, `.github/copilot-instructions.md`), Android port guide, current available development diary, `cmake/gamemath.cmake`, online `NetworkMesh.cpp`, `OnlineServices_LobbyInterface.cpp`, `NGMPGame.cpp`, `NextGenTransport.cpp`, and core `Connection.cpp`, `DisconnectManager.cpp`, `FrameDataManager.cpp`, `Network.cpp`.
+- Android `NetworkMesh.cpp` uses up to 3 signalling attempts when `retry_signalling` is enabled and removes the peer through the cannot-connect callback when retries fail.
+- Compared the iOS `NetworkMesh.cpp`: iOS has additional handling for unknown/known join order, a departed lobby peer, in-match reconnect attempts, capturing connection data before `SetDisconnected()` can invalidate the entry, deferred signalling-object cleanup, and avoiding making the host leave its own lobby. These differences are real code, not assumptions. The full in-match lobby failure still needs runtime logs to prove the precise cause of a particular disconnect.
+- Inspected local ZIP logs from Actions run `38038325029` (branch `fix/ios-android-lobby-compat`, commit `100ea08797c2278bf1ea814662db7525ad8a055e`). Configure explicitly enables deterministic GameMath. Final arm64 link fails because `_gm_acosf`, `_gm_asinf`, `_gm_atan2f`, `_gm_atanf`, `_gm_ceilf`, `_gm_cosf`, `_gm_floorf`, `_gm_sinf`, `_gm_sqrtf`, and `_gm_tanf` are unresolved. The final link command contains the game static libraries but no GameMath archive/target.
+- Confirmed upstream GameMath defines CMake target `gamemath::gamemath`; iOS workflow passes `-DSAGE_USE_DETERMINISTIC_MATH=ON`, while `GeneralsMD/Code/Main/CMakeLists.txt` did not link that target. This is the proven cause of the current linker failure; it is a build/link issue, not evidence that NetworkMesh caused that build failure.
+- Planned correction: link `gamemath::gamemath` into the final `z_generals` target when deterministic math is enabled. Validation requires a new Actions run; until it passes, do not call the build fixed.
+- No changes to Android reference repository and no changes to protected `a13-ios-build`.
