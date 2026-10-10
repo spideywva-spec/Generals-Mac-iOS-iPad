@@ -500,3 +500,10 @@
 - After switching `RETAIL_COMPATIBLE_CRC` to the GeneralsOnline value `0`, `m_containedByFrame` is part of the non-retail lockstep CRC. Android's `Object.h` declares `friend_setContainedBy` out-of-line and `Object.cpp` stamps this frame whenever containment changes; iOS previously had an inline setter that only assigned `m_containedBy`.
 - Ported that narrow parity fix on `fix/mods-visible-cross-platform-sync`: `GeneralsMD/Code/GameEngine/Include/GameLogic/Object.h` commit `401f4b60e9e3b941907377a8a1472ceca583e67c`; `GeneralsMD/Code/GameEngine/Source/GameLogic/Object/Object.cpp` commit `30ff124d5d80e35239d50568925156792b666cbb`. It stamps `TheGameLogic->getFrame()` for a non-null container and clears to zero for null, guarded by `!RETAIL_COMPATIBLE_CRC` exactly as Android does.
 - Not yet compiled or tested in a match. This change is especially relevant after the compatibility-switch correction; if a build error appears, inspect the exact C++ error before reverting.
+
+
+## 2026-10-11 — removed non-PC delayed runway reservation
+
+- Android's cross-play lesson documents that TheSuperHackers #1297 made aircraft in upper parking spaces skip their first runway reservation attempt; the PC client does not have this tweak. The phone then starts taxiing one frame later and desyncs when the aircraft is in the checksum.
+- Ported the Android/PC reservation behavior on `fix/mods-visible-cross-platform-sync`: `GeneralsMD/Code/GameEngine/Include/GameLogic/Module/ParkingPlaceBehavior.h` commit `136381c7534540d83d7dfa954a254d81533be467` removes the port-only postponed flag from `ParkingPlaceInfo`; `GeneralsMD/Code/GameEngine/Source/GameLogic/Object/Behavior/ParkingPlaceBehavior.cpp` commit `6ee42e9357017e96473996bf99c312ccc058afb7` removes the postponed-reservation helper/call and uses the Android implementation of `reserveRunway`. Verified the new function body matches Android's exact method body and no postponed-flag references remain in the source.
+- Not yet built or runtime-tested. This addresses a known later-match divergence, not necessarily the first frame-100 mismatch.
