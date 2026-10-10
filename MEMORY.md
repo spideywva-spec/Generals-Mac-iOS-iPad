@@ -282,3 +282,11 @@
 - При ревизии добавленного startup mapping обнаружено, что `getExtraAnimationsDisabled()` уже возвращает значение для `m_useDrawModuleLOD` (это видно по веткам метода и по `OptionsMenu.cpp`). Первоначальная инверсия в строке загрузки была лишней.
 - Исправлено в коммите `39f2dd1e91f6570f24337a714b764b1b7242646f`: `m_useDrawModuleLOD = optionPref.getExtraAnimationsDisabled();`. Не использовать дополнительное `!`.
 - Ветка сборки `build-ios-shell.yml` сейчас запускается по push только на `main`, `a13-ios-build` и `generealss-spideywv`; рабочая ветка `fix/ios-graphics-settings-persistence` не запускает workflow автоматически. Не заявлять, что Actions проверен. Не менять workflow только ради запуска без необходимости; нужна отдельная разрешённая ручная dispatch-проверка либо запуск на целевой ветке после согласованного переноса.
+
+
+## 2026-10-10 — Graphics preferences persistence moved to cross-platform sync branch
+- User requested running the graphics-preferences persistence build on `fix/mods-visible-cross-platform-sync` because its warmed CI caches should make subsequent builds much faster than the first cold build.
+- Commit `0c82bc689ebdcd09ebede0453d82dc7d5bb4d8ff`: OptionsMenu writes the six graphics preference values from `TheWritableGlobalData`, not stale `TheGlobalData`.
+- Commit `2657ee883e8a93527138c70c7e1c8543832a679e`: `GlobalData::parseGameDataDefinition` restores persisted graphics preferences at startup, including shadows, cloud/light maps, smooth water, trees, extra animations, heat effects, dynamic LOD, building markers, and particle cap.
+- The target branch's `.github/workflows/build-ios-shell.yml` already includes `fix/mods-visible-cross-platform-sync` in push triggers, and uses vcpkg binary caching plus ccache restore/save. The file changes match the `GeneralsMD/**` trigger path.
+- Protected `a13-ios-build` was not modified. Build completion/status has not yet been independently confirmed.
