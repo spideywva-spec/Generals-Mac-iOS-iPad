@@ -35,6 +35,10 @@ if(SAGE_USE_DETERMINISTIC_MATH)
     # Intrinsics would use platform-specific SIMD, breaking CRC parity between architectures.
     set(GM_ENABLE_INTRINSICS OFF CACHE BOOL "Disable intrinsics for cross-arch determinism" FORCE)
     set(GM_ENABLE_TESTS OFF CACHE BOOL "Disable GameMath tests" FORCE)
+    # Shadow any parent-scope BUILD_SHARED_LIBS setting while configuring GameMath.
+    # A cache-only assignment can lose to an inherited normal variable and produce
+    # an iOS-incompatible shared libgm.dylib instead of a static archive.
+    set(gamemath_SHARED_LIBS OFF)
     set(gamemath_SHARED_LIBS OFF CACHE BOOL "Force GameMath as static lib" FORCE)
 
     FetchContent_Declare(
