@@ -358,6 +358,44 @@ BOOL WriteKeyValueFile(NSString *path, NSDictionary<NSString *, NSString *> *val
     return [output writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:error];
 }
 
+/*
+ * iOS/MoltenVK compatibility: the stencil-based volumetric shadow pass can
+ * leave a rectangular dark overlay on Apple GPUs. Keep texture/decal shadows
+ * enabled, but migrate existing Options.ini files away from volumetric shadows
+ * once so the user can still explicitly change the setting later.
+ */
+void EnsureIOSShadowVolumeCompatibility()
+{
+    NSString *optionsPath = EngineOptionsPath();
+    NSFileManager *fm = [NSFileManager defaultManager];
+    if (![fm fileExistsAtPath:optionsPath])
+        return;
+
+    NSString *markerPath = [[optionsPath stringByDeletingLastPathComponent]
+        stringByAppendingPathComponent:@"IOSShadowVolumeCompatV1"];
+    if ([fm fileExistsAtPath:markerPath])
+        return;
+
+    NSMutableDictionary<NSString *, NSString *> *options = ReadKeyValueFile(optionsPath);
+    if (SettingBoolValue(options, @"UseShadowVolumes", NO))
+    {
+        options[@"UseShadowVolumes"] = @"No";
+        NSError *writeError = nil;
+        if (!WriteKeyValueFile(optionsPath, options, &writeError))
+        {
+            fprintf(stderr, "[IOS-GRAPHICS] Failed to migrate volumetric shadows: %s\n",
+                    writeError != nil ? writeError.localizedDescription.UTF8String : "unknown");
+            return;
+        }
+        fprintf(stderr, "[IOS-GRAPHICS] Disabled incompatible volumetric shadows; texture shadows remain enabled\n");
+    }
+
+    NSError *markerError = nil;
+    if (![ @"" writeToFile:markerPath atomically:YES encoding:NSUTF8StringEncoding error:&markerError ])
+        fprintf(stderr, "[IOS-GRAPHICS] Could not write shadow compatibility marker: %s\n",
+                markerError != nil ? markerError.localizedDescription.UTF8String : "unknown");
+}
+
 NSDictionary<NSString *, NSString *> *DefaultContraSettings()
 {
     return @{
@@ -373,7 +411,7 @@ NSDictionary<NSString *, NSString *> *DefaultContraSettings()
         @"ExtraBuildingProps": @"Yes",
         @"UseShadowVolumes": @"No",
         @"UseShadowDecals": @"Yes",
-        @"UseCloudMap": @"No",
+        @"UseCloudMap": @"Yes",
         @"UseLightMap": @"Yes",
         @"ShowSoftWaterEdge": @"Yes",
         @"BuildingOcclusion": @"Yes",
@@ -677,6 +715,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
                                                object:nil];
 
     self.view.backgroundColor = UIColor.blackColor;
+    EnsureIOSShadowVolumeCompatibility();
     EnsureDefaultIPadOverrides();
 
     NSString *bundledProfile = BundledAutoLaunchProfile();
@@ -1400,7 +1439,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
             ok = [camera writeToFile:IPadOverridesPath() atomically:YES encoding:NSUTF8StringEncoding error:&saveError];
             NSMutableDictionary *options = ReadKeyValueFile(EngineOptionsPath());
             options[@"IdealStaticGameLOD"] = @"High";
-            options[@"StaticGameLOD"] = @"Custom";
+            options[@"StaticGameLOD"] = @"High";
             options[@"UseShadowVolumes"] = boolValue(@"shadow3D", NO) ? @"Yes" : @"No";
             options[@"UseShadowDecals"] = boolValue(@"shadow2D", YES) ? @"Yes" : @"No";
             options[@"UseCloudMap"] = boolValue(@"cloudShadows", NO) ? @"Yes" : @"No";
@@ -2910,7 +2949,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
 {
     self.shadow3DSwitch.on = SettingBoolValue(values, @"UseShadowVolumes", NO);
     self.shadow2DSwitch.on = SettingBoolValue(values, @"UseShadowDecals", YES);
-    self.cloudShadowsSwitch.on = SettingBoolValue(values, @"UseCloudMap", NO);
+    self.cloudShadowsSwitch.on = SettingBoolValue(values, @"UseCloudMap", YES);
     self.groundLightingSwitch.on = SettingBoolValue(values, @"UseLightMap", YES);
     self.softWaterSwitch.on = SettingBoolValue(values, @"ShowSoftWaterEdge", YES);
     self.buildingOcclusionSwitch.on = SettingBoolValue(values, @"BuildingOcclusion", YES);
@@ -2980,7 +3019,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     self.contraWaterSwitch.on = SettingBoolValue(defaults, @"WaterEffects", YES);
     self.contraExtraBuildingPropsSwitch.on = SettingBoolValue(defaults, @"ExtraBuildingProps", YES);
 
-    self.shadow3DSwitch.on = SettingBoolValue(defaults, @"UseShadowVolumes", NO);
+    self.shadow3DSwitch.on = SettingBoolValue(defaults, @"UseShadowVolumes", YES);
     self.shadow2DSwitch.on = SettingBoolValue(defaults, @"UseShadowDecals", YES);
     self.cloudShadowsSwitch.on = SettingBoolValue(defaults, @"UseCloudMap", NO);
     self.groundLightingSwitch.on = SettingBoolValue(defaults, @"UseLightMap", YES);
@@ -3216,7 +3255,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
 
     NSMutableDictionary<NSString *, NSString *> *options = ReadKeyValueFile(EngineOptionsPath());
     options[@"IdealStaticGameLOD"] = @"High";
-    options[@"StaticGameLOD"] = @"Custom";
+    options[@"StaticGameLOD"] = @"High";
     options[@"UseShadowVolumes"] = self.shadow3DSwitch.on ? @"Yes" : @"No";
     options[@"UseShadowDecals"] = self.shadow2DSwitch.on ? @"Yes" : @"No";
     options[@"UseCloudMap"] = self.cloudShadowsSwitch.on ? @"Yes" : @"No";
@@ -3281,29 +3320,14 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
 - (void)saveSettings
 {
     NSError *error = nil;
-    if ([self.settingsProfileId isEqualToString:@"enhanced"] ||
-        [self.settingsProfileId isEqualToString:@"contra-x"])
+
+    // Always persist the shared graphics and camera settings, even when the
+    // selected profile also has its own Enhanced/Contra settings file.
+    NSString *profileToSave = self.settingsProfileId;
+    if (![profileToSave isEqualToString:@"enhanced"] &&
+        ![profileToSave isEqualToString:@"contra-x"])
     {
-        BOOL ok = [self.settingsProfileId isEqualToString:@"enhanced"]
-            ? [self saveEnhancedSettingsAndOptions:&error]
-            : [self saveContraSettingsAndOptions:&error];
-        if (ok)
-        {
-            self.settingsStatus.text = @"Настройки мода сохранены. Изменения применятся при следующем запуске.";
-            self.settingsStatus.textColor = [UIColor systemGreenColor];
-            fprintf(stderr,
-                    "[HUB-SETTINGS] saved profile='%s' path='%s'\n",
-                    self.settingsProfileId.UTF8String,
-                    ([self.settingsProfileId isEqualToString:@"enhanced"]
-                        ? EnhancedSettingsPath()
-                        : ContraSettingsPath()).fileSystemRepresentation);
-        }
-        else
-        {
-            self.settingsStatus.text = @"Не удалось сохранить. Подробности в generals-stderr.log.";
-            self.settingsStatus.textColor = [UIColor systemRedColor];
-        }
-        return;
+        profileToSave = BundledAutoLaunchProfile();
     }
 
     NSString *contents = [NSString stringWithFormat:
@@ -3331,10 +3355,10 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
                                  encoding:NSUTF8StringEncoding
                                     error:&error];
     BOOL profileOK = cameraOK && [self saveGraphicsOptions:&error];
-    NSString *bundledProfile = BundledAutoLaunchProfile();
-    if (profileOK && [bundledProfile isEqualToString:@"enhanced"])
+
+    if (profileOK && [profileToSave isEqualToString:@"enhanced"])
         profileOK = [self saveEnhancedSettingsAndOptions:&error];
-    else if (profileOK && [bundledProfile isEqualToString:@"contra-x"])
+    else if (profileOK && [profileToSave isEqualToString:@"contra-x"])
         profileOK = [self saveContraSettingsAndOptions:&error];
 
     if (cameraOK && profileOK)
@@ -3342,7 +3366,8 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         self.settingsStatus.text = @"Сохранено. Изменения применятся при следующем запуске игры.";
         self.settingsStatus.textColor = [UIColor systemGreenColor];
         fprintf(stderr,
-                "[HUB-SETTINGS] saved shared options=%s camera=%s\n",
+                "[HUB-SETTINGS] saved profile='%s' shared options=%s camera=%s\n",
+                profileToSave.UTF8String,
                 EngineOptionsPath().fileSystemRepresentation,
                 IPadOverridesPath().fileSystemRepresentation);
     }
@@ -3354,7 +3379,6 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
                 error != nil ? [[error description] UTF8String] : "unknown");
     }
 }
-
 - (void)resetSettings
 {
     [self resetSettingsControls];

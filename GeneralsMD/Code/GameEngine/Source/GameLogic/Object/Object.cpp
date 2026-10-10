@@ -750,6 +750,17 @@ Int Object::getTransportSlotCount() const
 	return count;
 }
 
+void Object::friend_setContainedBy(Object* containedBy)
+{
+	m_containedBy = containedBy;
+
+#if !RETAIL_COMPATIBLE_CRC
+	// This frame is included in the GeneralsOnline lockstep CRC; stamp it on every
+	// containment path, not only the normal onContainedBy/onRemovedFrom callbacks.
+	m_containedByFrame = containedBy ? TheGameLogic->getFrame() : 0;
+#endif
+}
+
 const Object* Object::getEnclosingContainedBy() const
 {
 	for (const Object* child = this, *container = getContainedBy(); container; child = container, container = container->getContainedBy())
@@ -2360,7 +2371,7 @@ Bool Object::clearDisabled( DisabledType type )
 	{
 		// We explicitly pass stuff in up in the set, so we need to turn it off if it is a forever type
 		Object *rider = (Object*)contain->friend_getRider();
-		if( rider  &&  (m_disabledTillFrame[ type ] == FOREVER) )
+		if( rider  &&  !rider->isEffectivelyDead()  &&  rider->m_behaviors  &&  (m_disabledTillFrame[ type ] == FOREVER) )
 		{
 			rider->clearDisabled(type);
 		}

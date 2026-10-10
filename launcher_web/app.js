@@ -713,6 +713,46 @@ const settingsDefaults = {
   }
 };
 
+// The native launcher persists canonical English option values in Options.ini and profile settings files.
+// Keep the web UI translated while converting values at the bridge boundary.
+const nativeSettingLabels = {
+  game: {
+    textureQuality: { "Высокое": "High", "Среднее": "Medium", "Низкое": "Low" },
+    particles: { "Низкое": "Low", "Среднее": "Medium", "Высокое": "High" },
+    textureFilter: { "Билинейная": "Bilinear", "Трилинейная": "Trilinear", "Анизотропная": "Anisotropic" },
+    msaa: { "Выкл.": "Off", "2x": "2x", "4x": "4x", "8x": "8x" }
+  },
+  enhanced: {
+    textureResolution: { "Vanilla": "Vanilla", "Высокое": "High" },
+    aiScripts: { "По умолчанию": "Default", "Сдержанные": "Restrained", "Skynet": "Skynet" }
+  },
+  contra: {
+    controlBar: { "Contra": "Contra", "Pro": "Pro", "Стандартная": "Standard" },
+    cameos: { "Стандартные": "Standard", "HD": "HD" },
+    music: { "Стандартная": "Standard", "Улучшенная": "Enhanced", "The Score": "The Score" },
+    voices: { "Английские": "English", "Родные": "Native" },
+    hotkeys: { "Оригинальные": "Original", "Leikeze": "Leikeze" },
+    hotkeyLanguage: { "Английский": "English", "Русский": "Russian" },
+    portraits: { "Стандартные": "Standard", "Забавные": "Funny" }
+  }
+};
+
+function mapSettingsValues(scope, values, toNative = false) {
+  const mapped = { ...values };
+  const scopeMap = nativeSettingLabels[scope] || {};
+  for (const [key, labels] of Object.entries(scopeMap)) {
+    const value = mapped[key];
+    if (typeof value !== "string") continue;
+    if (toNative) {
+      if (Object.prototype.hasOwnProperty.call(labels, value)) mapped[key] = labels[value];
+    } else {
+      const match = Object.entries(labels).find(([, nativeValue]) => nativeValue === value);
+      if (match) mapped[key] = match[0];
+    }
+  }
+  return mapped;
+}
+
 function cloneSettingsDefaults() {
   return JSON.parse(JSON.stringify(settingsDefaults));
 }
@@ -857,7 +897,7 @@ async function openPanel(type) {
       try {
         const nativeSettings = await nativeRequest("settingsGet", { profileId });
         const scope = profileId === "enhanced" ? "enhanced" : profileId === "contra-x" ? "contra" : "game";
-        settingsState[scope] = { ...settingsDefaults[scope], ...(nativeSettings?.values || {}) };
+        settingsState[scope] = { ...settingsDefaults[scope], ...mapSettingsValues(scope, nativeSettings?.values || {}) };
       } catch (error) {
         showToast(error.message || "Не удалось загрузить настройки");
       }
@@ -1590,7 +1630,7 @@ function renderSettings(profileId = "zero-hour-online") {
   modalHeaderActions?.querySelector("[data-settings-save]")?.addEventListener("click", async () => {
     try {
       if (hasNativeBridge) {
-        await nativeRequest("settingsSave", { profileId, values: settingsState[scope] });
+        await nativeRequest("settingsSave", { profileId, values: mapSettingsValues(scope, settingsState[scope], true) });
       } else {
         localStorage.setItem("generals-x-launcher-demo-settings", JSON.stringify(settingsState));
       }

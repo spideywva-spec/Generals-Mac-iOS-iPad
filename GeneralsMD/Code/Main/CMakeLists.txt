@@ -76,7 +76,17 @@ target_sources(z_generals PRIVATE
     $<$<NOT:$<BOOL:${WIN32}>>:SDL3Main.cpp>
     # Linux stubs for P2-P3 platform functions (P2-P3 - TheSuperHackers @build 13/02/2026 BenderAI Session 37)
     $<$<NOT:$<BOOL:${WIN32}>>:LinuxStubs.cpp>
+    # Match PC 32-bit MSVC float-transcendental semantics on non-MSVC builds.
+    $<$<NOT:$<BOOL:${MSVC}>>:ReferenceFloatMath.cpp>
 )
+
+if(NOT MSVC)
+    # Prevent clang from rewriting the wrappers back into calls to sinf/cosf,
+    # and avoid a PCH that imported default-visibility math declarations.
+    set_source_files_properties(ReferenceFloatMath.cpp PROPERTIES
+        COMPILE_OPTIONS "-fno-builtin"
+        SKIP_PRECOMPILE_HEADERS ON)
+endif()
 
 # GeneralsX @feature dvorovrus 26/09/2026 Native UIKit profile launcher for iOS.
 # Keep launcher UI in its own dylib: launcher-only changes can then be rebuilt and
