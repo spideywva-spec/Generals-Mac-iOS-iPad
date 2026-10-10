@@ -840,41 +840,80 @@ NSString *GXHubModsRootPath(void)
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         NSFileManager *fm = [NSFileManager defaultManager];
-        root = [GXHubManagedPath(@"Mods") copy];
+
+        // Keep the managed Mods folder visible in the iOS Files app. The app's
+        // legacy Documents/Mods location is the canonical path for the launcher.
+        root = [GXHubDocumentsPath(@"Mods") copy];
         [fm createDirectoryAtPath:root withIntermediateDirectories:YES attributes:nil error:nil];
 
-        // Migrate legacy Files-visible Hub profiles without forcing any re-download.
-        NSString *legacy = GXHubDocumentsPath(@"Mods");
-        BOOL legacyIsDirectory = NO;
-        if ([fm fileExistsAtPath:legacy isDirectory:&legacyIsDirectory] && legacyIsDirectory)
+        // Recover profiles/settings from builds that stored them under
+        // Application Support/GeneralsX/Hub/Mods. Never overwrite an existing
+        // file and never delete the old copy during migration.
+        NSString *previousRoot = GXHubManagedPath(@"Mods");
+        BOOL previousIsDirectory = NO;
+        if ([fm fileExistsAtPath:previousRoot isDirectory:&previousIsDirectory] && previousIsDirectory)
         {
-            NSArray<NSString *> *children = [fm contentsOfDirectoryAtPath:legacy error:nil] ?: @[];
+            NSArray<NSString *> *children = [fm contentsOfDirectoryAtPath:previousRoot error:nil] ?: @[];
             for (NSString *child in children)
             {
                 if ([child hasPrefix:@"."])
                     continue;
-                NSString *source = [legacy stringByAppendingPathComponent:child];
-                NSString *destination = [root stringByAppendingPathComponent:child];
-                if ([fm fileExistsAtPath:destination])
-                    continue;
 
-                NSError *moveError = nil;
-                if ([fm moveItemAtPath:source toPath:destination error:&moveError])
+                NSString *source = [previousRoot stringByAppendingPathComponent:child];
+                NSString *destination = [root stringByAppendingPathComponent:child];
+                BOOL sourceIsDirectory = NO;
+                BOOL destinationIsDirectory = NO;
+                [fm fileExistsAtPath:source isDirectory:&sourceIsDirectory];
+                BOOL destinationExists = [fm fileExistsAtPath:destination isDirectory:&destinationIsDirectory];
+
+                if (!destinationExists)
                 {
-                    fprintf(stderr, "[HUB-STORAGE] migrated '%s' -> Application Support\n", child.UTF8String);
+                    NSError *moveError = nil;
+                    if (![fm moveItemAtPath:source toPath:destination error:&moveError])
+                    {
+                        fprintf(stderr, "[HUB-STORAGE] migration retained old profile '%s': %s\\n",
+                                child.UTF8String,
+                                moveError.localizedDescription.UTF8String ?: "unknown");
+                    }
+                    else
+                    {
+                        fprintf(stderr, "[HUB-STORAGE] restored profile '%s' to Documents/Mods\\n", child.UTF8String);
+                    }
+                    continue;
                 }
-                else
+
+                // Merge only missing entries if both copies exist. Existing
+                // Documents files win; the old source remains as a recovery copy.
+                if (sourceIsDirectory && destinationIsDirectory)
                 {
-                    fprintf(stderr, "WARNING: failed to migrate Hub profile '%s': %s\n",
-                            child.UTF8String,
-                            moveError != nil ? moveError.description.UTF8String : "unknown");
+                    NSDirectoryEnumerator<NSString *> *enumerator = [fm enumeratorAtPath:source];
+                    for (NSString *relative in enumerator)
+                    {
+                        NSString *sourceItem = [source stringByAppendingPathComponent:relative];
+                        NSString *destinationItem = [destination stringByAppendingPathComponent:relative];
+                        BOOL itemIsDirectory = NO;
+                        if ([fm fileExistsAtPath:sourceItem isDirectory:&itemIsDirectory] && itemIsDirectory)
+                        {
+                            [fm createDirectoryAtPath:destinationItem withIntermediateDirectories:YES attributes:nil error:nil];
+                            continue;
+                        }
+                        if (![fm fileExistsAtPath:destinationItem])
+                        {
+                            [fm createDirectoryAtPath:destinationItem.stringByDeletingLastPathComponent
+                          withIntermediateDirectories:YES attributes:nil error:nil];
+                            NSError *copyError = nil;
+                            if (![fm copyItemAtPath:sourceItem toPath:destinationItem error:&copyError])
+                            {
+                                fprintf(stderr, "[HUB-STORAGE] could not restore '%s': %s\\n",
+                                        relative.UTF8String,
+                                        copyError.localizedDescription.UTF8String ?: "unknown");
+                            }
+                        }
+                    }
                 }
             }
-
-            NSArray *remaining = [fm contentsOfDirectoryAtPath:legacy error:nil] ?: @[];
-            if (remaining.count == 0)
-                [fm removeItemAtPath:legacy error:nil];
         }
+        fprintf(stderr, "[HUB-STORAGE] canonical mods root='%s'\\n", root.fileSystemRepresentation);
     });
     return root;
 }
