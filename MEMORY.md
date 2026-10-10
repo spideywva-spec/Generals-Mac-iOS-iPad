@@ -219,3 +219,28 @@
 - Source comparison against `dvorovrus/Generals-Mac-iOS-iPad:feature/online-deterministic-math` found a specific FPU-state difference: reference branch has `ScopedFPUGuard` in `GameLogic::update()` and its header, ours did not. Added the same scope-exit reassertion of `setFPMode()` in `GeneralsMD/Code/GameEngine/Include/GameLogic/FPUControl.h` and at the beginning of `GameLogic::update()`. Commits: `a1650b39a33a8133c6e688adb55d355333eba35f` (guard) and `d397244792ce7154f60fb254dd4795e8e02f6537` (use guard). This is a narrowly scoped deterministic-FPU consistency fix; it is a plausible contributor, not yet proven to fix all cross-platform desync.
 - Added the isolated branch to `.github/workflows/build-ios-shell.yml` trigger in commit `9183a74b94391c858a7ffe2cc653ffe344bfafcf`. CI run `38051927605` was queued at handoff; compile result not yet known.
 - The downloaded configure log confirms GameMath/fdlibm is enabled for this iOS build. It does not establish whether the PC/Android clients in the target GeneralsOnline lobby use the same deterministic math/data patch. CRC deep logging was not enabled in this build; no matched cross-device CRC dumps or real cross-platform match are available yet.
+
+
+## Работа по модам и межплатформенной синхронизации (2026-10-10)
+
+### Созданная рабочая ветка / PR
+- Рабочая ветка: `fix/mods-visible-cross-platform-sync`, основана на `generealss-spideywv`; защищённая `a13-ios-build` напрямую не менялась.
+- PR: https://github.com/spideywva-spec/Generals-Mac-iOS-iPad/pull/2 (открыт, не слит).
+- Последний коммит ветки: `e891ca525c9acd96149075407282ba873d6afcb5`.
+- Коммиты по порядку:
+  - `616ddfca090681a50769800e870b8943689d5c93` — исправление контракта результата отправки игровых пакетов и framing fallback.
+  - `0415a8bc71827203cfe8bea177df6b04a59da484` — возврат канонической папки модов в Documents/Mods и восстановление старых данных.
+  - `9567456ef708ad3a2ae5658b858ebb387690f8ee` — включение deterministic math в общий preset `default-vcpkg` для современных не-VC6 сборок.
+  - `e891ca525c9acd96149075407282ba873d6afcb5` — добавлена рабочая ветка в push-trigger iOS build workflow для проверки.
+
+### Изменения
+- `GeneralsMD/Code/Main/IOSModManager.mm`: канонический путь снова `Documents/Mods`, чтобы папка была видна в iOS Files. При запуске профили переносятся из прежнего `Library/Application Support/GeneralsX/Hub/Mods`, если целевого профиля ещё нет; если обе копии есть, копируются только отсутствующие файлы, старый источник не удаляется, существующие файлы не перезаписываются.
+- `GeneralsMD/Code/GameEngine/Source/GameNetwork/GeneralsOnline/NetworkMesh.cpp`: `PlayerConnection::SendGamePacket` теперь возвращает `k_EResultOK` после успешной отправки/передачи в transport plugin. Ранее успешный путь проваливался в `k_EResultFail`. Повторная отправка сохраняет префикс `NETWORK_CHANNEL_GAME`; прежний fallback отправлял необрамлённый `pBuffer`, что несовместимо с ожидаемым framing при приёме.
+- `CMakePresets.json`: `SAGE_USE_DETERMINISTIC_MATH=ON` добавлен в общий `default-vcpkg`, чтобы наследующие его современные Windows/Linux/macOS пресеты использовали детерминированную математику. VC6-пресеты не менялись.
+- `.github/workflows/build-ios-shell.yml`: добавлена только новая рабочая ветка в список push-триггеров; A12/A13 workaround и Vulkan 1.2/1.3 настройки не менялись.
+
+### Проверки и ограничения
+- Статическая проверка исходников подтвердила: успешный send возвращает OK; fallback повторно использует framed `vecData`, а не сырой `pBuffer`; CMakePresets.json разбирается как валидный JSON; iOS workflow по-прежнему содержит A12/A13 workaround `samplerMirrorClampToEdge=VK_FALSE`.
+- Нативная сборка этой ветки и реальный матч iOS↔Android/Windows/Linux/macOS пока НЕ подтверждены. Успех межплатформенной синхронизации не заявлять до парных логов/CRC с одного матча.
+- Android reference repo `MYSOREZ/GeneralsZH-Android-Port` имеет `SAGE_USE_DETERMINISTIC_MATH` по умолчанию OFF в `cmake/gamemath.cmake`, а workflow `.github/workflows/build-android.yml` не передаёт эту опцию. Сам reference repo не менялся. Поэтому полная math-детерминированность iOS↔Android пока не обеспечена этим PR; нужно согласовать/проверить соответствующую настройку в фактическом Android build, который использует пользователь.
+- Render не менялся: он публикует web launcher, но не управляет локальной папкой модов и не может сам исправить игровые пакеты.
