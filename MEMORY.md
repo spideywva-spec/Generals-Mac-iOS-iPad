@@ -529,3 +529,8 @@
 - The same log shows successful HTTP 200 responses for the GeneralsOnline VersionManifest, LoginWithToken, social/friends, social/blocked, MOTD, GlobalStats, Rooms, PlayerStats, Lobbies, ServiceConfig, and lobby detail calls; the client joins the lobby. There is no API HTTP failure shown before the lockstep CRC mismatch.
 - Source path check: `IOSProfileLauncher.mm` writes game graphics settings through `EngineOptionsPath()` to app-support `Options.ini`, and writes camera settings through `IPadOverridesPath()`; `GameEngine.cpp` loads `$HOME/Documents/iPadOverrides.ini`, while `GlobalData.cpp` restores graphics preferences from `Options.ini`. The current log does not print actual saved key/value contents or loaded values, so successful save does not by itself prove every value was applied; a before/after value dump is still needed if the user reports settings not taking effect.
 - The startup line `SDL3GameEngine for Linux` is not proof this is a standalone Linux binary: the same log records `platform=apple`, Apple manifest handling, and Apple Windows-parity CRC preparation. Treat this log as the iOS/Apple target's log with a Linux branding string, and keep Linux and MacBook checks as separate builds/tests.
+
+
+### Memory SHA correction (2026-10-11)
+- The Overlord header restoration commit referenced in the earlier section is `c34ea17a270a5031370e305011d6ee8df24db916` (not the typo `c34ea17a270a5031370d305011d6ee8df24db916`).
+- Name-key diagnostic newline was corrected in working-branch commit `27a77e016623482a47cdeb9ba07bb152b877aa3c`; it only changes the log string from a literal backslash-n to a proper newline.
