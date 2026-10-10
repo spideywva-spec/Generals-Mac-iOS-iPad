@@ -609,3 +609,9 @@
 ### Lobby executable-CRC handshake confirmed for the latest uploaded log (2026-10-11)
 - The latest local log's lobby response has `ExeCRC=560676586`, which is exactly `0x216B3EEA`, the Apple Windows-parity 60 Hz network CRC prepared by `OnlineServices_Init.cpp`. Its `IniCRC=2180732466` is also accepted by the service. The VersionManifest's `execrc_60=2671734965` is a different server-side executable hash algorithm and must not be compared directly to the lobby CRC.
 - The client joins and starts match 4285915 with these values, so executable-CRC/lobby admission is not the cause of the frame-100 simulation mismatch.
+
+
+## 2026-10-11 — live Actions compile-log scan (run 38080742338)
+
+- Retrieved and scanned the in-progress workflow job log for head `d2f987d355ef6351ea6649dace5b5e800fcb142c` (job `114296969835`): 27,486,229 characters / 222,491 lines as of 19:49:18Z. No CMake errors, fatal compiler errors, undefined references, or `ninja: build stopped` markers were found. Compilation had progressed through many translation units, including Object.cpp. Repeated warnings about `Object.h:162` custom `operator new` returning null are pre-existing warnings and not caused by these changes.
+- This is an in-progress log scan, not a successful build conclusion; wait for the job to finish and scan the final tail/result before marking the build green.
