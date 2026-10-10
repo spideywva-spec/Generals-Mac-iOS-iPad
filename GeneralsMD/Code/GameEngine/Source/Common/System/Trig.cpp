@@ -47,33 +47,53 @@
 #define INT_PI								12868
 #define INT_HALFPI 						6434
 
-// GeneralsX @refactor fbraz 03/05/2026 Route legacy trig functions through WWMath wrappers.
-// Upstream reference: Okladnoj, PR #2670
-// https://github.com/TheSuperHackers/GeneralsGameCode/pull/2670
-
+// Cross-platform lockstep: moving-object orientation matrices are included in the
+// simulation CRC. Match the Windows x87/VC6 result by evaluating in double and
+// narrowing once on non-MSVC x86 platforms. Keep the original CRT entry points
+// on 32-bit MSVC x86, where they provide the Windows compatibility behavior.
 Real Sin(Real x)
 {
-	return WWMath::SinTrig(x);
+#if defined(_MSC_VER) && defined(_M_IX86)
+	return sinf(x);
+#else
+	return (Real)sin((double)x);
+#endif
 }
 
 Real Cos(Real x)
 {
-	return WWMath::CosTrig(x);
+#if defined(_MSC_VER) && defined(_M_IX86)
+	return cosf(x);
+#else
+	return (Real)cos((double)x);
+#endif
 }
 
 Real Tan(Real x)
 {
-	return WWMath::TanTrig(x);
+#if defined(_MSC_VER) && defined(_M_IX86)
+	return tanf(x);
+#else
+	return (Real)tan((double)x);
+#endif
 }
 
 Real ACos(Real x)
 {
-	return WWMath::ACosTrig(x);
+#if defined(_MSC_VER) && defined(_M_IX86)
+	return acosf(x);
+#else
+	return (Real)acos((double)x);
+#endif
 }
 
 Real ASin(Real x)
 {
-	return WWMath::ASinTrig(x);
+#if defined(_MSC_VER) && defined(_M_IX86)
+	return asinf(x);
+#else
+	return (Real)asin((double)x);
+#endif
 }
 
 double Sqrt(double x)
