@@ -6,11 +6,31 @@
 
 char* itoa(int value, char* str, int base)
 {
-  // Create stringbuf from str
-  std::stringbuf buf;
-  buf.pubsetbuf(str, 33);
-  std::ostream os(&buf);
-  os << value << '\0';
+  if (str == nullptr)
+    return str;
+  if (base < 2 || base > 36)
+  {
+    str[0] = '\0';
+    return str;
+  }
+
+  char digits[34];
+  int count = 0;
+  const bool negative = (base == 10 && value < 0);
+  unsigned int magnitude = negative ? 0u - (unsigned int)value : (unsigned int)value;
+  do
+  {
+    const unsigned int digit = magnitude % (unsigned int)base;
+    digits[count++] = (char)(digit < 10 ? '0' + digit : 'a' + (digit - 10));
+    magnitude /= (unsigned int)base;
+  } while (magnitude != 0);
+
+  int out = 0;
+  if (negative)
+    str[out++] = '-';
+  while (count > 0)
+    str[out++] = digits[--count];
+  str[out] = '\0';
   return str;
 }
 
