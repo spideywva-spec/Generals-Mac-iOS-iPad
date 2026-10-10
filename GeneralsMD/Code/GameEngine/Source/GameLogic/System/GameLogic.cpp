@@ -3810,6 +3810,9 @@ extern __int64 Total_Load_3D_Assets;
 // ------------------------------------------------------------------------------------------------
 void GameLogic::update()
 {
+	// Re-apply the deterministic FPU mode when this simulation frame exits.
+	ScopedFPUGuard fpuGuard;
+
 	USE_PERF_TIMER(GameLogic_update)
 	PROFILER_SECTION_COLOR(0x4CAF50);
 

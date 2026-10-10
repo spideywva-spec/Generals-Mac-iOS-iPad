@@ -15,6 +15,7 @@
 struct OutgoingPacketState
 {
 	Int retryCount = 0;
+	unsigned long long sequence = 0;
 	static constexpr Int MAX_RETRIES = 3;
 };
 
@@ -52,6 +53,7 @@ public:
 
 private:
 	OutgoingPacketState m_outPacketState[MAX_MESSAGES];
+	unsigned long long m_nextPacketSequence = 1;
 	// Track which incoming buffer slots are occupied (handles zero-length packets)
 	bool m_inBufferOccupied[MAX_MESSAGES];
 };

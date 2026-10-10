@@ -1529,8 +1529,28 @@ void NGMP_OnlineServices_LobbyInterface::CreateLobby(UnicodeString strLobbyName,
 				sanitizedMapPath = sanitizedMapPath.reverseFind('\\') + 1;
 			}
 
+			// The iOS client identifies its lobbies in the public browser automatically.
+			// This is lobby metadata only; it is not part of gameplay packets or simulation state.
+			std::string strPublishedLobbyName = to_utf8(strLobbyName.str());
+#if defined(__APPLE__)
+			constexpr const char* kIOSLobbyPrefix = "[iOS] ";
+			if (strPublishedLobbyName.compare(0, 6, kIOSLobbyPrefix) == 0)
+			{
+				// Already normalized; do not duplicate the prefix or its space.
+			}
+			else if (strPublishedLobbyName.compare(0, 5, "[iOS]") == 0)
+			{
+				// Normalize a manually supplied prefix that is missing its separating space.
+				strPublishedLobbyName = std::string(kIOSLobbyPrefix) + strPublishedLobbyName.substr(5);
+			}
+			else
+			{
+				strPublishedLobbyName.insert(0, kIOSLobbyPrefix);
+			}
+#endif
+
 			nlohmann::json j;
-			j["name"] = to_utf8(strLobbyName.str());
+			j["name"] = strPublishedLobbyName;
 			j["map_name"] = strMapName;
 			j["map_path"] = local_to_utf8(sanitizedMapPath.str());
 			j["map_official"] = bIsOfficial;
