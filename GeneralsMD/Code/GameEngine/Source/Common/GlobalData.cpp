@@ -1249,7 +1249,7 @@ void GlobalData::parseGameDataDefinition( INI* ini )
 	TheWritableGlobalData->m_useLightMap = optionPref.getLightmapEnabled();
 	TheWritableGlobalData->m_showSoftWaterEdge = optionPref.getSmoothWaterEnabled();
 	TheWritableGlobalData->m_useTrees = optionPref.getTreesEnabled();
-	TheWritableGlobalData->m_useDrawModuleLOD = !optionPref.getExtraAnimationsDisabled();
+	TheWritableGlobalData->m_useDrawModuleLOD = optionPref.getExtraAnimationsDisabled();
 	TheWritableGlobalData->m_useHeatEffects = optionPref.getUseHeatEffects();
 	TheWritableGlobalData->m_enableDynamicLOD = optionPref.getDynamicLODEnabled();
 	TheWritableGlobalData->m_enableBehindBuildingMarkers = optionPref.getBuildingOcclusionEnabled();
