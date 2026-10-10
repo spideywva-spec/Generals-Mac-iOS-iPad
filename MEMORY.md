@@ -269,3 +269,10 @@
 2. На iOS изменить один из параметров (например, Dynamic LOD/Heat Effects), сохранить, перезапустить игру, проверить содержимое `~/Library/Application Support/GeneralsX/GeneralsZH/Options.ini` и фактическое значение при повторном открытии меню.
 3. Проверить 2D/3D shadows при `StaticGameLOD=Custom`; не обещать аппаратно полноценные тени/отражения только по наличию чекбоксов.
 4. Для межплатформенной синхронизации запросить лог Android/PC второй стороны того же матча. Сравнить build/revision, карту/режим, сетевой packet/channel/version и CRC на одинаковых кадрах; текущий iOS лог сам по себе не доказывает desync.
+
+
+### Дополнительная находка: graphics options не применялись при старте
+- После первого исправления проверены `OptionPreferences.cpp` и `GlobalData.cpp`: в `OptionPreferences` уже есть getters для 2D/3D shadows, cloud shadows, lightmap, smooth water, trees, extra animations, heat effects, Dynamic LOD, building occlusion и particle cap, но `GlobalData::load` не переносил эти сохранённые значения в `TheWritableGlobalData`.
+- Добавлен второй коммит в ту же рабочую ветку: `f1ef78bed0b1a966adc065922e31cce8781a4173` — `Load persisted graphics options at startup`.
+- В `GeneralsMD/Code/GameEngine/Source/Common/GlobalData.cpp` сразу после базовых option preferences добавлено применение этих 11 параметров из `OptionPreferences` в writable global data. Это дополняет предыдущий fix, где сохранение шести полей было переключено с `TheGlobalData` на `TheWritableGlobalData`.
+- Проверено по заголовку `Core/GameEngine/Include/Common/OptionPreferences.h`, что используемые getters объявлены. Компиляция ещё не выполнена; остаётся проверить Actions и реальный перезапуск игры.
