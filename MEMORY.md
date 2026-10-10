@@ -567,3 +567,10 @@
 - Android's cross-play lesson says the current GeneralsOnline PC client parses INI numbers with sscanf; from_chars and strtod-then-float can round or parse differently, changing simulation inputs. The iOS file already chose sscanf on Apple, but the same source selected std::from_chars on Linux because it used the platform conditional.
 - Changed Core/GameEngine/Source/Common/INI/INI.cpp in commit cb36a0b8b6497e6999aa46efb22645d85ec97d11 to set USE_STD_FROM_CHARS_PARSING=0 unconditionally for this online branch, matching Android and keeping Linux/macOS/Apple INI parsing consistent with PC. This leaves the iOS parsing path unchanged and fixes the Linux build path.
 - Not yet built or match-tested. A new Actions run should be created for HEAD cb36a0b8b6497e6999aa46efb22645d85ec97d11; inspect compile and new frame-100 CRC after installation.
+
+
+## 2026-10-11 — matched PC rule for scripted upgrades on unfinished buildings
+
+- Android's replay-validated lesson documents a frame-19251 divergence: the GeneralsOnline PC client refuses to queue an upgrade on an under-construction building, while this port allowed the queue to finish and changed the object's upgrade mask.
+- Added the same early refusal to ProductionUpdate::queueUpgrade in GeneralsMD/Code/GameEngine/Source/GameLogic/Object/Update/ProductionUpdate.cpp, commit d2f987d355ef6351ea6649dace5b5e800fcb142c. The check is before production queue/payment mutations and applies to script/AI requests; normal UI already hides upgrades on unfinished buildings.
+- This addresses a documented later-match divergence; not yet compiled or tested in the user's match.
