@@ -95,3 +95,19 @@
 - Никакая новая сборка или межплатформенный матч в рамках этого уточнения не запускались.
 - Защищённая `a13-ios-build` не изменялась.
 - Следующее действие: проверить полный diff `fix/multiplayer-send-result` (метод был значительно сокращён), затем собрать ветку и провести контрольный матч iOS↔iOS и тестовый матч iOS↔Android с логами обеих сторон. Если iOS↔iOS проходит, а Android-host снова расходится — сначала локализовать первый отличающийся CRC/пакет/игровой кадр и только после этого выбирать точечный fix.
+
+
+## Рабочая сессия (2026-10-10): iOS↔Android/PC compatibility branch
+- Создана отдельная ветка `fix/ios-android-lobby-compat` от `generealss-spideywv`. Защищённая `a13-ios-build` не изменялась. Сравнение refs показывает 5 коммитов поверх базовой ветки и только 4 изменённых исходных файла.
+- В `GeneralsMD/Code/GameEngine/Source/GameNetwork/GeneralsOnline/OnlineServices_LobbyInterface.cpp` добавлено автоматическое имя `[iOS] ` только при создании лобби на Apple. Префикс не добавляется повторно; ручной `[iOS]` без пробела нормализуется. Изменяется поле имени в запросе создания лобби, не игровые пакеты или состояние симуляции.
+- В `GeneralsMD/Code/GameEngine/Source/GameNetwork/GeneralsOnline/NetworkMesh.cpp`, `PlayerConnection::SendGamePacket`, исправлены обнаруженные при сравнении с MYSOREZ Android ошибки: успешная отправка раньше проваливалась к `k_EResultFail`; plugin-send тоже не возвращал успех; повторная отправка после ошибки посылала сырой `pBuffer` без channel prefix. Теперь возвращается результат реальной отправки, а fallback использует тот же буфер `vecData` с `NETWORK_CHANNEL_GAME`.
+- В `GeneralsMD/Code/GameEngine/Include/GameLogic/FPUControl.h` добавлен `ScopedFPUGuard`; в `GeneralsMD/Code/GameEngine/Source/GameLogic/System/GameLogic.cpp` он создаётся в начале каждого `GameLogic::update()`, чтобы восстановить заданный FPU-режим при выходе из кадра. Это выборочная реализация подхода из dvorov `feature/online-deterministic-math`, не перенос всей ветки.
+- Коммиты ветки:
+  - `4d9cb07e7a663236c57ba6c6901bafdc84177e9d` — автоматический iOS lobby prefix.
+  - `2121db5c2298965bbb670331a6c6a6604e450309` — send result/channel framing.
+  - `11f6dd16e5f235df258674c47073c18ee6c50f45` — scoped FPU guard declaration.
+  - `00ffb6157d6e17787359e967474d7ce24cae74f1` — FPU guard per simulation frame.
+  - `dce2db94c75f362e6f3912deb00e9fe045406119` — normalize prefix without duplicate space.
+- Проверки исходников после записи: ветка содержит нужный `return k_EResultOK` для успешной отправки и plugin path; fallback использует `vecData.data()`, а не raw `pBuffer`; lobby JSON использует `strPublishedLobbyName`; guard и его include присутствуют; diff относительно `generealss-spideywv` ограничен этими четырьмя файлами. В запросе GitHub Actions для новой ветки пока не было workflow runs.
+- ВАЖНО: компиляция, GitHub Actions build и реальный тест iOS↔iOS / iOS↔Android / iOS↔PC ещё не выполнялись. Эти изменения — точечные исправления на основе исходников, а не подтверждённое решение всех трёх типов сбоев. Нельзя говорить, что межплатформенная синхронизация уже исправлена.
+- Следующие шаги: проверить CI/build для этой ветки; прогнать prefix edge cases; тестировать вход в лобби/старт/матч отдельно с Android-host и PC-host; собрать stderr/transport logs обеих сторон и сравнить первый несовпадающий CRC. Если сборка не запускается автоматически, проверить доступные workflows и запустить подходящий.
