@@ -4,30 +4,35 @@
 
 ## Защищённые ограничения
 - Основной репозиторий: `spideywva-spec/Generals-Mac-iOS-iPad`.
-- Текущая рабочая ветка пользователя: `generealss-spideywv`; не путать с другим репозиторием `spideywv-command-zero-hour`.
+- Рабочая ветка пользователя: `generealss-spideywv`; не путать с другим репозиторием `spideywv-command-zero-hour`.
 - Никогда не изменять `a13-ios-build` случайно. Сохранять A12/A13 Vulkan workaround, русскоязычный `IOSProfileLauncher`, настройки `build-ios-shell.yml` и не трогать `SDL3GameEngine` без доказанной необходимости.
 - Цель: разобраться с multiplayer desync/таймаутами. Не объявлять успех только потому, что Actions workflow завершился успешно; проверять содержимое логов и подтверждать тестами.
 
 ## Референсы
-- Android-порт: `MYSOREZ/GeneralsZH-Android-Port`; изучать сетевую реализацию, особенно `NetworkMesh.cpp`, обработку peer lifecycle, повторные попытки соединения, TURN/ICE/signalling, join-order, `bInMatch`/`bPeerLeft`, отказ одного peer без убийства всей игры.
-- iOS reference: `dvorovrus/Generals-Mac-iOS-iPad`, branch `feature/online-deterministic-math`. Использовать выборочно deterministic math/FPU/CRC fixes; не переносить весь NetworkMesh/transport teardown вслепую. Deterministic math и транспортные таймауты — разные классы проблем.
-- Предпочитать изменения на отдельной рабочей ветке; держать эту ветку только для памяти/заметок.
+- Android-порт: `MYSOREZ/GeneralsZH-Android-Port`; исходники `GeneralsMD/Code/GameEngine/Source/GameNetwork/GeneralsOnline/NetworkMesh.cpp`, `NextGenTransport.cpp`, заголовок `NetworkMesh.h`.
+- iOS reference: `dvorovrus/Generals-Mac-iOS-iPad`, branch `feature/online-deterministic-math`. Выбирать детерминированную математику/FPU/CRC отдельно от transport fixes; не переносить весь NetworkMesh или teardown вслепую.
+- Ветка `memory-notes` — только постоянные заметки/handoff. Кодовые изменения делать в `generealss-spideywv` или отдельной рабочей ветке, не в memory branch.
 
-## Последняя диагностика лога (2026-10-10)
-- Получено и проанализировано содержимое `logs/generals-stderr.log` из ветки `logs` через GitHub connector; попытка обычного скачивания через raw URL не сработала, поэтому не утверждать, что файл был сохранён локально.
-- Lobby ID `141339`, карта `Defcon 6 (6)`, в лобби было 6 игроков.
-- iOS использует relay-only ICE; TURN credentials/candidates присутствуют. Peer ID `92042` перестаёт отвечать вскоре после старта матча: последовательные таймауты 5, 8 и 11; последнее сообщение было примерно 7.8 секунд назад.
-- Есть предупреждение SteamNetworking о socket lock, удерживаемом около 5.2 ms; это само по себе не доказывает причину.
-- В логе есть CRC/state trace на кадрах 0/100/200, но нет сопоставленных CRC двух устройств на одинаковых кадрах. Поэтому именно desync пока не доказан; подтверждённый симптом — сетевые таймауты peer.
-- Код после анализа этого лога не менялся; фикс и повторный multiplayer тест не выполнены.
+## Диагностика игрового лога (2026-10-10)
+- Содержимое `logs/generals-stderr.log` из ветки `logs` проанализировано через GitHub connector; raw URL не скачался, поэтому не утверждать, что файл сохранён локально.
+- Lobby ID `141339`, карта `Defcon 6 (6)`, 6 игроков.
+- iOS использует relay-only ICE; TURN credentials/candidates присутствуют. Peer ID `92042` перестаёт отвечать вскоре после старта: таймауты 5, 8, 11 подряд; последнее сообщение примерно 7.8 секунды назад.
+- SteamNetworking сообщает о socket lock около 5.2 ms; отдельно это не доказывает причину.
+- CRC/state trace на кадрах 0/100/200 есть, но сопоставленных CRC двух устройств на одинаковых кадрах нет. Пока подтверждены сетевые таймауты, но не доказан simulation desync.
+- После анализа лога код не менялся; fix/build/retest не выполнялись.
 
-## Текущая сессия
-- Создана ветка `memory-notes` от `generealss-spideywv`.
-- Этот файл — постоянный handoff. После каждого дальнейшего изменения обновлять его новым commit в `memory-notes`.
-- Нужно продолжить сравнение исходников Android-порта и ветки deterministic math по реальным файлам/коммитам; поисковая выдача GitHub code search в текущем сеансе не вернула результатов для `NetworkMesh`, `bPeerLeft` и `WWMath`, поэтому это пока не считается проверкой исходников.
+## Проверка исходников (2026-10-10)
+- Сравнены реальные `NetworkMesh.cpp` из Android `main` и нашей `generealss-spideywv`. В обоих есть правила: учитывать join order, не пересигналивать ушедшему peer (`bPeerLeft`), повторять signalling при ошибке, продолжать восстановление соединения в матче, не заставлять host покидать лобби из-за одного peer. Значит, базовая retry-policy уже присутствует в нашей ветке; нельзя просто копировать её заново и заявлять исправление.
+- Наша `NetworkMesh.cpp` длиннее Android reference (66990 против 57614 символов) и содержит дополнительные механизмы deferred deletion, mutex/ожидания TURN credentials. Следующий поиск причины должен быть в конкретных различиях жизненного цикла callback/handle, relay credentials/signalling, packet delivery и таймаутах.
+- Android `NextGenTransport.cpp` проверяет channel prefix, magic, CRC, длины сообщения и освобождение полученных SteamNetworking messages. Нужна отдельная проверка остального файла и сопоставление этих packet-level safeguards с нашей реализацией.
+- `Core/Libraries/Source/WWVegas/WWMath/wwmath.h` в нашей ветке и в указанной dvorov ветке имеет одинаковый blob SHA `01e507a6650fe7dd65865efd6f7d11b7673fc5d8`: deterministic wrappers уже совпадают на уровне этого файла. Не переносить его повторно.
+- В dvorov `feature/online-deterministic-math` есть `GameLogic/FPUControl.h` с `ScopedFPUGuard`, документация `docs/HOWTO/INVESTIGATING_DESYNCS.md` и расширенный `XferCRC.cpp`/Deep CRC instrumentation. Документ подчёркивает, что для доказательства desync нужны deep-CRC dumps от обеих сторон одного матча; одного игрового stderr недостаточно.
+- Сравнение dvorov `main` → `feature/online-deterministic-math`: ветка разошлась (72 commits ahead, 22 behind); diff затрагивает много online и build файлов. Не cherry-pick/merge всей ветки в iOS без выборочного анализа.
+- Текущая сессия не меняла игровые исходники и не запускала сборку.
 
-## Следующие шаги
-1. Получить точные файлы/патчи из Android-порта и `feature/online-deterministic-math` через repository file/commit/tree APIs; зафиксировать конкретные пути и diff.
-2. Сопоставить их с текущей веткой `generealss-spideywv`; отделить deterministic math/CRC/FPU от transport lifecycle/ICE/TURN.
-3. Вносить только обоснованные изменения в рабочую ветку, не в `a13-ios-build`; запустить build и проверить полный локально скачанный Actions log/игровой лог.
-4. После каждой сессии добавить дату, список фактических изменений, commit SHA, сборку/тесты и следующий шаг в этот файл.
+## Постоянный handoff / следующие шаги
+1. Изучить различия в Android `NetworkMesh.cpp` целиком, особенно `SetDisconnected`, signalling callback, `Tick`, relay/credential timing; сопоставить с нашей реализацией.
+2. Сравнить Android `NextGenTransport.cpp` с нашей версией по отправке/приёму пакетов, очередям, ACK/sequence/CRC и таймаутам.
+3. Проверить в нашей ветке фактическое включение deterministic math macro и FPU mode во всех game-logic paths; `SAGE_USE_DETERMINISTIC_MATH` и `USE_DETERMINISTIC_MATH` не считать взаимозаменяемыми без проверки CMake definitions.
+4. Вносить только доказанные исправления в рабочую ветку; не менять `a13-ios-build`. После build скачать Actions artifact/log и проверить содержимое; затем повторить матч с логами обеих сторон и, если есть, двумя deep-CRC dumps.
+5. В конце каждой следующей сессии обновлять этот файл отдельным commit в `memory-notes`.
