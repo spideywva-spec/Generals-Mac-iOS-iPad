@@ -91,5 +91,11 @@ target_link_libraries(core_wwmath PRIVATE
     core_wwsaveload
 )
 
+# GameMath functions are referenced by inline WWMath wrappers when deterministic
+# math is enabled. core_wwmath is static, so propagate GameMath to final link targets.
+if(SAGE_USE_DETERMINISTIC_MATH)
+    target_link_libraries(core_wwmath PUBLIC gamemath::gamemath)
+endif()
+
 # @todo Test its impact and see what to do with the legacy functions.
 #add_compile_definitions(core_wwmath PUBLIC ALLOW_TEMPORARIES) # Enables legacy math with "temporaries"
