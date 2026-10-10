@@ -276,3 +276,9 @@
 - Добавлен второй коммит в ту же рабочую ветку: `f1ef78bed0b1a966adc065922e31cce8781a4173` — `Load persisted graphics options at startup`.
 - В `GeneralsMD/Code/GameEngine/Source/Common/GlobalData.cpp` сразу после базовых option preferences добавлено применение этих 11 параметров из `OptionPreferences` в writable global data. Это дополняет предыдущий fix, где сохранение шести полей было переключено с `TheGlobalData` на `TheWritableGlobalData`.
 - Проверено по заголовку `Core/GameEngine/Include/Common/OptionPreferences.h`, что используемые getters объявлены. Компиляция ещё не выполнена; остаётся проверить Actions и реальный перезапуск игры.
+
+
+### Корректировка семантики ExtraAnimations
+- При ревизии добавленного startup mapping обнаружено, что `getExtraAnimationsDisabled()` уже возвращает значение для `m_useDrawModuleLOD` (это видно по веткам метода и по `OptionsMenu.cpp`). Первоначальная инверсия в строке загрузки была лишней.
+- Исправлено в коммите `39f2dd1e91f6570f24337a714b764b1b7242646f`: `m_useDrawModuleLOD = optionPref.getExtraAnimationsDisabled();`. Не использовать дополнительное `!`.
+- Ветка сборки `build-ios-shell.yml` сейчас запускается по push только на `main`, `a13-ios-build` и `generealss-spideywv`; рабочая ветка `fix/ios-graphics-settings-persistence` не запускает workflow автоматически. Не заявлять, что Actions проверен. Не менять workflow только ради запуска без необходимости; нужна отдельная разрешённая ручная dispatch-проверка либо запуск на целевой ветке после согласованного переноса.
