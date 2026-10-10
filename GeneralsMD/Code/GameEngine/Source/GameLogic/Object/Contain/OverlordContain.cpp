@@ -46,7 +46,8 @@
 #include "GameLogic/Object.h"
 #include "GameLogic/PartitionManager.h"
 
- 
+
+
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -108,62 +109,14 @@ void OverlordContain::onObjectCreated()
   OverlordContain::createPayload();
 }
 
-void OverlordContain::syncPortablePosition()
-{
-	Object* portable = (m_containListSize > 0) ? m_containList.front() : nullptr;
-	if (portable && portable->isKindOf(KINDOF_PORTABLE_STRUCTURE))
-	{
-		// GeneralsX @bugfix copilot 19/04/2026 Keep Overlord portable structures spatially synced with the host tank.
-		portable->setPosition(getObject()->getPosition());
-		portable->setOrientation(getObject()->getOrientation());
-	}
-}
-
-UpdateSleepTime OverlordContain::update()
-{
-	// Keep the GeneralsOnline PC simulation order; do not pin portable riders to the host.
-	return TransportContain::update();
-}
-
-void OverlordContain::containReactToTransformChange()
-{
-	// Match the PC client's bone-based placement for contained riders.
-	OpenContain::containReactToTransformChange();
-}
-
-// GeneralsX @bugfix copilot 19/04/2026 Prevent portable structures from ever exiting the Overlord.
-// On Windows/VC6, DISABLED_HELD caused getCurLocomotor() to return null, blocking exit naturally.
-// On POSIX the locomotor is still present even when HELD, so portables could exit when commanded
-// (e.g., force-attack). Portables are permanent upgrades and must never leave the Overlord.
-Bool OverlordContain::isSpecificRiderFreeToExit(Object* obj)
-{
-	if (obj && obj->isKindOf(KINDOF_PORTABLE_STRUCTURE))
-		return FALSE;
-	return TransportContain::isSpecificRiderFreeToExit(obj);
-}
-
-// GeneralsX @bugfix copilot 19/04/2026 Block instant-exit path for portable structures.
-// AIExitInstantlyState::onEnter() calls exitObjectViaDoor(obj, DOOR_1) directly, bypassing
-// reserveDoorForExit and isSpecificRiderFreeToExit entirely. The Gatling Cannon enters
-// AI_EXIT_INSTANTLY because it has attack weapons and its attack state machine transitions
-// through CHASE_TARGET (ContinueState) -> EXIT_MACHINE_WITH_FAILURE -> AI_EXIT_INSTANTLY
-// when force-attacking empty terrain. Propaganda Tower never hits this path (no weapons).
-// GeneralsX @bugfix copilot 20/04/2026 Issue #95: redeployOccupants calls putObjAtNextFirePoint on
-// PORTABLE_STRUCTURE riders which triggers Object::reactToTransformChange and destroys them.
-// The portable position is managed exclusively by syncPortablePosition().
-// Non-portable occupants (if any) are still redeployed via the parent.
-void OverlordContain::redeployOccupants()
-{
-	// Match the PC client's bone-based rider placement.
-	TransportContain::redeployOccupants();
-}
-
-void OverlordContain::exitObjectViaDoor(Object* exitObj, ExitDoorType exitDoor)
-{
-	if (exitObj && exitObj->isKindOf(KINDOF_PORTABLE_STRUCTURE))
-		return;
-	TransportContain::exitObjectViaDoor(exitObj, exitDoor);
-}
+// GeneralsX @bugfix Android port 24/09/2026 Removed this port's portable-structure overrides
+// (update(), containReactToTransformChange(), redeployOccupants(), exitObjectViaDoor(),
+// isSpecificRiderFreeToExit(), from 19-20/04/2026). They pinned a rider such as the
+// Avenger's laser turret to the host's own position every frame instead of its bone, to
+// hide bone positions that were wrong on POSIX at the time. Bone positions on Android now
+// match the model files bit for bit (see LESSON-cross-play-desync-method.md), and the pinned
+// position is part of the lockstep checksum: a PC replay desynced on the very frame an
+// Avenger left its factory. This file is again identical to the GeneralsOnline client's.
 
 //-------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -420,6 +373,7 @@ void OverlordContain::onContaining( Object *obj, Bool wasSelected )
 	{
 		TransportContain::onContaining( obj, wasSelected );
 
+
     if ( obj->isKindOf( KINDOF_PORTABLE_STRUCTURE ) )
     {
   		activateRedirectedContain();//Am now carrying something
@@ -637,11 +591,9 @@ Bool OverlordContain::isPassengerAllowedToFire( ObjectID id ) const
 
 
   if ( getObject() && getObject()->getContainedBy() ) // nested containment voids firing, always
-	{
     return FALSE;
-	}
 
-	return TransportContain::isPassengerAllowedToFire();
+  return TransportContain::isPassengerAllowedToFire();
 }
 
 
