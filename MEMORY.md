@@ -623,3 +623,11 @@
 
 ### Actions compile progress (run 38080742338, 19:51:53Z)
 - Latest log is 50,737,376 characters and shows Ninja at `[1420/1469]` compiling the W3D drawing layer. No real compiler errors or build-stopped markers; the only matches for `FATAL ERROR` were literal source-code text in a diagnostic function, not build failures. The changed game-logic files have passed compilation so far; link/package still pending.
+
+
+## 2026-10-11 — cross-play fix branch build succeeded; IPA and build logs downloaded locally
+
+- GitHub Actions run `38080742338` completed with conclusion `success` on working-branch HEAD `d2f987d355ef6351ea6649dace5b5e800fcb142c`: https://github.com/spideywva-spec/Generals-Mac-iOS-iPad/actions/runs/38080742338. The `Verify binary`, `Package unsigned Online Hub shell`, `Upload shell`, and `Upload logs` steps all succeeded.
+- Downloaded artifact `GeneralsXZH-ios-build-logs` (ID `11679974605`) to `/mnt/data/GeneralsXZH-ios-build-logs.zip`, extracted locally to `/mnt/data/build-log-artifact/`. The build log is 39,826,514 bytes; local scan found no fatal compiler errors, undefined references, CMake errors, or Ninja stop markers. Final build log shows successful linking of `GeneralsMD/GeneralsXZH.app/GeneralsXZH`; only non-fatal existing warnings remain.
+- Downloaded artifact `GeneralsXZH-launcher-unsigned` (ID `11679869818`), extracted locally, and verified the app's Info.plist: bundle ID `com.dvorov.generalszh.hub`, display name `Generals X`, version `1.4.15`, build `38080742338`, minimum iOS `16.0`, device family iPhone+iPad. `file` identifies the executable as Mach-O 64-bit arm64. `strings` confirms the binary contains both `[ONLINE-NAMEKEY-CHECK]` and `[ONLINE-CRC-REVISION-PROBE]` diagnostics.
+- Copied the exact built IPA to `/mnt/data/GeneralsXZH-online-sync-fix-unsigned.ipa` (27,843,213 bytes, SHA-256 `fc2980221937a6c4ad48650ba9f31b4a54e143ff3a0cc05a2551845fa58d93a0`). It is unsigned by workflow design and needs SideStore signing before installation. This is a real successful build, not a completed cross-platform match test; next runtime check is to install this IPA, run the same 6-player GeneralsOnline match, and inspect the frame-100 CRC plus name-key probe in the new local log.
