@@ -493,3 +493,10 @@
 - Android's cross-play lesson says the iOS/port-only `OverlordContain` overrides pin portable riders to the host position and cause a lockstep mismatch when an Avenger/Overlord rider appears. I attempted to replace the Zero Hour source with Android's PC-compatible implementation, but the source-file edit was blocked and did **not** change `OverlordContain.cpp`.
 - The first attempt had changed only `OverlordContain.h` (commit `9c3a3ba0320478bca1b427649f9121d131b7132b`), leaving the old C++ definitions undeclared. Corrected that immediately in commit `c34ea17a270a5031370e305011d6ee8df24db916` by restoring declarations for the existing methods and `syncPortablePosition()`, keeping the header/source consistent. The Overlord behavior fix is therefore **not active** in the current branch.
 - Do not claim the Overlord issue fixed. If a safe, normal edit path becomes available, port the Android behavior while keeping header/source consistent; otherwise retain the current compile-safe state and document the unresolved parity issue. No protected `a13-ios-build` files were touched.
+
+
+## 2026-10-11 — containment frame now stamped on every setter path
+
+- After switching `RETAIL_COMPATIBLE_CRC` to the GeneralsOnline value `0`, `m_containedByFrame` is part of the non-retail lockstep CRC. Android's `Object.h` declares `friend_setContainedBy` out-of-line and `Object.cpp` stamps this frame whenever containment changes; iOS previously had an inline setter that only assigned `m_containedBy`.
+- Ported that narrow parity fix on `fix/mods-visible-cross-platform-sync`: `GeneralsMD/Code/GameEngine/Include/GameLogic/Object.h` commit `401f4b60e9e3b941907377a8a1472ceca583e67c`; `GeneralsMD/Code/GameEngine/Source/GameLogic/Object/Object.cpp` commit `30ff124d5d80e35239d50568925156792b666cbb`. It stamps `TheGameLogic->getFrame()` for a non-null container and clears to zero for null, guarded by `!RETAIL_COMPATIBLE_CRC` exactly as Android does.
+- Not yet compiled or tested in a match. This change is especially relevant after the compatibility-switch correction; if a build error appears, inspect the exact C++ error before reverting.
