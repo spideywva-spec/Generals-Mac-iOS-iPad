@@ -350,3 +350,35 @@
 - Added an adapted compatibility implementation in commit `11f5cf678ae11bf24380e9dc0601dd7bbdd2428a`, wired into `GeneralsMD/Code/Main/CMakeLists.txt` with `-fno-builtin` and no PCH. Commit `8d4cec3c6940cb94d6683646d313e6f877e62764` fixes source escaping and macro continuations.
 - This is a strong root-cause candidate for the frame-117 CRC mismatch, not yet proven until CI passes and a real iOS versus Android/PC match is compared. Check for `[ONLINE-MATH-COMPAT]` in the new iOS log. Android math trace instrumentation is not ported yet.
 - Latest CI run is `38075742305` (#170), commit `8d4cec3c6940cb94d6683646d313e6f877e62764`, status was `in_progress` at the last check. Runs #167–169 were cancelled when newer commits were pushed.
+
+
+## 2026-10-10 — cross-platform sync + square shadow regression follow-up
+
+### Active code branch and safety
+- User explicitly requested work in `fix/mods-visible-cross-platform-sync` (not a different code branch). Current code branch head after this session's commits: `ee5818941e14f9b0b20ba314d3c9e96f17fd12bd`.
+- Protected `a13-ios-build` was not changed. No edits were made to `SDL3GameEngine`, the A13 Vulkan workaround, or the Russian launcher UI language.
+- The GitHub Actions shell workflow on this branch is `Shared | iPad | Engine Shelll`; the latest previous completed run for the math-wrapper commit `8d4cec3c6940cb94d6683646d313e6f877e62764` succeeded (run `38075742305`, job packaging/upload steps successful). This verifies compilation/package for that older commit, not the newest shadow fix or multiplayer correctness.
+- New shadow-fix workflow run `38078185001`, commit `0ee8828b494247f5c0e133d9c182d64c8b25b2aa`, was confirmed queued at 2026-10-10 19:02 UTC. Check its final result and job logs before claiming the latest change builds.
+
+### Root-cause evidence and shadow workaround
+- The earlier commit `c29c1fa4155c98e57c2870d50e70abe4fd4e68b9` enabled `UseShadowVolumes = yes` by default in the iOS bundle and enabled the volumetric shadow switch in Contra defaults. The volumetric renderer `W3DVolumetricShadow.cpp` uses a stencil-based shadow pass and a destination-color blend; if that pass is not handled correctly by the iOS/DXVK/MoltenVK path, a rectangular dark overlay is a plausible failure mode. This is a code-level hypothesis supported by the regression timing, not yet visually confirmed on device.
+- Commit `0a1578dd22adf21d96670e94c19939588f58582d` in `fix/mods-visible-cross-platform-sync` added `EnsureIOSShadowVolumeCompatibility()`: on first launch after this update, if the existing app-support `Options.ini` has volumetric shadows enabled, it writes `UseShadowVolumes = No` and creates `IOSShadowVolumeCompatV1` marker. This is a one-time migration; users can explicitly re-enable the option afterward. It leaves texture/decal shadows enabled.
+- The same commit changed the launcher graphics default for `UseShadowVolumes` from Yes to No. Commit `0ee8828b494247f5c0e133d9c182d64c8b25b2aa` changed bundled `ios/config/Options.ini` to `UseShadowVolumes = no`, retaining `UseShadowDecals = yes`, cloud map and light map. Commit `ee5818941e14f9b0b20ba314d3c9e96f17fd12bd` corrected newline escapes in migration diagnostics.
+- Latest file check confirms the bundled Options.ini contains `UseShadowVolumes = no` and `UseShadowDecals = yes`. Still unverified on a physical iPhone/iPad; if the square remains, next isolate cloud map vs shadow decal vs volume pass one at a time and capture a screenshot rather than randomly toggling every graphics feature.
+
+### Multiplayer diagnosis and current status
+- Earlier supplied iOS log evidence: at game frame 111, three remote CRCs were all `0xC2BDF524`, while local CRC was `0xE5C74D69`; local state CRC was `0xE2830B1B`, RNG base `0x7A21EEC7`, RNG CRC `0x5E465A44`. Connections to all three peers had established over relay before the mismatch. This is confirmed simulation desync, not just a lobby/TURN-connect failure. Exact first divergent simulation operation remains unknown without paired logs/replay.
+- The current branch contains the recent float-transcendental compatibility source `GeneralsMD/Code/Main/ReferenceFloatMath.cpp`, wired with `-fno-builtin` and no PCH; commit `11f5cf678ae11bf24380e9dc0601dd7bbdd2428a`, corrected by `8d4cec3c6940cb94d6683646d313e6f877e62764`. It is a root-cause candidate, not a proven fix until runtime logs show `[ONLINE-MATH-COMPAT]` and paired iOS/Android/PC CRCs match on the same frames.
+- Latest NetworkMesh/NextGenTransport sources were inspected against MYSOREZ Android. The branch already contains substantial retry/signalling and packet validation code. Do not copy the entire Android NetworkMesh wholesale; compare exact packet framing and return values, callbacks, math/FPU state and first divergent simulation frame. A successful iOS build alone does not prove cross-platform sync.
+- No new real multiplayer match was run in this session. No paired Android/PC host log was available here. Do not state Lost Sync is fixed yet.
+
+### Render
+- Render workspace listing returned one workspace named `My Workspace` (ID `tea-db1r3pp7lnhs73e6edgg`). No Render service/deploy status was queried because the workspace must be explicitly confirmed by the user before operating on it.
+- Ask the user to confirm using `My Workspace` before reading Render services/deploys/logs. The website URL being reachable does not prove a particular Render service is active or that an API service is healthy.
+
+### Exact next steps
+1. Poll workflow run `38078185001`; inspect job logs/artifacts, not only the run headline. If it fails, fix that branch and record the follow-up commit/run.
+2. Install the newest artifact and visually verify the square shadow. Look for `[IOS-GRAPHICS] Disabled incompatible volumetric shadows` in stderr to confirm the migration actually ran; verify decals remain visible.
+3. Run one matched iOS-host ↔ Android-host/PC-host game with both sides' logs. Confirm `[ONLINE-MATH-COMPAT]` appears on iOS and compare the first common CRC frames. If CRC still diverges, add/enable per-subsystem/deep-CRC tracing on both builds and inspect the first divergent object/state; do not suppress CRC or merely extend timeouts.
+4. User must confirm the Render workspace before checking whether the launcher/API service is down.
+5. Keep updating this memory after every code edit, CI check, test result, or rollback, including exact commit/run IDs and explicit unknowns.
