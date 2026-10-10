@@ -189,7 +189,7 @@ jobs:
           CXX: clang++
         run: |
           mkdir -p logs
-          cmake --preset ios-vulkan-online -DCMAKE_CXX_FLAGS=-ferror-limit=0 2>&1 | tee logs/configure_ios_hub_online.log
+          cmake --preset ios-vulkan-online -DSAGE_USE_DETERMINISTIC_MATH=ON -DCMAKE_CXX_FLAGS=-ferror-limit=0 2>&1 | tee logs/configure_ios_hub_online.log
           test ${PIPESTATUS[0]} -eq 0
 
       - name: Save vcpkg binaries
