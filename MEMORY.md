@@ -574,3 +574,9 @@
 - Android's replay-validated lesson documents a frame-19251 divergence: the GeneralsOnline PC client refuses to queue an upgrade on an under-construction building, while this port allowed the queue to finish and changed the object's upgrade mask.
 - Added the same early refusal to ProductionUpdate::queueUpgrade in GeneralsMD/Code/GameEngine/Source/GameLogic/Object/Update/ProductionUpdate.cpp, commit d2f987d355ef6351ea6649dace5b5e800fcb142c. The check is before production queue/payment mutations and applies to script/AI requests; normal UI already hides upgrades on unfinished buildings.
 - This addresses a documented later-match divergence; not yet compiled or tested in the user's match.
+
+
+## 2026-10-11 — checked Zero Hour-only enum alignment; no extra edit needed
+
+- Compared iOS and Android `Core/GameEngine/Include/GameLogic/Damage.h`: both already wrap `DAMAGE_FLESHY_SNIPER` in `#if RTS_GENERALS`, so Zero Hour's damage-type numbering is already aligned; do not add that entry unconditionally.
+- Compared `GeneralsMD/Code/GameEngine/Include/Common/KindOf.h` and its name table: the current Zero Hour target has no `KINDOF_AIRFIELD` entry, matching the effective `RTS_GENERALS=0` build. The Android header's entry is guarded by `#if RTS_GENERALS`, so no KindOf enum change is needed for this Zero Hour target.
