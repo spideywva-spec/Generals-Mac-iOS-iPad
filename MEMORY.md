@@ -619,3 +619,7 @@
 
 ### Actions log follow-up (run 38080742338, 19:51:14Z)
 - The live job log grew to 46,509,251 characters and compilation continued through GameLogic sources. The critical-error scan still found no fatal compiler errors, CMake errors, undefined references, missing-member errors, or Ninja stop markers. The tail contains a non-fatal `Damage.h` switch-enum warning; this is not an error and no new code change was made in response.
+
+
+### Actions compile progress (run 38080742338, 19:51:53Z)
+- Latest log is 50,737,376 characters and shows Ninja at `[1420/1469]` compiling the W3D drawing layer. No real compiler errors or build-stopped markers; the only matches for `FATAL ERROR` were literal source-code text in a diagnostic function, not build failures. The changed game-logic files have passed compilation so far; link/package still pending.
