@@ -514,3 +514,10 @@
 - Added a diagnostic immediately after `TheUpgradeCenter` initialization in `GeneralsMD/Code/GameEngine/Source/Common/GameEngine.cpp`, commit `a6deaeb771a24d4fa9a86f9f439908cf4a18a4af`. Startup now prints `[ONLINE-NAMEKEY-CHECK] Upgrade_AmericaAdvancedControlRods=<key> expected=2265` before port-only GUI names are keyed.
 - This makes the FunctionLexicon compatibility fix testable from the next startup log; expected value is 2265 per Android's PC-replay investigation. The log is diagnostic only and does not alter key assignment.
 - Not yet compiled or checked in a new app run.
+
+
+## 2026-10-11 — Overlord rider position pinning removed; base bone placement restored
+
+- Follow-up targeted edit succeeded without removing the separate portable-exit guards. In `GeneralsMD/Code/GameEngine/Source/GameLogic/Object/Contain/OverlordContain.cpp`, commit `a587c957de1a9afb11454a8933414f5f823d215e`, `update()` no longer calls `syncPortablePosition()`, `containReactToTransformChange()` now delegates to the base bone-placement path, and `redeployOccupants()` delegates to `TransportContain::redeployOccupants()`.
+- This removes the position/orientation override that pinned portable riders to the Overlord host every frame, the exact known source of a PC replay mismatch when an Avenger/Overlord rider appeared. The old `syncPortablePosition()` helper remains defined but has no call sites; `isSpecificRiderFreeToExit` and `exitObjectViaDoor` guards remain for now to minimize unrelated behavior changes. This is a partial port of the Android fix, not a full byte-for-byte source replacement.
+- Header declarations remain consistent with the current C++ definitions after the earlier restoration commit `c34ea17a270a5031370d305011d6ee8df24db916` (verify SHA in GitHub history; recorded earlier as `c34ea17a270a5031370d305011d6ee8df24db916`). Build and match test still pending.
