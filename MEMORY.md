@@ -1,6 +1,6 @@
-# memory.md — GeneralsX iOS / Android project log
+# MEMORY.md — GeneralsX iOS / Android project log
 
-**Canonical project memory file.** Use this file for future GeneralsX / Zero Hour task notes. `memory.rd` was created by mistake during the 2026-10-10 investigation; do not treat it as a separate source of truth.
+**Canonical project memory file.** Use this file for future GeneralsX / Zero Hour task notes.
 
 Updated: 2026-10-10 (after linker correction)
 
@@ -37,9 +37,10 @@ Updated: 2026-10-10 (after linker correction)
 - No new production-code changes were made during this comparison. No build or real cross-platform match was run here; synchronization remains unverified. Next useful evidence is a fresh build of commit `ace201fc7fe26adbc5ac66b3c4006d99f7638244` plus matching logs from iOS and Android/PC at the same frame/CRC.
 
 ## 2026-10-10 — Current compatibility branch and uploaded match log
-- Re-read this canonical file and the repository instructions before continuing. Worked on `fix/ios-android-lobby-compat` source at `26429268848989f7a372d745347b01d891a8e60d`; the protected `a13-ios-build` branch was not changed.
+- Re-read this canonical file and the repository instructions before continuing. Inspected source commit `26429268848989f7a372d745347b01d891a8e60d`; the protected `a13-ios-build` branch was not changed.
 - Inspected the uploaded `logs` branch. Its tree contains only `generals-stderr.log`, an iOS (`platform=apple`) runtime capture; it does not contain a paired Android/PC log.
-- The iOS capture records a real simulation CRC mismatch at frame 137 (validated frame 100): local CRC `0x41281139`, while all five remote players report `0x28CD9FBF`. Its local math CRC is `0x97B538BF`. It also records ICE end-to-end timeouts for user `109141` immediately before the mismatch; it has no `Game Packet Send` failure diagnostics. This confirms a desync occurred but does not isolate transport loss from cross-platform simulation divergence.
-- Rechecked source at the current branch head: `GameLogic::update()` already applies `setFPMode()` and has `ScopedFPUGuard`; the iOS workflow enables deterministic math; `NextGenTransport::doSend()` treats only `k_EResultOK` as accepted, retains failed packets, and blocks later packets for that peer. These fixes are present; no additional safe code defect is established by the available single-device log.
-- Verified GitHub Actions run `38045368900` for this exact HEAD completed successfully, including the iOS Online Hub engine build and shell packaging. This is build validation, not a paired-device multiplayer test.
-- No production-code change was justified. Multiplayer synchronization remains unverified until matching logs from the iOS and Android/PC participants at the same frame are available.
+- The iOS capture records local simulation CRC `0x41281139` at frame 100; at frame 137, the desync report shows that CRC for the local player and `0x28CD9FBF` for each of the five remote players. The local math CRC is `0x97B538BF`.
+- ICE diagnostics for user `109141` show successive keepalive/reply-timeout messages at 15:21:52 and 15:21:53, including “3 consecutive end-to-end timeouts” at 15:21:53. Those lines precede the frame-100 CRC trace and the later frame-137 desync report in the log. This establishes temporal ordering/correlation only: the log does not show when the CRCs first diverged, a failed game-packet send, or a paired peer's corresponding timeline. It does not establish the ICE timeout as the cause.
+- Rechecked source at the inspected compatibility branch head: `GameLogic::update()` already calls `setFPMode()` and uses `ScopedFPUGuard`; the iOS workflow enables deterministic math; `NextGenTransport::doSend()` accepts only `k_EResultOK`, retains failed packets, and blocks later packets for that peer. No further direct, actionable source defect is established by this single-device log.
+- Verified GitHub Actions run `38045368900` for commit `26429268848989f7a372d745347b01d891a8e60d` completed successfully, including the iOS Online Hub engine build and shell packaging. This is build validation, not a paired-device multiplayer test.
+- No production-code change was justified. Multiplayer synchronization remains unverified; diagnosing causality requires matching logs from both participants, including packet send/receive outcomes and CRCs at the first divergent frame.
