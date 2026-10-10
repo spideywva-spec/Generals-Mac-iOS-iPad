@@ -1460,7 +1460,7 @@ int PlayerConnection::SendGamePacket(void* pBuffer, uint32_t totalDataSize)
         (int)result, sendFlags, (long long)m_userID);
 
     result = SteamNetworkingSockets()->SendMessageToConnection(
-        m_hSteamConnection, vecData.data(), (uint32)vecData.size(), sendFlags, nullptr);
+        m_hSteamConnection, vecData.data(), (int)vecData.size(), sendFlags, nullptr);
 
     if (result != k_EResultOK)
     {
