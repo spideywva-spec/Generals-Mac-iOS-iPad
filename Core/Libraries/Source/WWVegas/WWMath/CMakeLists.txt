@@ -91,5 +91,12 @@ target_link_libraries(core_wwmath PRIVATE
     core_wwsaveload
 )
 
+# Deterministic GameMath wrappers in wwmath.h reference gm_* symbols.
+# Link the fdlibm implementation transitively so every final executable using
+# WWMath resolves those symbols when SAGE_USE_DETERMINISTIC_MATH is enabled.
+if(TARGET gamemath::gamemath)
+    target_link_libraries(core_wwmath PUBLIC gamemath::gamemath)
+endif()
+
 # @todo Test its impact and see what to do with the legacy functions.
 #add_compile_definitions(core_wwmath PUBLIC ALLOW_TEMPORARIES) # Enables legacy math with "temporaries"
