@@ -20,7 +20,7 @@
 # Enable deterministic math only for non-VC6 builds (VC6 uses native x87 asm)
 # Note: Currently defaults to OFF until GameMath is available as a proper library/submodule
 if(NOT IS_VS6_BUILD)
-    option(SAGE_USE_DETERMINISTIC_MATH "Use fdlibm-based deterministic math for cross-platform replay validation" OFF)
+    option(SAGE_USE_DETERMINISTIC_MATH "Use fdlibm-based deterministic math for cross-platform replay validation" ON)
 else()
     # VC6 uses native x87 inline asm; deterministic mode not applicable
     set(SAGE_USE_DETERMINISTIC_MATH OFF)
