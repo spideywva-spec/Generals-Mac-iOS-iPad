@@ -1398,17 +1398,31 @@ int main(int argc, char* argv[])
 						snprintf(destinationPath, sizeof(destinationPath), "%s/%s", userDataDir, fileName);
 
 						if (access(sourcePath, R_OK) == 0) {
-							std::error_code copyError;
-							std::filesystem::copy_file(
-								sourcePath,
-								destinationPath,
-								std::filesystem::copy_options::overwrite_existing,
-								copyError);
-							if (!copyError) {
-								fprintf(stderr, "INFO: iPad File Sharing applied %s\n", fileName);
-							} else {
-								fprintf(stderr, "WARNING: failed to apply Documents/%s: %s\n",
-								        fileName, copyError.message().c_str());
+							// The launcher writes to Application Support. Do not overwrite those
+							// newer settings with a stale Documents copy on every startup; still
+							// import a newer file manually edited through the Files app.
+							bool shouldCopy = access(destinationPath, F_OK) != 0;
+							if (!shouldCopy) {
+								std::error_code timeError;
+								auto sourceTime = std::filesystem::last_write_time(sourcePath, timeError);
+								if (!timeError) {
+									auto destinationTime = std::filesystem::last_write_time(destinationPath, timeError);
+									shouldCopy = !timeError && sourceTime > destinationTime;
+								}
+							}
+							if (shouldCopy) {
+								std::error_code copyError;
+								std::filesystem::copy_file(
+										sourcePath,
+										destinationPath,
+										std::filesystem::copy_options::overwrite_existing,
+										copyError);
+								if (!copyError) {
+									fprintf(stderr, "INFO: iPad File Sharing applied newer %s\\n", fileName);
+								} else {
+									fprintf(stderr, "WARNING: failed to apply Documents/%s: %s\\n",
+									        fileName, copyError.message().c_str());
+								}
 							}
 						}
 					};
