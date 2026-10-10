@@ -641,3 +641,12 @@
 - This is a targeted compatibility fix based on the Android port documented reverse-engineering. It is **not yet confirmed to fix live matchmaking** until the new build passes and a new iOS-vs-Android/PC log shows matching CRCs at frame 100 and later. Do not call it a verified fix before that test.
 - The prior locally downloaded baseline log remains SHA-256 `53afc78814c81336303cac76a0c00d9e1af63954e25b4f63bacef8a9ccf80b8c`; it predates this change and must not be treated as a post-fix test.
 - Protected `a13-ios-build` was not edited. Only the cross-platform working branch and this `memory-notes` record were changed.
+
+
+## 2026-10-11 — correction: Generals Online API supplies the CRC contract
+
+- User corrected the prior diagnosis: the CRC in question is issued/provided by the Generals Online website/API; it is not a user-generated random value. Do not confuse the server/API-provided executable or compatibility CRC with the runtime simulation checksum returned by `GameLogic::getCRC`.
+- The prior commit `0837b1e101b799f6ec2d0830454a042c80384deb` incorrectly changed every runtime simulation CRC by appending `MARKER:OfficialLogicCRCRevision` and `0x474F0001` without first verifying the API's CRC contract. This was not the requested behavior and must not be described as a fix.
+- Reverted that unconditional behavior on `fix/mods-visible-cross-platform-sync` in commit `b5fe37777d5ba919d6f454d0ed3817660feb3f3d`. The revision-tag variant is diagnostic-only at frames 100/200 again; the returned runtime CRC remains the original value. This does not fix synchronization by itself.
+- Next investigation must trace the actual Generals Online API response that provides/assigns CRC, how the iOS client parses and applies it, and compare that with Android/Windows clients. Keep API/executable compatibility CRC separate from per-frame simulation CRC. Do not hardcode or randomize either value without evidence from the API and reference clients.
+- The protected `a13-ios-build` branch and its A13/Vulkan workflow/settings remain untouched. Runtime cross-platform sync remains unverified.
