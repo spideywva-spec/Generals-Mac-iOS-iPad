@@ -678,8 +678,9 @@ Bool NextGenTransport::doSend(void)
                     "Game Packet Send: totalLen (%u) exceeds allowed max (%zu)",
                     totalLen,
                     sizeof(TransportMessageHeader) + static_cast<size_t>(MAX_PACKET_SIZE));
-                m_outBuffer[i].length = 0; // drop this entry
+                m_outBuffer[i].length = 0; // malformed oversized entry cannot be sent
                 m_outPacketState[i].retryCount = 0;
+                m_outPacketState[i].sequence = 0;
                 retval = FALSE;
                 continue;
             }
@@ -689,7 +690,9 @@ Bool NextGenTransport::doSend(void)
             {
                 NetworkLog(ELogVerbosity::LOG_RELEASE,
                     "Game Packet Send: No network mesh");
-                // Don't clear the packet - retry next frame
+                // Don't clear the packet - retry next frame. Block later packets
+                // for this peer so they cannot overtake this queued packet.
+                blockedAddrs.push_back(m_outBuffer[i].addr);
                 retval = FALSE;
                 continue;
             }
@@ -729,7 +732,8 @@ Bool NextGenTransport::doSend(void)
                 m_outBuffer[i].length = 0; // Remove from queue
                 m_outPacketState[i].retryCount = 0;
                 m_outPacketState[i].sequence = 0;
-                retval = TRUE;
+                // Keep retval sticky: one failed packet makes this update unsuccessful
+                // even if packets for other peers were accepted.
             }
             else
             {
