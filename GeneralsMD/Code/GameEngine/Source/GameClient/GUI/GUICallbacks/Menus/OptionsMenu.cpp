@@ -442,23 +442,23 @@ static void saveOptions()
 		(*pref)["UseShadowDecals"] = TheWritableGlobalData->m_useShadowDecals ? "yes" : "no";
 
 		TheWritableGlobalData->m_useCloudMap = GadgetCheckBoxIsChecked( checkCloudShadows );
-		(*pref)["UseCloudMap"] = TheGlobalData->m_useCloudMap ? "yes" : "no";
+		(*pref)["UseCloudMap"] = TheWritableGlobalData->m_useCloudMap ? "yes" : "no";
 
 		TheWritableGlobalData->m_useLightMap = GadgetCheckBoxIsChecked( checkGroundLighting );
-		(*pref)["UseLightMap"] = TheGlobalData->m_useLightMap ? "yes" : "no";
+		(*pref)["UseLightMap"] = TheWritableGlobalData->m_useLightMap ? "yes" : "no";
 
 		TheWritableGlobalData->m_showSoftWaterEdge = GadgetCheckBoxIsChecked( checkSmoothWater );
-		(*pref)["ShowSoftWaterEdge"] = TheGlobalData->m_showSoftWaterEdge ? "yes" : "no";
+		(*pref)["ShowSoftWaterEdge"] = TheWritableGlobalData->m_showSoftWaterEdge ? "yes" : "no";
 
 		TheWritableGlobalData->m_useDrawModuleLOD = !GadgetCheckBoxIsChecked( checkExtraAnimations );
 		TheWritableGlobalData->m_useTreeSway = !TheWritableGlobalData->m_useDrawModuleLOD;	//borrow same setting.
-		(*pref)["ExtraAnimations"] = TheGlobalData->m_useDrawModuleLOD ? "no" : "yes";
+		(*pref)["ExtraAnimations"] = TheWritableGlobalData->m_useDrawModuleLOD ? "no" : "yes";
 
 		TheWritableGlobalData->m_enableDynamicLOD = !GadgetCheckBoxIsChecked( checkNoDynamicLod );
-		(*pref)["DynamicLOD"] = TheGlobalData->m_enableDynamicLOD ? "yes" : "no";
+		(*pref)["DynamicLOD"] = TheWritableGlobalData->m_enableDynamicLOD ? "yes" : "no";
 
 		TheWritableGlobalData->m_useHeatEffects = GadgetCheckBoxIsChecked( checkHeatEffects );
-		(*pref)["HeatEffects"] = TheGlobalData->m_useHeatEffects ? "yes" : "no";
+		(*pref)["HeatEffects"] = TheWritableGlobalData->m_useHeatEffects ? "yes" : "no";
 
 		// Never write this out
 		//TheWritableGlobalData->m_useFpsLimit = !GadgetCheckBoxIsChecked( checkUnlockFps );
