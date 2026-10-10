@@ -1392,89 +1392,83 @@ PlayerConnection::PlayerConnection(int64_t userID, const char* szMiddlewareID)
 
 int PlayerConnection::SendGamePacket(void* pBuffer, uint32_t totalDataSize)
 {
-    if (totalDataSize == 0)
+    if (totalDataSize == 0 || pBuffer == nullptr)
     {
-        NetworkLog(ELogVerbosity::LOG_RELEASE, "[GAME PACKET] Cannot send empty game packet to user %lld", m_userID);
-        return (int)k_EResultFail;
+        NetworkLog(ELogVerbosity::LOG_RELEASE,
+            "[GAME PACKET] Cannot send empty/null game packet to user %lld (size=%u)",
+            static_cast<long long>(m_userID), totalDataSize);
+        return static_cast<int>(k_EResultFail);
     }
 
-    if (pBuffer == nullptr)
+    if (AnticheatPlugInterface::DoesACPluginProvideSecureGameTransport())
     {
-        NetworkLog(ELogVerbosity::LOG_RELEASE, "[GAME PACKET] Cannot send game packet with null buffer to user %lld", m_userID);
-        return (int)k_EResultFail;
+        // The plugin owns delivery; report that dispatch was accepted by the transport path.
+        AnticheatPlugInterface::SendPacket(
+            m_strMiddlewareID.c_str(), m_userID, pBuffer, totalDataSize,
+            ENetworkChannels::Game, EPacketReliability::PACKET_RELIABILITY_RELIABLE_ORDERED);
+        return static_cast<int>(k_EResultOK);
     }
 
-	if (AnticheatPlugInterface::DoesACPluginProvideSecureGameTransport())
-	{
-		// TODO_EOS: Determine best reliability
-		AnticheatPlugInterface::SendPacket(m_strMiddlewareID.c_str(), m_userID, pBuffer, totalDataSize, ENetworkChannels::Game, EPacketReliability::PACKET_RELIABILITY_RELIABLE_ORDERED);
-	}
-	else
-	{
-		if (m_hSteamConnection == k_HSteamNetConnection_Invalid)
-		{
-			NetworkLog(ELogVerbosity::LOG_RELEASE, "[GAME PACKET] Cannot send game packet - connection is invalid for user %lld", m_userID);
-			return (int)k_EResultFail;
-		}
+    if (m_hSteamConnection == k_HSteamNetConnection_Invalid)
+    {
+        NetworkLog(ELogVerbosity::LOG_RELEASE,
+            "[GAME PACKET] Cannot send game packet - connection is invalid for user %lld",
+            static_cast<long long>(m_userID));
+        return static_cast<int>(k_EResultFail);
+    }
 
-		ENetworkChannel netChannel = ENetworkChannel::NETWORK_CHANNEL_GAME;
-		std::vector<BYTE> vecData;
-		vecData.resize(totalDataSize + sizeof(ENetworkChannel));
-		memcpy(vecData.data() + sizeof(ENetworkChannel), pBuffer, totalDataSize);
-		vecData[0] = (BYTE)netChannel;
+    // Every GeneralsOnline peer expects the channel byte before the game payload.
+    // Keep the exact same framing for the initial send and any configured fallback.
+    const ENetworkChannel netChannel = ENetworkChannel::NETWORK_CHANNEL_GAME;
+    std::vector<BYTE> vecData(totalDataSize + sizeof(ENetworkChannel));
+    vecData[0] = static_cast<BYTE>(netChannel);
+    memcpy(vecData.data() + sizeof(ENetworkChannel), pBuffer, totalDataSize);
 
-		int sendFlags = k_nSteamNetworkingSend_Reliable | k_nSteamNetworkingSend_AutoRestartBrokenSession; // default from last patch
+    int sendFlags = k_nSteamNetworkingSend_Reliable | k_nSteamNetworkingSend_AutoRestartBrokenSession;
+    ServiceConfig& serviceConf = NGMP_OnlineServicesManager::GetInstance()->GetServiceConfig();
+    const int netSendFlags = serviceConf.network_send_flags;
 
-		ServiceConfig& serviceConf = NGMP_OnlineServicesManager::GetInstance()->GetServiceConfig();
-		int netSendFlags = serviceConf.network_send_flags;
+    NetworkLog(ELogVerbosity::LOG_DEBUG,
+        "[GAME PACKET] Sending %u payload bytes to user %lld",
+        totalDataSize, static_cast<long long>(m_userID));
 
-		NetworkLog(ELogVerbosity::LOG_DEBUG, "[GAME PACKET] Sending msg of size %ld to user %lld\n", totalDataSize, m_userID);
-		EResult r = SteamNetworkingSockets()->SendMessageToConnection(
-			m_hSteamConnection, vecData.data(), vecData.size(), sendFlags, nullptr);
+    EResult result = SteamNetworkingSockets()->SendMessageToConnection(
+        m_hSteamConnection, vecData.data(), static_cast<uint32_t>(vecData.size()), sendFlags, nullptr);
 
-		if (r != k_EResultOK)
-		{
-			if (netSendFlags != -1)
-			{
-				if (netSendFlags == 0)
-				{
-					sendFlags = k_nSteamNetworkingSend_Unreliable;
-				}
-				else if (netSendFlags == 1)
-				{
-					sendFlags = k_nSteamNetworkingSend_UnreliableNoNagle;
-				}
-				else if (netSendFlags == 2)
-				{
-					sendFlags = k_nSteamNetworkingSend_UnreliableNoDelay;
-				}
-				else if (netSendFlags == 3)
-				{
-					sendFlags = k_nSteamNetworkingSend_Reliable;
-				}
-				else if (netSendFlags == 4)
-				{
-					sendFlags = k_nSteamNetworkingSend_ReliableNoNagle;
-				}
-			}
+    if (result == k_EResultOK)
+    {
+        return static_cast<int>(result);
+    }
 
-			NetworkLog(ELogVerbosity::LOG_DEBUG, "[GAME PACKET] Sending msg of size %ld to user %lld\n", totalDataSize, m_userID);
-			EResult r = SteamNetworkingSockets()->SendMessageToConnection(
-				m_hSteamConnection, pBuffer, (int)totalDataSize, sendFlags, nullptr);
+    if (netSendFlags != -1)
+    {
+        switch (netSendFlags)
+        {
+        case 0: sendFlags = k_nSteamNetworkingSend_Unreliable; break;
+        case 1: sendFlags = k_nSteamNetworkingSend_UnreliableNoNagle; break;
+        case 2: sendFlags = k_nSteamNetworkingSend_UnreliableNoDelay; break;
+        case 3: sendFlags = k_nSteamNetworkingSend_Reliable; break;
+        case 4: sendFlags = k_nSteamNetworkingSend_ReliableNoNagle; break;
+        default: break;
+        }
+    }
 
-			if (r != k_EResultOK)
-			{
-				NetworkLog(ELogVerbosity::LOG_RELEASE, "[GAME PACKET] Failed to send, err code was %d", r);
-			}
+    NetworkLog(ELogVerbosity::LOG_DEBUG,
+        "[GAME PACKET] Retrying %u payload bytes to user %lld with flags=%d after result=%d",
+        totalDataSize, static_cast<long long>(m_userID), sendFlags, static_cast<int>(result));
 
-			return (int)r;
-		}
-	}
+    result = SteamNetworkingSockets()->SendMessageToConnection(
+        m_hSteamConnection, vecData.data(), static_cast<uint32_t>(vecData.size()), sendFlags, nullptr);
 
-	return (int)k_EResultFail;
+    if (result != k_EResultOK)
+    {
+        NetworkLog(ELogVerbosity::LOG_RELEASE,
+            "[GAME PACKET] Failed to send to user %lld, result=%d",
+            static_cast<long long>(m_userID), static_cast<int>(result));
+    }
 
+    return static_cast<int>(result);
 }
-
 
 void PlayerConnection::SendACPacket(const void* pData, uint32_t dataLen)
 {
