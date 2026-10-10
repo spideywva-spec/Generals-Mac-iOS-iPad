@@ -560,3 +560,10 @@
 - The cross-play lesson identified a concrete port bug: iOS used std::stringbuf::pubsetbuf(str, 33) to implement itoa. libc++ does not implement that buffer-binding behavior, so it wrote digits to the stringbuf's own storage and left the caller's str unchanged. The game uses itoa to build bone names such as FIREPOINT0 and ExitStart0; failed bone lookups leave an uninitialized Matrix3D in a rider transform, which is hashed into the lockstep CRC.
 - Ported the Android/MSVC-compatible integer conversion into GeneralsMD/Code/CompatLib/Source/string_compat.cpp, commit c2612185cadb10078cc90f95ca3b667c367a3a8c. The replacement validates bases 2-36, handles negative decimal values, writes the output digits directly into the caller buffer, and null-terminates. Confirmed the old pubsetbuf call is gone.
 - This is a concrete correctness fix that can cause an early or later CRC mismatch, depending on when a bone lookup occurs. The current Actions run on the previous HEAD will be cancelled/replaced; wait for a build on the new HEAD and inspect the new match log for bone missing diagnostics and frame-100 CRCs.
+
+
+## 2026-10-11 — standardized INI number parsing for Linux/macOS/Android cross-play
+
+- Android's cross-play lesson says the current GeneralsOnline PC client parses INI numbers with sscanf; from_chars and strtod-then-float can round or parse differently, changing simulation inputs. The iOS file already chose sscanf on Apple, but the same source selected std::from_chars on Linux because it used the platform conditional.
+- Changed Core/GameEngine/Source/Common/INI/INI.cpp in commit cb36a0b8b6497e6999aa46efb22645d85ec97d11 to set USE_STD_FROM_CHARS_PARSING=0 unconditionally for this online branch, matching Android and keeping Linux/macOS/Apple INI parsing consistent with PC. This leaves the iOS parsing path unchanged and fixes the Linux build path.
+- Not yet built or match-tested. A new Actions run should be created for HEAD cb36a0b8b6497e6999aa46efb22645d85ec97d11; inspect compile and new frame-100 CRC after installation.
