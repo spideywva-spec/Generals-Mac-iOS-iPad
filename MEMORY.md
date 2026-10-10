@@ -580,3 +580,7 @@
 
 - Compared iOS and Android `Core/GameEngine/Include/GameLogic/Damage.h`: both already wrap `DAMAGE_FLESHY_SNIPER` in `#if RTS_GENERALS`, so Zero Hour's damage-type numbering is already aligned; do not add that entry unconditionally.
 - Compared `GeneralsMD/Code/GameEngine/Include/Common/KindOf.h` and its name table: the current Zero Hour target has no `KINDOF_AIRFIELD` entry, matching the effective `RTS_GENERALS=0` build. The Android header's entry is guarded by `#if RTS_GENERALS`, so no KindOf enum change is needed for this Zero Hour target.
+
+
+### Local isolated `itoa` test (2026-10-11)
+- Compiled the replacement algorithm locally with clang++ (`-std=c++17 -Wall -Wextra -Werror`) and checked decimal 123, negative decimal -42, hexadecimal 255, and INT_MIN. Output was `123 -42 ff -2147483648`. This verifies the integer conversion routine itself; it is not a full engine build or cross-platform game test.
