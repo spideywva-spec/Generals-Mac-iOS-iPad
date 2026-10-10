@@ -50,6 +50,9 @@
 //-----------------------------------------------------------------------------
 // USER INCLUDES //////////////////////////////////////////////////////////////
 //-----------------------------------------------------------------------------
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
 #include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/GlobalData.h"
@@ -679,10 +682,7 @@ void createGame()
 
 	UnicodeString gameName = GadgetTextEntryGetText(textEntryGameName);
 
-#if defined(__APPLE__)
-	// TargetConditionals distinguishes iOS from macOS for the shared Apple build.
-	#include <TargetConditionals.h>
-	#if TARGET_OS_IPHONE
+#if defined(__APPLE__) && TARGET_OS_IPHONE
 	// Keep the platform label in the server-side lobby name so every client,
 	// including PC and Android, sees [iOS] in the lobby browser.
 	UnicodeString platformGameName(L"[iOS] ");
