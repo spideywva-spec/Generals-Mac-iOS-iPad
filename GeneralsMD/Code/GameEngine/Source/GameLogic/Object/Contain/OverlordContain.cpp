@@ -121,17 +121,14 @@ void OverlordContain::syncPortablePosition()
 
 UpdateSleepTime OverlordContain::update()
 {
-	syncPortablePosition();
+	// Keep the GeneralsOnline PC simulation order; do not pin portable riders to the host.
 	return TransportContain::update();
 }
 
 void OverlordContain::containReactToTransformChange()
 {
-	// Let the base class run redeployOccupants() (bone-based placement).
+	// Match the PC client's bone-based placement for contained riders.
 	OpenContain::containReactToTransformChange();
-	// GeneralsX @bugfix copilot 19/04/2026 Immediately correct portable position after transform;
-	// bone queries return wrong world coords on POSIX, so override with the host tank's position.
-	syncPortablePosition();
 }
 
 // GeneralsX @bugfix copilot 19/04/2026 Prevent portable structures from ever exiting the Overlord.
@@ -157,22 +154,8 @@ Bool OverlordContain::isSpecificRiderFreeToExit(Object* obj)
 // Non-portable occupants (if any) are still redeployed via the parent.
 void OverlordContain::redeployOccupants()
 {
-	// In practice the Overlord's own contain list only ever has a single portable upgrade,
-	// so this is effectively a no-op — but guarded correctly for safety.
-	bool hasNonPortable = false;
-	const ContainedItemsList& list = getContainList();
-	for (ContainedItemsList::const_iterator it = list.begin(); it != list.end(); ++it)
-	{
-		Object* obj = *it;
-		if (obj && !obj->isKindOf(KINDOF_PORTABLE_STRUCTURE))
-		{
-			hasNonPortable = true;
-			break;
-		}
-	}
-	if (hasNonPortable)
-		TransportContain::redeployOccupants();
-	// Portables are repositioned by syncPortablePosition() called from containReactToTransformChange().
+	// Match the PC client's bone-based rider placement.
+	TransportContain::redeployOccupants();
 }
 
 void OverlordContain::exitObjectViaDoor(Object* exitObj, ExitDoorType exitDoor)
