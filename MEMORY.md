@@ -599,3 +599,8 @@
 ### Additional local network log finding (2026-10-11)
 - The locally downloaded latest log also contains repeated failed P2P attempts to user ID `111064`: `Symmetric role resolution ... cannot change our role`, `Guessed ICE failure ... NAT traversal failed`, two reconnect attempts exhausted, and SteamNetworking assertions (`m_bCryptKeysValid`, `BCryptKeysValid`, matching-connection/listen-socket state). User 111064 is **not** among the six members in the successful lobby response for lobby 149312; the final six members are 15017, 90080, 132198, 129336, 116665, 132254. This points to a stale/unrelated peer connection or signalling cleanup problem worth auditing separately.
 - The six actual lobby members do connect and reach the match before the CRC mismatch. Treat the stale peer/ICE failure as a separate networking defect, not as proof that it caused the frame-100 lockstep CRC mismatch.
+
+
+### Clarification to the user111064 connection sequence (2026-10-11)
+- The local log's earlier Lobby/149312 response at 19:42:28 includes user 111064 (`Android 17`) in slot 4, so this was not an unrelated friend from the beginning. That peer was present during lobby setup, then the service sent `NETWORK_CONNECTION_DISCONNECT_PLAYER` at 19:42:53 and the client closed/erased that connection before the six-player match began. The final six members did not include 111064.
+- Therefore the failed ICE/symmetric-connect assertions are a real pre-match peer connection failure, but the log shows the service eventually removed that peer. They do not establish the cause of the later frame-100 CRC mismatch; do not patch a stale-peer membership guard based on the earlier mistaken interpretation alone.
