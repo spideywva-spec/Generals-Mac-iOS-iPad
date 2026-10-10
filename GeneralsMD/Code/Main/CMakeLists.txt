@@ -160,6 +160,14 @@ if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
     )
 endif()
 
+# GeneralsX @bugfix ChatGPT 10/10/2026 Link deterministic math implementation
+# USE_DETERMINISTIC_MATH makes engine objects reference gm_* symbols. FetchContent
+# creates the gamemath target, but merely adding its include directory does not
+# put its implementation archive on the final executable link line.
+if(TARGET gamemath::gamemath)
+    target_link_libraries(z_generals PRIVATE gamemath::gamemath)
+endif()
+
 # RC files optional for MinGW builds
 # Icon: LoadIcon() handles missing resource gracefully (uses default system icon)
 # Manifest: DPI awareness metadata (nice to have but not essential)
