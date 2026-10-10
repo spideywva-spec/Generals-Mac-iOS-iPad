@@ -1240,6 +1240,21 @@ void GlobalData::parseGameDataDefinition( INI* ini )
 	TheWritableGlobalData->m_textureFilteringMode = optionPref.getTextureFilterMode();
 	TheWritableGlobalData->m_textureAnisotropyLevel = optionPref.getTextureAnisotropyLevel();
 
+	// Apply persisted graphics preferences after loading the base INI data.
+	// These are stored in Options.ini by OptionPreferences, not in the game's
+	// data INIs, so leaving them out here causes the menu to reset on restart.
+	TheWritableGlobalData->m_useShadowVolumes = optionPref.get3DShadowsEnabled();
+	TheWritableGlobalData->m_useShadowDecals = optionPref.get2DShadowsEnabled();
+	TheWritableGlobalData->m_useCloudMap = optionPref.getCloudShadowsEnabled();
+	TheWritableGlobalData->m_useLightMap = optionPref.getLightmapEnabled();
+	TheWritableGlobalData->m_showSoftWaterEdge = optionPref.getSmoothWaterEnabled();
+	TheWritableGlobalData->m_useTrees = optionPref.getTreesEnabled();
+	TheWritableGlobalData->m_useDrawModuleLOD = optionPref.getExtraAnimationsDisabled();
+	TheWritableGlobalData->m_useHeatEffects = optionPref.getUseHeatEffects();
+	TheWritableGlobalData->m_enableDynamicLOD = optionPref.getDynamicLODEnabled();
+	TheWritableGlobalData->m_enableBehindBuildingMarkers = optionPref.getBuildingOcclusionEnabled();
+	TheWritableGlobalData->m_maxParticleCount = optionPref.getParticleCap();
+
 	Int val=optionPref.getGammaValue();
 	//generate a value between 0.6 and 2.0.
 	if (val < 50)
