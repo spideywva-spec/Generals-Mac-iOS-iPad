@@ -857,7 +857,7 @@ void GameEngine::init()
 		initSubsystem(TheUpgradeCenter,"TheUpgradeCenter", MSGNEW("GameEngineSubsystem") UpgradeCenter, &xferCRC, "Data\\INI\\Default\\Upgrade", "Data\\INI\\Upgrade");
 		{
 			const UpgradeTemplate *gxRods = TheUpgradeCenter->findUpgrade("Upgrade_AmericaAdvancedControlRods");
-			fprintf(stderr, "[ONLINE-NAMEKEY-CHECK] Upgrade_AmericaAdvancedControlRods=%d expected=2265\\n",
+			fprintf(stderr, "[ONLINE-NAMEKEY-CHECK] Upgrade_AmericaAdvancedControlRods=%d expected=2265\n",
 				gxRods ? (int)gxRods->getUpgradeNameKey() : -1);
 			fflush(stderr);
 		}
