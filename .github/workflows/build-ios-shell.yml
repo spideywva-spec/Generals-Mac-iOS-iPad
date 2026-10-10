@@ -9,6 +9,7 @@ on:
       - a13-ios-build
       - a13build-dismatch
       - errors/actions-147-local-check
+      - fix/ios-online-log-portability
     paths:
       - 'GeneralsMD/**'
       - 'launcher_web/**'
