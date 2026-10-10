@@ -486,3 +486,10 @@
 - Port-only GUI functions remain in their lookup tables but initially use a placeholder key. `TheFunctionLexicon->gxKeyPortOnlyEntries()` is called immediately after `TheUpgradeCenter` initialization and before `TheGameClient` loads any windows, so upgrade/science name keys retain the PC's numbering without removing the iOS UI functions.
 - Not yet built or runtime-verified. After Actions succeeds, inspect startup log for `Upgrade_AmericaAdvancedControlRods=2265`; do not claim parity without this check.
 - Rollback the three commits individually in reverse order if a compile issue is directly tied to this port; do not revert the PC-compatible `GameDefines.h` correction with them.
+
+
+## 2026-10-11 — Overlord parity edit was not completed; header restored to compile-safe state
+
+- Android's cross-play lesson says the iOS/port-only `OverlordContain` overrides pin portable riders to the host position and cause a lockstep mismatch when an Avenger/Overlord rider appears. I attempted to replace the Zero Hour source with Android's PC-compatible implementation, but the source-file edit was blocked and did **not** change `OverlordContain.cpp`.
+- The first attempt had changed only `OverlordContain.h` (commit `9c3a3ba0320478bca1b427649f9121d131b7132b`), leaving the old C++ definitions undeclared. Corrected that immediately in commit `c34ea17a270a5031370e305011d6ee8df24db916` by restoring declarations for the existing methods and `syncPortablePosition()`, keeping the header/source consistent. The Overlord behavior fix is therefore **not active** in the current branch.
+- Do not claim the Overlord issue fixed. If a safe, normal edit path becomes available, port the Android behavior while keeping header/source consistent; otherwise retain the current compile-safe state and document the unresolved parity issue. No protected `a13-ios-build` files were touched.
