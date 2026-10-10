@@ -8,6 +8,7 @@ on:
       - main
       - a13-ios-build
       - generealss-spideywv
+      - fix/ios-android-lobby-compat
     paths:
       - 'GeneralsMD/**'
       - 'launcher_web/**'
