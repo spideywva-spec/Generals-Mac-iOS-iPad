@@ -342,3 +342,11 @@
 - Включены дефолты 3D shadow volumes и cloud shadows в UI fallback и default Contra settings; в `ios/config/Options.ini` добавлены `UseShadowVolumes = yes`, `UseShadowDecals = yes`, `UseCloudMap = yes`, `UseLightMap = yes`. Существующие явные пользовательские значения в Documents/Options.ini кодом не перезаписываются, а продолжают читаться как настройки пользователя.
 - Это изменение пока не проверено сборкой/устройством. Оно затрагивает `IOSProfileLauncher.mm` и `ios/config/Options.ini`, не `SDL3GameEngine` и не защищённую ветку `a13-ios-build`.
 - Новый commit запускает отдельный Actions run; необходимо проверить его status/logs. Run `38075364594` / commit `f9f84fa` был всё ещё `in_progress` на этапе `Install build tools` в последней проверке, поэтому его нельзя считать прошедшим или проваленным без обновлённого статуса.
+
+
+## 2026-10-10 — cross-platform float math
+
+- Android reference has `GeneralsMD/Code/Main/ReferenceFloatMath.cpp`; our branch previously lacked it. Its documented purpose is to reproduce the Windows 32-bit MSVC behavior for float transcendental functions by computing in double and rounding once to float, including compiler-merged `sincosf` calls.
+- Added an adapted compatibility implementation in commit `11f5cf678ae11bf24380e9dc0601dd7bbdd2428a`, wired into `GeneralsMD/Code/Main/CMakeLists.txt` with `-fno-builtin` and no PCH. Commit `8d4cec3c6940cb94d6683646d313e6f877e62764` fixes source escaping and macro continuations.
+- This is a strong root-cause candidate for the frame-117 CRC mismatch, not yet proven until CI passes and a real iOS versus Android/PC match is compared. Check for `[ONLINE-MATH-COMPAT]` in the new iOS log. Android math trace instrumentation is not ported yet.
+- Latest CI run is `38075742305` (#170), commit `8d4cec3c6940cb94d6683646d313e6f877e62764`, status was `in_progress` at the last check. Runs #167–169 were cancelled when newer commits were pushed.
