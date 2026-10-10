@@ -795,8 +795,6 @@ void Player::initFromDict(const Dict* d)
 	Bool exists;
 	Bool skirmish = false;
 	Bool forceHuman = false;
-	// GeneralsX @bugfix Copilot 22/03/2026 Initialize multiplayer start index before any skirmish name/script qualification.
-	m_mpStartIndex = d->getInt(TheKey_multiplayerStartIndex, &exists);
 	if (d->getBool(TheKey_playerIsSkirmish, &exists))
 	{
 
@@ -864,6 +862,10 @@ void Player::initFromDict(const Dict* d)
 	{
 		setPlayerType(PLAYER_COMPUTER, skirmish);
 	}
+	// Match the GeneralsOnline PC/Android initialization order: skirmish script and
+	// team-name qualification above must run before mpStartIndex is read from the map.
+	// Reading it earlier changes the qualified names and can desynchronize lockstep.
+	m_mpStartIndex = d->getInt(TheKey_multiplayerStartIndex, &exists);
 	if (skirmish) {
 		// Copy and qualify scripts, and teams.
 
