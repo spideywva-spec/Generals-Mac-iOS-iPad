@@ -1,3 +1,9 @@
+# LEGACY FILE — use `memory.md` instead
+
+`memory.rd` was created by mistake on 2026-10-10. The canonical running project log is now [`memory.md`](memory.md). Do not maintain separate competing records here; update `memory.md` for future investigations and fixes.
+
+Historical notes retained below for traceability.
+
 # memory.rd — GeneralsX iOS / Android reference audit
 
 Updated: 2026-10-10 (after linker correction)
