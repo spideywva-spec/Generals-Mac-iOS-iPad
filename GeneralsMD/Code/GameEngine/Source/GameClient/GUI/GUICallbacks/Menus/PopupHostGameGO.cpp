@@ -679,6 +679,18 @@ void createGame()
 
 	UnicodeString gameName = GadgetTextEntryGetText(textEntryGameName);
 
+#if defined(__APPLE__)
+	// TargetConditionals distinguishes iOS from macOS for the shared Apple build.
+	#include <TargetConditionals.h>
+	#if TARGET_OS_IPHONE
+	// Keep the platform label in the server-side lobby name so every client,
+	// including PC and Android, sees [iOS] in the lobby browser.
+	UnicodeString platformGameName(L"[iOS] ");
+	platformGameName.concat(gameName);
+	gameName = platformGameName;
+	#endif
+#endif
+
 	AsciiString passwd;
 	passwd.translate(GadgetTextEntryGetText(textEntryGamePassword));
 
