@@ -157,3 +157,15 @@
 - В GeneralsMD/Code/Main/CMakeLists.txt build metadata содержит version 1.4, build 601; это не само по себе доказательство совпадения версии игрового simulation code с PC/Android releases.
 - Новый подтверждённый диагностический вывод: кроме транспортных различий, нужно исследовать известное ARM mismatch/лобби-флагирование на стороне GeneralsOnline и точную версию игрового simulation patchset. На последнем логе все три remote CRC одинаковы, local отличается на frame 111; это consistent with simulation mismatch, но конкретная причина пока не установлена.
 - Не менялись игровые исходники, workflow или защищённая ветка a13-ios-build в рамках этой проверки; новая сборка и реальный тест не выполнялись. Следующий шаг: проверить более поздние patch notes/current GO ARM lobby policy, сравнить Android release 1.4.0 vs iOS build 601 source patches/INI/data/60Hz-vs-30Hz settings, проверить exact tested IPA SHA and Actions run, затем получить парные логи iOS + Android/PC с одним матчем и deep CRC на первом divergent frame.
+
+
+## Confirmed transport send-result fix (2026-10-10, follow-up)
+
+- On branch `fix/ios-android-lobby-compat`, changed `GeneralsMD/Code/GameEngine/Source/GameNetwork/GeneralsOnline/NextGenTransport.cpp`.
+- Commit: `ace201fc7fe26adbc5ac66b3c4006d99f7638244`; new file blob SHA `aaaf2ba1e0a95b06ea0da40a11e5e61ba0ffe1e4`.
+- Confirmed defect: `PlayerConnection::SendGamePacket` returns Steam `EResult` codes, where failures such as `k_EResultFail` are positive values. `NextGenTransport::doSend()` previously treated every `sendResult >= 0` as success, so a failed send could be counted as sent and its outgoing game packet cleared from the queue. That can drop a simulation command and plausibly cause desync.
+- Fix: only `sendResult == static_cast<int>(k_EResultOK)` counts as a successful send; all other results enter the existing retry path and log the error. The updated source was fetched back from GitHub and verified to contain the new comparison and no old `sendResult >= 0` condition.
+- This is a concrete transport correctness fix, not proof it was the sole cause of frame-111 desync. The existing Android `NextGenTransport.cpp` has a similar `sendResult >= 0` pattern, but its legacy `SendGamePacket` implementation/return contract differs; do not blindly transplant that legacy behavior into the iOS branch.
+- Commit was pushed to `fix/ios-android-lobby-compat`, which is included in the existing workflow's push branch filter and `GeneralsMD/**` path filter. `fetch_commit_workflow_runs` returned an empty list because that connector endpoint only returns pull-request-triggered runs; it does not confirm whether the push-triggered run has started. Do not invent a run ID. Check the Actions run/log when a run ID is discoverable.
+- Prior successful shell workflow remains run `38042315366` on commit `a47b1b598cb7f10dda246f95abef5d7d440ed026`; it predates this fix, so it does NOT validate commit `ace201fc7fe26adbc5ac66b3c4006d99f7638244`.
+- `a13-ios-build`, `SDL3GameEngine`, Vulkan configuration, and Russian launcher were not changed. No cross-platform real-match test has been performed after this fix.
