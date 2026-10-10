@@ -8,6 +8,7 @@
 #include "GameNetwork/GeneralsOnline/NGMP_interfaces.h"
 #include "GameNetwork/GeneralsOnline/NetworkMesh.h"
 #include <steam/steamnetworkingtypes.h>
+#include <algorithm>
 #include "GameNetwork/GeneralsOnline/PluginInterfaces.h"
 
 #ifdef _INTERNAL
@@ -60,6 +61,7 @@ void NextGenTransport::reset(void)
     for (int i = 0; i < MAX_MESSAGES; ++i)
     {
         m_outPacketState[i].retryCount = 0;
+        m_outPacketState[i].sequence = 0;
         m_inBufferOccupied[i] = false;  // Mark all incoming slots as empty
     }
 }
@@ -600,13 +602,42 @@ Bool NextGenTransport::doSend(void)
     Bool retval = TRUE;
     int numSent = 0;
 
+    // Process packets in enqueue order. The buffer is a set of slots, not a FIFO:
+    // a reused low-numbered slot must not let a newer packet overtake an older one.
+    std::vector<int> sendOrder;
+    sendOrder.reserve(MAX_MESSAGES);
     for (int i = 0; i < MAX_MESSAGES; ++i)
     {
-        if (m_outBuffer[i].length == 0)
+        if (m_outBuffer[i].length != 0)
+            sendOrder.push_back(i);
+    }
+    std::sort(sendOrder.begin(), sendOrder.end(),
+        [this](int lhs, int rhs)
         {
-            m_outPacketState[i].retryCount = 0;  // Reset retry counter when packet slot is cleared
+            return m_outPacketState[lhs].sequence < m_outPacketState[rhs].sequence;
+        });
+
+    // If one peer's packet cannot be accepted, do not send later packets to that
+    // peer this frame. Other peers can continue independently.
+    std::vector<UnsignedInt> blockedAddrs;
+    blockedAddrs.reserve(MAX_MESSAGES);
+
+    for (int i : sendOrder)
+    {
+        if (m_outBuffer[i].length == 0)
             continue;
+
+        bool blocked = false;
+        for (UnsignedInt blockedAddr : blockedAddrs)
+        {
+            if (blockedAddr == m_outBuffer[i].addr)
+            {
+                blocked = true;
+                break;
+            }
         }
+        if (blocked)
+            continue;
 
         NGMP_OnlineServicesManager* pOnlineServicesManager = NGMP_OnlineServicesManager::GetInstance();
         if (pOnlineServicesManager == nullptr)
@@ -697,32 +728,35 @@ Bool NextGenTransport::doSend(void)
                     m_outBuffer[i].length + sizeof(TransportMessageHeader);
                 m_outBuffer[i].length = 0; // Remove from queue
                 m_outPacketState[i].retryCount = 0;
+                m_outPacketState[i].sequence = 0;
                 retval = TRUE;
             }
             else
             {
-                // Send failed - implement retry logic for transient errors
-                m_outPacketState[i].retryCount++;
-                
+                // Never discard a game command merely because the transport rejected
+                // one send attempt. Dropping it silently can desynchronize deterministic
+                // simulation. Keep it queued, and prevent newer packets for this peer
+                // from overtaking it until the transport accepts it.
+                const Int previousRetryCount = m_outPacketState[i].retryCount;
                 if (m_outPacketState[i].retryCount < OutgoingPacketState::MAX_RETRIES)
+                    ++m_outPacketState[i].retryCount;
+
+                if (previousRetryCount == 0)
                 {
                     NetworkLog(ELogVerbosity::LOG_RELEASE,
-                        "Game Packet Send: SendGamePacket failed (err=%d), retry %d/%d for packet to user %lld",
-                        sendResult, m_outPacketState[i].retryCount, 
-                        OutgoingPacketState::MAX_RETRIES, pSlot->m_userID);
-                    // Keep packet in queue for retry
-                    retval = FALSE;
+                        "Game Packet Send: SendGamePacket failed (err=%d); retaining packet and preserving peer order for user %lld",
+                        sendResult, static_cast<long long>(pSlot->m_userID));
                 }
-                else
+                else if (previousRetryCount < OutgoingPacketState::MAX_RETRIES &&
+                         m_outPacketState[i].retryCount == OutgoingPacketState::MAX_RETRIES)
                 {
-                    // Max retries exceeded - drop packet
                     NetworkLog(ELogVerbosity::LOG_RELEASE,
-                        "Game Packet Send: Dropping packet after %d failed retries to user %lld",
-                        m_outPacketState[i].retryCount, pSlot->m_userID);
-                    m_outBuffer[i].length = 0;
-                    m_outPacketState[i].retryCount = 0;
-                    retval = FALSE;
+                        "Game Packet Send: %d retries reached for user %lld; packet remains queued (not dropped)",
+                        OutgoingPacketState::MAX_RETRIES, static_cast<long long>(pSlot->m_userID));
                 }
+
+                blockedAddrs.push_back(m_outBuffer[i].addr);
+                retval = FALSE;
             }
         }
         else
@@ -731,6 +765,7 @@ Bool NextGenTransport::doSend(void)
                 "Game Packet Send: No slot for addr %u, dropping packet", m_outBuffer[i].addr);
             m_outBuffer[i].length = 0;
             m_outPacketState[i].retryCount = 0;
+            m_outPacketState[i].sequence = 0;
             retval = FALSE;
         }
     }
@@ -782,6 +817,8 @@ Bool NextGenTransport::queueSend(UnsignedInt addr,
         std::memcpy(m_outBuffer[i].data, buf, static_cast<size_t>(len));
         m_outBuffer[i].addr = addr;
         m_outBuffer[i].port = port;
+        m_outPacketState[i].retryCount = 0;
+        m_outPacketState[i].sequence = m_nextPacketSequence++;
 
         m_outBuffer[i].header.magic = GENERALS_MAGIC_NUMBER;
 
