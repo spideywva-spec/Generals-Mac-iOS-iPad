@@ -50,10 +50,11 @@
 //-----------------------------------------------------------------------------
 // USER INCLUDES //////////////////////////////////////////////////////////////
 //-----------------------------------------------------------------------------
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
+
 #if defined(__APPLE__)
 #include <TargetConditionals.h>
 #endif
-#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/GlobalData.h"
 #include "Common/NameKeyGenerator.h"
