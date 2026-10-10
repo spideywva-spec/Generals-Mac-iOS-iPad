@@ -1534,9 +1534,13 @@ void NGMP_OnlineServices_LobbyInterface::CreateLobby(UnicodeString strLobbyName,
 			std::string strPublishedLobbyName = to_utf8(strLobbyName.str());
 #if defined(__APPLE__)
 			constexpr const char* kIOSLobbyPrefix = "[iOS] ";
-			if (strPublishedLobbyName.compare(0, 5, "[iOS]") == 0)
+			if (strPublishedLobbyName.compare(0, 6, kIOSLobbyPrefix) == 0)
 			{
-				// Normalize a manually supplied prefix so it is never duplicated or missing its space.
+				// Already normalized; do not duplicate the prefix or its space.
+			}
+			else if (strPublishedLobbyName.compare(0, 5, "[iOS]") == 0)
+			{
+				// Normalize a manually supplied prefix that is missing its separating space.
 				strPublishedLobbyName = std::string(kIOSLobbyPrefix) + strPublishedLobbyName.substr(5);
 			}
 			else
