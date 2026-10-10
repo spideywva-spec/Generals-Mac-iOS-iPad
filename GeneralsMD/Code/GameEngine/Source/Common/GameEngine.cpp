@@ -855,6 +855,12 @@ void GameEngine::init()
 #endif
 
 		initSubsystem(TheUpgradeCenter,"TheUpgradeCenter", MSGNEW("GameEngineSubsystem") UpgradeCenter, &xferCRC, "Data\\INI\\Default\\Upgrade", "Data\\INI\\Upgrade");
+		{
+			const UpgradeTemplate *gxRods = TheUpgradeCenter->findUpgrade("Upgrade_AmericaAdvancedControlRods");
+			fprintf(stderr, "[ONLINE-NAMEKEY-CHECK] Upgrade_AmericaAdvancedControlRods=%d expected=2265\\n",
+				gxRods ? (int)gxRods->getUpgradeNameKey() : -1);
+			fflush(stderr);
+		}
 		// Match GeneralsOnline PC name-key ordering before the game client loads any windows.
 		TheFunctionLexicon->gxKeyPortOnlyEntries();
 		initSubsystem(TheGameClient,"TheGameClient", createGameClient(), nullptr);
