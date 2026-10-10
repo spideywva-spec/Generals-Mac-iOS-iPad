@@ -1433,7 +1433,7 @@ int PlayerConnection::SendGamePacket(void* pBuffer, uint32_t totalDataSize)
     const int netSendFlags = serviceConf.network_send_flags;
 
     EResult result = SteamNetworkingSockets()->SendMessageToConnection(
-        m_hSteamConnection, vecData.data(), (uint32)vecData.size(), sendFlags, nullptr);
+        m_hSteamConnection, vecData.data(), (int)vecData.size(), sendFlags, nullptr);
 
     if (result == k_EResultOK)
     {
