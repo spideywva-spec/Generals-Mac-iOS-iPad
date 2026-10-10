@@ -41,18 +41,18 @@ static void *gxRealMathSymbol(const char *name)
 
     if (symbol == nullptr)
     {
-        fprintf(stderr, "[ONLINE-MATH-COMPAT] Could not resolve system math function %s\\n", name);
+        fprintf(stderr, "[ONLINE-MATH-COMPAT] Could not resolve system math function %s\n", name);
         abort();
     }
     return symbol;
 }
 
 #define GX_REF_MATH extern "C" __attribute__((visibility("hidden")))
-#define GX_FORWARD_MATH1(name) \\
-    GX_REF_MATH double name(double x) \\
-    { \\
-        static GXMathFn1 realFunction = reinterpret_cast<GXMathFn1>(gxRealMathSymbol(#name)); \\
-        return realFunction(x); \\
+#define GX_FORWARD_MATH1(name) \
+    GX_REF_MATH double name(double x) \
+    { \
+        static GXMathFn1 realFunction = reinterpret_cast<GXMathFn1>(gxRealMathSymbol(#name)); \
+        return realFunction(x); \
     }
 
 GX_FORWARD_MATH1(sin)
@@ -109,7 +109,7 @@ GX_REF_MATH void sincosf(float x, float *s, float *c)
 
 __attribute__((constructor)) static void gxReportReferenceFloatMath()
 {
-    fprintf(stderr, "[ONLINE-MATH-COMPAT] Reference PC float-transcendental semantics enabled\\n");
+    fprintf(stderr, "[ONLINE-MATH-COMPAT] Reference PC float-transcendental semantics enabled\n");
 }
 
 #endif
