@@ -383,16 +383,16 @@ void EnsureIOSShadowVolumeCompatibility()
         NSError *writeError = nil;
         if (!WriteKeyValueFile(optionsPath, options, &writeError))
         {
-            fprintf(stderr, "[IOS-GRAPHICS] Failed to migrate volumetric shadows: %s\\n",
+            fprintf(stderr, "[IOS-GRAPHICS] Failed to migrate volumetric shadows: %s\n",
                     writeError != nil ? writeError.localizedDescription.UTF8String : "unknown");
             return;
         }
-        fprintf(stderr, "[IOS-GRAPHICS] Disabled incompatible volumetric shadows; texture shadows remain enabled\\n");
+        fprintf(stderr, "[IOS-GRAPHICS] Disabled incompatible volumetric shadows; texture shadows remain enabled\n");
     }
 
     NSError *markerError = nil;
     if (![ @"" writeToFile:markerPath atomically:YES encoding:NSUTF8StringEncoding error:&markerError ])
-        fprintf(stderr, "[IOS-GRAPHICS] Could not write shadow compatibility marker: %s\\n",
+        fprintf(stderr, "[IOS-GRAPHICS] Could not write shadow compatibility marker: %s\n",
                 markerError != nil ? markerError.localizedDescription.UTF8String : "unknown");
 }
 
