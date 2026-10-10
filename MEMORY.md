@@ -553,3 +553,10 @@
 ### Same-frame CRC/player mapping recheck (2026-10-11)
 - The raw log's exact mismatch is frame 117 validating frame 100, with four connected peers. Network slots 0-3 map to game player indices 2, 3, 4, 5; local player index 4 is network slot 2. This is a consistent slot mapping, not evidence of a bad player-index map.
 - At frame 100, local cumulative CRC stages were objects `0x46D9D349` (127 objects), RNG `0x1F79F51B` with RNG CRC `0x93C64D88`, partition `0x2C893377`, players `0xF966A680`, AI/final `0x9076BDDF`. Peers 2, 3, and 5 all report `0xED158F13`. All four are connected. The log later continues to frame 200, so it doesn't prove a network timeout killed the host.
+
+
+## 2026-10-11 — fixed a confirmed libc++ simulation bug in itoa
+
+- The cross-play lesson identified a concrete port bug: iOS used std::stringbuf::pubsetbuf(str, 33) to implement itoa. libc++ does not implement that buffer-binding behavior, so it wrote digits to the stringbuf's own storage and left the caller's str unchanged. The game uses itoa to build bone names such as FIREPOINT0 and ExitStart0; failed bone lookups leave an uninitialized Matrix3D in a rider transform, which is hashed into the lockstep CRC.
+- Ported the Android/MSVC-compatible integer conversion into GeneralsMD/Code/CompatLib/Source/string_compat.cpp, commit c2612185cadb10078cc90f95ca3b667c367a3a8c. The replacement validates bases 2-36, handles negative decimal values, writes the output digits directly into the caller buffer, and null-terminates. Confirmed the old pubsetbuf call is gone.
+- This is a concrete correctness fix that can cause an early or later CRC mismatch, depending on when a bone lookup occurs. The current Actions run on the previous HEAD will be cancelled/replaced; wait for a build on the new HEAD and inspect the new match log for bone missing diagnostics and frame-100 CRCs.
