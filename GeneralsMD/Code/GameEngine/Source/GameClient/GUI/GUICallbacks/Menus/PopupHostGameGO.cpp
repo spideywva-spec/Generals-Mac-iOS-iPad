@@ -688,7 +688,6 @@ void createGame()
 	UnicodeString platformGameName(L"[iOS] ");
 	platformGameName.concat(gameName);
 	gameName = platformGameName;
-	#endif
 #endif
 
 	AsciiString passwd;
