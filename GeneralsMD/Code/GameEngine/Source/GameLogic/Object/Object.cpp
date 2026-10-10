@@ -2371,7 +2371,7 @@ Bool Object::clearDisabled( DisabledType type )
 	{
 		// We explicitly pass stuff in up in the set, so we need to turn it off if it is a forever type
 		Object *rider = (Object*)contain->friend_getRider();
-		if( rider  &&  (m_disabledTillFrame[ type ] == FOREVER) )
+		if( rider  &&  !rider->isEffectivelyDead()  &&  rider->m_behaviors  &&  (m_disabledTillFrame[ type ] == FOREVER) )
 		{
 			rider->clearDisabled(type);
 		}
