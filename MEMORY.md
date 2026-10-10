@@ -548,3 +548,8 @@
 - Inspected `Core/GameEngine/Source/Common/System/XferCRC.cpp`: `XferCRC::close()` is empty and `getCRC()` returns the current CRC, so capturing the no-tag value immediately before appending the revision marker is valid; the diagnostic does not accidentally omit bytes added by `close()`.
 - Inspected the current `Core/GameEngine/CMakeLists.txt`, `GeneralsMD/Code/CMakeLists.txt`, `GeneralsMD/Code/GameEngine/CMakeLists.txt`, and `cmake/config-build.cmake`. `RTS_ZEROHOUR=1` is defined for the Zero Hour target; there is no compile definition overriding the `RETAIL_COMPATIBLE_*` switches to `1`. The new defaults in `Core/GameEngine/Include/Common/GameDefines.h` therefore take effect in the iOS Online build.
 - The latest code HEAD at this check is `27a77e016623482a47cdeb9ba07bb152b877aa3c`. GitHub Actions run `38080428152` is the first current run for this HEAD; job `114296080188` was still in progress at step `Install build tools`/setup vcpkg. No build conclusion yet.
+
+
+### Same-frame CRC/player mapping recheck (2026-10-11)
+- The raw log's exact mismatch is frame 117 validating frame 100, with four connected peers. Network slots 0-3 map to game player indices 2, 3, 4, 5; local player index 4 is network slot 2. This is a consistent slot mapping, not evidence of a bad player-index map.
+- At frame 100, local cumulative CRC stages were objects `0x46D9D349` (127 objects), RNG `0x1F79F51B` with RNG CRC `0x93C64D88`, partition `0x2C893377`, players `0xF966A680`, AI/final `0x9076BDDF`. Peers 2, 3, and 5 all report `0xED158F13`. All four are connected. The log later continues to frame 200, so it doesn't prove a network timeout killed the host.
