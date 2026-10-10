@@ -35,3 +35,10 @@
 	* anywhere that touches DirectX inside GameLogic loops (LoadScreen).
 	*/
 void setFPMode();
+
+// Keep the simulation's floating-point mode deterministic across frame boundaries.
+class ScopedFPUGuard {
+public:
+	ScopedFPUGuard() = default;
+	~ScopedFPUGuard() { setFPMode(); }
+};
