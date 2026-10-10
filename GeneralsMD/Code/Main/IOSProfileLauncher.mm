@@ -358,6 +358,44 @@ BOOL WriteKeyValueFile(NSString *path, NSDictionary<NSString *, NSString *> *val
     return [output writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:error];
 }
 
+/*
+ * iOS/MoltenVK compatibility: the stencil-based volumetric shadow pass can
+ * leave a rectangular dark overlay on Apple GPUs. Keep texture/decal shadows
+ * enabled, but migrate existing Options.ini files away from volumetric shadows
+ * once so the user can still explicitly change the setting later.
+ */
+void EnsureIOSShadowVolumeCompatibility()
+{
+    NSString *optionsPath = EngineOptionsPath();
+    NSFileManager *fm = [NSFileManager defaultManager];
+    if (![fm fileExistsAtPath:optionsPath])
+        return;
+
+    NSString *markerPath = [[optionsPath stringByDeletingLastPathComponent]
+        stringByAppendingPathComponent:@"IOSShadowVolumeCompatV1"];
+    if ([fm fileExistsAtPath:markerPath])
+        return;
+
+    NSMutableDictionary<NSString *, NSString *> *options = ReadKeyValueFile(optionsPath);
+    if (SettingBoolValue(options, @"UseShadowVolumes", NO))
+    {
+        options[@"UseShadowVolumes"] = @"No";
+        NSError *writeError = nil;
+        if (!WriteKeyValueFile(optionsPath, options, &writeError))
+        {
+            fprintf(stderr, "[IOS-GRAPHICS] Failed to migrate volumetric shadows: %s\\n",
+                    writeError != nil ? writeError.localizedDescription.UTF8String : "unknown");
+            return;
+        }
+        fprintf(stderr, "[IOS-GRAPHICS] Disabled incompatible volumetric shadows; texture shadows remain enabled\\n");
+    }
+
+    NSError *markerError = nil;
+    if (![ @"" writeToFile:markerPath atomically:YES encoding:NSUTF8StringEncoding error:&markerError ])
+        fprintf(stderr, "[IOS-GRAPHICS] Could not write shadow compatibility marker: %s\\n",
+                markerError != nil ? markerError.localizedDescription.UTF8String : "unknown");
+}
+
 NSDictionary<NSString *, NSString *> *DefaultContraSettings()
 {
     return @{
@@ -371,7 +409,7 @@ NSDictionary<NSString *, NSString *> *DefaultContraSettings()
         @"FogEffects": @"No",
         @"WaterEffects": @"Yes",
         @"ExtraBuildingProps": @"Yes",
-        @"UseShadowVolumes": @"Yes",
+        @"UseShadowVolumes": @"No",
         @"UseShadowDecals": @"Yes",
         @"UseCloudMap": @"Yes",
         @"UseLightMap": @"Yes",
@@ -677,6 +715,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
                                                object:nil];
 
     self.view.backgroundColor = UIColor.blackColor;
+    EnsureIOSShadowVolumeCompatibility();
     EnsureDefaultIPadOverrides();
 
     NSString *bundledProfile = BundledAutoLaunchProfile();
@@ -2908,7 +2947,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
 
 - (void)loadGraphicsSettingsFromValues:(NSDictionary<NSString *, NSString *> *)values
 {
-    self.shadow3DSwitch.on = SettingBoolValue(values, @"UseShadowVolumes", YES);
+    self.shadow3DSwitch.on = SettingBoolValue(values, @"UseShadowVolumes", NO);
     self.shadow2DSwitch.on = SettingBoolValue(values, @"UseShadowDecals", YES);
     self.cloudShadowsSwitch.on = SettingBoolValue(values, @"UseCloudMap", YES);
     self.groundLightingSwitch.on = SettingBoolValue(values, @"UseLightMap", YES);
