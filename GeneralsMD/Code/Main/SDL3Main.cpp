@@ -1418,9 +1418,9 @@ int main(int argc, char* argv[])
 										std::filesystem::copy_options::overwrite_existing,
 										copyError);
 								if (!copyError) {
-									fprintf(stderr, "INFO: iPad File Sharing applied newer %s\\n", fileName);
+									fprintf(stderr, "INFO: iPad File Sharing applied newer %s\n", fileName);
 								} else {
-									fprintf(stderr, "WARNING: failed to apply Documents/%s: %s\\n",
+									fprintf(stderr, "WARNING: failed to apply Documents/%s: %s\n",
 									        fileName, copyError.message().c_str());
 								}
 							}
