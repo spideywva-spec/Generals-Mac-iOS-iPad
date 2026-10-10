@@ -1,6 +1,6 @@
 # memory.rd — GeneralsX iOS / Android reference audit
 
-Updated: 2026-10-10
+Updated: 2026-10-10 (after linker correction)
 
 ## Required workflow
 - Before each GeneralsX/Zero Hour investigation or code change, inspect this file first.
@@ -15,5 +15,5 @@ Updated: 2026-10-10
 - Compared the iOS `NetworkMesh.cpp`: iOS has additional handling for unknown/known join order, a departed lobby peer, in-match reconnect attempts, capturing connection data before `SetDisconnected()` can invalidate the entry, deferred signalling-object cleanup, and avoiding making the host leave its own lobby. These differences are real code, not assumptions. The full in-match lobby failure still needs runtime logs to prove the precise cause of a particular disconnect.
 - Inspected local ZIP logs from Actions run `38038325029` (branch `fix/ios-android-lobby-compat`, commit `100ea08797c2278bf1ea814662db7525ad8a055e`). Configure explicitly enables deterministic GameMath. Final arm64 link fails because `_gm_acosf`, `_gm_asinf`, `_gm_atan2f`, `_gm_atanf`, `_gm_ceilf`, `_gm_cosf`, `_gm_floorf`, `_gm_sinf`, `_gm_sqrtf`, and `_gm_tanf` are unresolved. The final link command contains the game static libraries but no GameMath archive/target.
 - Confirmed upstream GameMath defines CMake target `gamemath::gamemath`; iOS workflow passes `-DSAGE_USE_DETERMINISTIC_MATH=ON`, while `GeneralsMD/Code/Main/CMakeLists.txt` did not link that target. This is the proven cause of the current linker failure; it is a build/link issue, not evidence that NetworkMesh caused that build failure.
-- Planned correction: link `gamemath::gamemath` into the final `z_generals` target when deterministic math is enabled. Validation requires a new Actions run; until it passes, do not call the build fixed.
+- Applied correction in `GeneralsMD/Code/Main/CMakeLists.txt`: conditionally link `gamemath::gamemath` to `z_generals` when the target exists. Commit: `a47b1b598cb7f10dda246f95abef5d7d440ed026` on `fix/ios-android-lobby-compat`. This should place the GameMath archive on the final link line; validation requires a new Actions run, so the build is not yet confirmed fixed.
 - No changes to Android reference repository and no changes to protected `a13-ios-build`.
