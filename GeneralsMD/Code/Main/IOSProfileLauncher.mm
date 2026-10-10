@@ -1400,7 +1400,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
             ok = [camera writeToFile:IPadOverridesPath() atomically:YES encoding:NSUTF8StringEncoding error:&saveError];
             NSMutableDictionary *options = ReadKeyValueFile(EngineOptionsPath());
             options[@"IdealStaticGameLOD"] = @"High";
-            options[@"StaticGameLOD"] = @"Custom";
+            options[@"StaticGameLOD"] = @"High";
             options[@"UseShadowVolumes"] = boolValue(@"shadow3D", NO) ? @"Yes" : @"No";
             options[@"UseShadowDecals"] = boolValue(@"shadow2D", YES) ? @"Yes" : @"No";
             options[@"UseCloudMap"] = boolValue(@"cloudShadows", NO) ? @"Yes" : @"No";
@@ -3216,7 +3216,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
 
     NSMutableDictionary<NSString *, NSString *> *options = ReadKeyValueFile(EngineOptionsPath());
     options[@"IdealStaticGameLOD"] = @"High";
-    options[@"StaticGameLOD"] = @"Custom";
+    options[@"StaticGameLOD"] = @"High";
     options[@"UseShadowVolumes"] = self.shadow3DSwitch.on ? @"Yes" : @"No";
     options[@"UseShadowDecals"] = self.shadow2DSwitch.on ? @"Yes" : @"No";
     options[@"UseCloudMap"] = self.cloudShadowsSwitch.on ? @"Yes" : @"No";
