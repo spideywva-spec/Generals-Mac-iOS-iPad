@@ -244,3 +244,28 @@
 - Нативная сборка этой ветки и реальный матч iOS↔Android/Windows/Linux/macOS пока НЕ подтверждены. Успех межплатформенной синхронизации не заявлять до парных логов/CRC с одного матча.
 - Android reference repo `MYSOREZ/GeneralsZH-Android-Port` имеет `SAGE_USE_DETERMINISTIC_MATH` по умолчанию OFF в `cmake/gamemath.cmake`, а workflow `.github/workflows/build-android.yml` не передаёт эту опцию. Сам reference repo не менялся. Поэтому полная math-детерминированность iOS↔Android пока не обеспечена этим PR; нужно согласовать/проверить соответствующую настройку в фактическом Android build, который использует пользователь.
 - Render не менялся: он публикует web launcher, но не управляет локальной папкой модов и не может сам исправить игровые пакеты.
+
+
+## Новая диагностика лога и исправление сохранения графики (2026-10-10, продолжение)
+
+### Лог пользователя: `logs/generals-stderr.log`
+- Прочитан raw-файл из ветки `logs`; размер 716,719 байт, 7,831 строк.
+- Стартовый лог показывает iOS build `1.4 build=601`, API `playgenerals.online` отвечает HTTP 200, имя лобби содержит `[iOS]`. Это подтверждает регистрацию/получение данных лобби, но не подтверждает межплатформенную синхронизацию симуляции.
+- Сеть: в этом логе несколько раз для peer/user `81311` возникает SteamNetworking reason `5003: Timed out attempting to connect`; повтор сигнализации исчерпан на `2/2`, затем происходит локальное удаление peer. Есть сообщение `Invalid lane count 1; Connection only has 0 lanes configured`. Лог также показывает лобби `152685` с 7 игроками из 8 и `Lobby is full` при некоторых попытках присоединения; нельзя автоматически считать все эти события причиной desync — они могут относиться к другим попыткам подключения в лобби-браузере.
+- В логе есть `[ONLINE-CRC-TRACE]` с кадрами 0/100/200 и подробным CRC-дампом объектов для frame 200, после чего отображается `Menus/ScoreScreen.wnd`. Это одна сторона; без лога Android/PC участника и CRC того же матча/кадра нельзя доказать равенство или расхождение симуляции.
+- Графическая диагностика: `bitDepth=16`, `filter=0`, `anisotropy=4`, `msaa=0`, заявлены pixel shader `0xffff0104` и vertex shader `0xfffe0101`. В этом логе нет подтверждения, что опции игры были записаны в файл; `[HUB-SETTINGS] web saved profile='online'` относится к web-настройкам профиля, а не к факту сохранения всех engine graphics options.
+- `ios/config/Options.ini` в репозитории — только короткий шаблон (LOD, TextureReduction, HeatEffects, DynamicLOD); реальный iOS путь в `IOSProfileLauncher.mm` и `GlobalData::BuildUserDataPathFromRegistry()` совпадает: `~/Library/Application Support/GeneralsX/GeneralsZH/Options.ini`. Поэтому не объявлять путь причиной без проверки фактического файла устройства.
+
+### Исправление, внесённое в отдельную ветку
+- Создана ветка `fix/ios-graphics-settings-persistence` от `generealss-spideywv`; `a13-ios-build`, русский `IOSProfileLauncher` и `build-ios-shell.yml` не изменялись.
+- Коммит: `54d5ed30899cef867d9e20bbb76da49e1c5e3908` — `Fix saving updated graphics options`.
+- Файл `GeneralsMD/Code/GameEngine/Source/GameClient/GUI/GUICallbacks/Menus/OptionsMenu.cpp`: при сохранении шести параметров запись в `Options.ini` брала значения из `TheGlobalData` вместо обновлённых `TheWritableGlobalData`: `UseCloudMap`, `UseLightMap`, `ShowSoftWaterEdge`, `ExtraAnimations`, `DynamicLOD`, `HeatEffects`. Все шесть сохранений теперь читают writable instance, где соответствующие UI значения только что обновлены.
+- 2D/3D shadow keys уже записывались из `TheWritableGlobalData`, но этот блок advanced graphics settings выполняется только при выборе `StaticGameLOD = Custom`. Для штатного игрового меню нужно выбрать Custom и нажать подтверждение расширенных параметров, затем подтвердить основное меню.
+- Отдельного подтверждённого параметра «reflections» в текущем `OptionsMenu.cpp` не найдено; не добавлять декоративный переключатель без реализации в renderer/engine.
+- На момент записи Actions/build и реальный повторный тест на устройстве ещё не проверены. Не заявлять, что сохранение или синхронизация уже исправлены.
+
+### Следующие обязательные проверки
+1. Проверить Actions для `54d5ed30899cef867d9e20bbb76da49e1c5e3908`; если будет ошибка — скачать артефакт/лог и исследовать локально.
+2. На iOS изменить один из параметров (например, Dynamic LOD/Heat Effects), сохранить, перезапустить игру, проверить содержимое `~/Library/Application Support/GeneralsX/GeneralsZH/Options.ini` и фактическое значение при повторном открытии меню.
+3. Проверить 2D/3D shadows при `StaticGameLOD=Custom`; не обещать аппаратно полноценные тени/отражения только по наличию чекбоксов.
+4. Для межплатформенной синхронизации запросить лог Android/PC второй стороны того же матча. Сравнить build/revision, карту/режим, сетевой packet/channel/version и CRC на одинаковых кадрах; текущий iOS лог сам по себе не доказывает desync.
