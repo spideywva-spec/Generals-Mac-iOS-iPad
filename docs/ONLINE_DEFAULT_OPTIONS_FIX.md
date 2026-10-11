@@ -20,3 +20,10 @@ No edits to `.github/workflows/build-ios-shell.yml`, `SDL3GameEngine`, `IOSProfi
 
 ## Rollback
 Revert commit `231c190b98e94931b0262e675380bce08f0acb65` if the Online profile installer behavior regresses.
+
+## 2026-10-11 — launcher graphics defaults aligned
+Commit: `4c45fd73a8b89ec2bfac5b2737e7ff60c66c8c`
+
+`IOSProfileLauncher.mm` now supplies the five repository `DefaultOptions.ini` values as fallbacks when loading/saving Online graphics settings: `IdealStaticGameLOD=High`, `StaticGameLOD=High`, `TextureReduction=0`, `HeatEffects=Yes`, `DynamicLOD=No`. Existing user values in the global engine `Options.ini` take precedence. The native and web launcher both use these fallbacks; neither overwrites an existing graphics choice merely by reading settings. The FPS slider/limit and A13 build configuration are unchanged.
+
+**Not implemented:** a new per-profile graphics file writer or new LOD selection UI; no claim of measured FPS improvement. Revert commit `4c45fd73a8b89ec2bfac5b2737e7ff60c66c8c` to undo this launcher change. Compilation and runtime verification are still required.
