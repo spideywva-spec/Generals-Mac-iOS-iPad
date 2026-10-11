@@ -1122,6 +1122,26 @@ Bool GameEngine::canUpdateGameLogic()
 	TheFramePacer->setTimeFrozen(isTimeFrozen());
 	TheFramePacer->setGameHalted(isGameHalted());
 
+	// The animated main-menu Shell Map is a local simulation, not a multiplayer
+	// match. Keep its units at the original 30 logic steps per second even when
+	// the renderer runs at 60/120 FPS or the regular logic time scale is off.
+	// This does not change rendering cadence or gameplay/network timing.
+	static UnsignedInt lastShellLogicTime = 0;
+	if (TheGameLogic->isInShellGame())
+	{
+		const UnsignedInt now = timeGetTime();
+		if (lastShellLogicTime == 0)
+		{
+			lastShellLogicTime = now;
+			return true;
+		}
+		if (now - lastShellLogicTime < 33)
+			return false;
+		lastShellLogicTime = now;
+		return true;
+	}
+	lastShellLogicTime = 0;
+
 	if (TheNetwork != nullptr)
 	{
 		return canUpdateNetworkGameLogic();
