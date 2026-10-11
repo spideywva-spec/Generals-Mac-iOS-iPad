@@ -302,6 +302,32 @@ NSString *EngineOptionsPath()
     return [dir stringByAppendingPathComponent:@"Options.ini"];
 }
 
+// Matches the repository's DefaultOptions.ini for Online/vanilla graphics.
+// Existing Options.ini values always take precedence over these defaults.
+NSMutableDictionary<NSString *, NSString *> *ReadKeyValueFile(NSString *path);
+
+NSDictionary<NSString *, NSString *> *OnlineGraphicsDefaults()
+{
+    return @{
+        @"IdealStaticGameLOD": @"High",
+        @"StaticGameLOD": @"High",
+        @"TextureReduction": @"0",
+        @"HeatEffects": @"Yes",
+        @"DynamicLOD": @"No"
+    };
+}
+
+NSMutableDictionary<NSString *, NSString *> *ReadOnlineGraphicsOptions()
+{
+    NSMutableDictionary<NSString *, NSString *> *values = ReadKeyValueFile(EngineOptionsPath());
+    [OnlineGraphicsDefaults() enumerateKeysAndObjectsUsingBlock:
+        ^(NSString *key, NSString *value, BOOL *stop) {
+            if (values[key] == nil)
+                values[key] = value;
+        }];
+    return values;
+}
+
 NSMutableDictionary<NSString *, NSString *> *ReadKeyValueFile(NSString *path)
 {
     NSMutableDictionary<NSString *, NSString *> *values = [NSMutableDictionary dictionary];
@@ -1338,7 +1364,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         }
         else
         {
-            NSDictionary *options = ReadKeyValueFile(EngineOptionsPath());
+            NSDictionary *options = ReadOnlineGraphicsOptions();
             NSString *camera = [NSString stringWithContentsOfFile:IPadOverridesPath() encoding:NSUTF8StringEncoding error:nil] ?: DefaultIPadOverrides();
             values[@"shadow3D"] = @(SettingBoolValue(options, @"UseShadowVolumes", NO));
             values[@"shadow2D"] = @(SettingBoolValue(options, @"UseShadowDecals", YES));
@@ -1349,7 +1375,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
             values[@"showProps"] = @(SettingBoolValue(options, @"ShowTrees", YES));
             values[@"extraAnimations"] = @(SettingBoolValue(options, @"ExtraAnimations", YES));
             values[@"dynamicLOD"] = @(SettingBoolValue(options, @"DynamicLOD", NO));
-            values[@"heatEffects"] = @(SettingBoolValue(options, @"HeatEffects", NO));
+            values[@"heatEffects"] = @(SettingBoolValue(options, @"HeatEffects", YES));
             NSInteger textureReduction = [SettingValue(options, @"TextureReduction", @"0") integerValue];
             values[@"textureQuality"] = textureReduction <= 0 ? @"High" : (textureReduction == 1 ? @"Medium" : @"Low");
             NSInteger particles = [SettingValue(options, @"MaxParticleCount", @"2500") integerValue];
@@ -1437,7 +1463,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
                 boolValue(@"fpsLimit", YES) ? @"Yes" : @"No",
                 numberValue(@"fps", 60.0)];
             ok = [camera writeToFile:IPadOverridesPath() atomically:YES encoding:NSUTF8StringEncoding error:&saveError];
-            NSMutableDictionary *options = ReadKeyValueFile(EngineOptionsPath());
+            NSMutableDictionary *options = ReadOnlineGraphicsOptions();
             options[@"IdealStaticGameLOD"] = @"High";
             options[@"StaticGameLOD"] = @"High";
             options[@"UseShadowVolumes"] = boolValue(@"shadow3D", NO) ? @"Yes" : @"No";
@@ -1449,7 +1475,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
             options[@"ShowTrees"] = boolValue(@"showProps", YES) ? @"Yes" : @"No";
             options[@"ExtraAnimations"] = boolValue(@"extraAnimations", YES) ? @"Yes" : @"No";
             options[@"DynamicLOD"] = boolValue(@"dynamicLOD", NO) ? @"Yes" : @"No";
-            options[@"HeatEffects"] = boolValue(@"heatEffects", NO) ? @"Yes" : @"No";
+            options[@"HeatEffects"] = boolValue(@"heatEffects", YES) ? @"Yes" : @"No";
             NSString *quality = stringValue(@"textureQuality", @"High");
             options[@"TextureReduction"] = [quality isEqualToString:@"High"] ? @"0" : ([quality isEqualToString:@"Medium"] ? @"1" : @"2");
             NSString *particles = stringValue(@"particles", @"Medium");
@@ -3125,7 +3151,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     else if ([bundledProfile isEqualToString:@"contra-x"])
         [self loadContraSettingsControls];
 
-    [self loadGraphicsSettingsFromValues:ReadKeyValueFile(EngineOptionsPath())];
+    [self loadGraphicsSettingsFromValues:ReadOnlineGraphicsOptions()];
 
     NSError *error = nil;
     NSString *contents = [NSString stringWithContentsOfFile:IPadOverridesPath()
@@ -3253,7 +3279,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     NSArray<NSString *> *msaaLevels = @[@"0", @"2", @"4", @"8"];
     NSString *antiAliasing = msaaLevels[MAX(0, MIN(3, self.msaaSegment.selectedSegmentIndex))];
 
-    NSMutableDictionary<NSString *, NSString *> *options = ReadKeyValueFile(EngineOptionsPath());
+    NSMutableDictionary<NSString *, NSString *> *options = ReadOnlineGraphicsOptions();
     options[@"IdealStaticGameLOD"] = @"High";
     options[@"StaticGameLOD"] = @"High";
     options[@"UseShadowVolumes"] = self.shadow3DSwitch.on ? @"Yes" : @"No";
