@@ -1511,34 +1511,13 @@ function settingRow(label, control) {
 function renderGameSettings() {
   return `
     <div class="setting-section">
-      <h3>Графика</h3>
-      ${settingRow("3D-тени", toggleControl("game", "shadow3D"))}
-      ${settingRow("2D-тени", toggleControl("game", "shadow2D"))}
-      ${settingRow("Тени облаков", toggleControl("game", "cloudShadows"))}
-      ${settingRow("Освещение земли", toggleControl("game", "groundLighting"))}
-      ${settingRow("Сглаживание границ воды", toggleControl("game", "softWater"))}
-      ${settingRow("Юниты за зданиями", toggleControl("game", "buildingOcclusion"))}
-      ${settingRow("Мелкие объекты / деревья", toggleControl("game", "showProps"))}
-      ${settingRow("Дополнительные анимации", toggleControl("game", "extraAnimations"))}
-      ${settingRow("Предпочтительная детализация (IdealStaticGameLOD)", segmentControl("game", "idealStaticGameLOD", ["Высокое", "Среднее", "Низкое"]))}
-      ${settingRow("Детализация игры (StaticGameLOD)", segmentControl("game", "staticGameLOD", ["Высокое", "Среднее", "Низкое"]))}
-      ${settingRow("Динамический LOD", toggleControl("game", "dynamicLOD"))}
-      ${settingRow("Эффекты нагрева", toggleControl("game", "heatEffects"))}
-      ${settingRow("Качество текстур", segmentControl("game", "textureQuality", ["Высокое", "Среднее", "Низкое"]))}
-      ${settingRow("Частицы", segmentControl("game", "particles", ["Низкое", "Среднее", "Высокое"]))}
-      ${settingRow("Фильтрация текстур", segmentControl("game", "textureFilter", ["Билинейная", "Трилинейная", "Анизотропная"]))}
-      ${settingRow("Анизотропия", segmentControl("game", "anisotropy", ["2x", "4x", "8x", "16x"]))}
-      ${settingRow("MSAA", segmentControl("game", "msaa", ["Выкл.", "2x", "4x", "8x"]))}
-    </div>
-
-    <div class="setting-section">
-      <h3>Камера / Производительность</h3>
+      <h3>Камера / Скорость прокрутки / Дальность прорисовки / FPS</h3>
       ${settingRow("Максимальная высота камеры", rangeControl("game", "maxCamera", 300, 800, 10))}
       ${settingRow("Минимальная высота камеры", rangeControl("game", "minCamera", 40, 150, 5))}
       ${settingRow("Наклон камеры", rangeControl("game", "cameraPitch", 20, 60, 1, "°"))}
-      ${settingRow("Принудительная макс. высота камеры", toggleControl("game", "enforceMax"))}
-      ${settingRow("Скорость прокрутки клавиатурой / краем экрана", rangeControl("game", "scrollSpeed", 0.5, 2, 0.1, "×"))}
-      ${settingRow("Дальность прорисовки рельефа", rangeControl("game", "drawDistance", 0.5, 2, 0.05, "×"))}
+      ${settingRow("Ограничивать максимальную высоту камеры", toggleControl("game", "enforceMax"))}
+      ${settingRow("Скорость прокрутки", rangeControl("game", "scrollSpeed", 0.5, 2, 0.1, "×"))}
+      ${settingRow("Дальность прорисовки", rangeControl("game", "drawDistance", 0.5, 2, 0.05, "×"))}
       ${settingRow("Ограничение FPS", toggleControl("game", "fpsLimit"))}
       ${settingRow("Кадров в секунду", rangeControl("game", "fps", 30, 120, 5, " FPS"))}
     </div>
