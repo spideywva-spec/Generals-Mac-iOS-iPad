@@ -9,6 +9,7 @@ on:
       - a13-ios-build
       - generealss-spideywv
       - fix/mods-visible-cross-platform-sync
+      - fix/ios-shroud-bilinear-filter
     paths:
       - 'GeneralsMD/**'
       - 'launcher_web/**'
