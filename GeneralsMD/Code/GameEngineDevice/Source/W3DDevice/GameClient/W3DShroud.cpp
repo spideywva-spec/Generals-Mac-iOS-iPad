@@ -784,10 +784,17 @@ void W3DShroud::interpolateFogLevels(RECT *rect)
 //-----------------------------------------------------------------------------
 void W3DShroud::setShroudFilter(Bool enable)
 {
+	// iOS: the launcher and graphics options must never disable shroud smoothing.
+	// This affects visual sampling only, not the fog-of-war gameplay rules.
+#if defined(__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__)
+	(void)enable;
+	m_shroudFilter=TextureFilterClass::FILTER_TYPE_DEFAULT;
+#else
 	if (enable)
 		m_shroudFilter=TextureFilterClass::FILTER_TYPE_DEFAULT;
 	else
 		m_shroudFilter=TextureFilterClass::FILTER_TYPE_NONE;
+#endif
 }
 
 //-----------------------------------------------------------------------------
