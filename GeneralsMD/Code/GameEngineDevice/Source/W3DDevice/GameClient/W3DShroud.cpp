@@ -679,11 +679,18 @@ void W3DShroud::render(CameraClass *cam)
 
 	pSurface->Unlock();
 */
-	if (m_pDstTexture->Get_Filter().Get_Mag_Filter() != m_shroudFilter)
-	{
-		m_pDstTexture->Get_Filter().Set_Mag_Filter(m_shroudFilter);
-		m_pDstTexture->Get_Filter().Set_Min_Filter(m_shroudFilter);
-	}
+	// Generals X iOS: restore both sampler filters independently. The original
+	// MAG-only guard could leave MIN at nearest-neighbor after settings changes.
+	// Preserve gameplay visibility; change only texture sampling on iOS.
+#if defined(__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__)
+	const TextureFilterClass::FilterType shroudFilter = TextureFilterClass::FILTER_TYPE_DEFAULT;
+#else
+	const TextureFilterClass::FilterType shroudFilter = m_shroudFilter;
+#endif
+	if (m_pDstTexture->Get_Filter().Get_Mag_Filter() != shroudFilter)
+		m_pDstTexture->Get_Filter().Set_Mag_Filter(shroudFilter);
+	if (m_pDstTexture->Get_Filter().Get_Min_Filter() != shroudFilter)
+		m_pDstTexture->Get_Filter().Set_Min_Filter(shroudFilter);
 
 	//Update video memory texture with sysmem copy
 	SurfaceClass* pDestSurface;
