@@ -65,8 +65,11 @@ void PopupCommunicatorInit( WindowLayout *layout, void *userData )
 	//set keyboard focus to main parent and set modal
 	NameKeyType parentID = TheNameKeyGenerator->nameToKey("PopupCommunicator.wnd:PopupCommunicator");
 	parent = TheWindowManager->winGetWindowFromId( nullptr, parentID );
-	TheWindowManager->winSetFocus( parent );
-	TheWindowManager->winSetModal( parent );
+	if (parent != nullptr)
+	{
+		TheWindowManager->winSetFocus( parent );
+		TheWindowManager->winSetModal( parent );
+	}
 
 	// get ids for our children controls
 	buttonOkID = TheNameKeyGenerator->nameToKey( "PopupCommunicator.wnd:ButtonOk" );
@@ -180,6 +183,8 @@ WindowMsgHandledType PopupCommunicatorSystem( GameWindow *window, UnsignedInt ms
 		case GBM_SELECTED:
 		{
 			GameWindow *control = (GameWindow *)mData1;
+			if (control == nullptr || window == nullptr)
+				return MSG_HANDLED;
 			Int controlID = control->winGetWindowId();
 
 			if( controlID == buttonOkID )
