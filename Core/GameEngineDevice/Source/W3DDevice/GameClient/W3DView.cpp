@@ -3531,11 +3531,19 @@ void W3DView::moveAlongWaypointPath(Real milliseconds)
 		}
 	}
 	Real avgFactor = 1.0/m_mcwpInfo.rollingAverageFrames;
-	m_mcwpInfo.curShutter--;
-	if (m_mcwpInfo.curShutter>0) {
-		return;
+	// The shell-map camera must interpolate on every rendered frame. Its
+	// scripted shutter can otherwise skip visible camera updates even though
+	// the shell units intentionally keep their independent 30 Hz logic tick.
+	// Preserve the original shutter behavior in actual matches.
+	if (TheGameLogic->isInShellGame()) {
+		m_mcwpInfo.curShutter = 1;
+	} else {
+		m_mcwpInfo.curShutter--;
+		if (m_mcwpInfo.curShutter>0) {
+			return;
+		}
+		m_mcwpInfo.curShutter = m_mcwpInfo.shutter;
 	}
-	m_mcwpInfo.curShutter = m_mcwpInfo.shutter;
 	Real factor = m_mcwpInfo.curSegDistance / m_mcwpInfo.waySegLength[m_mcwpInfo.curSegment];
 	if (m_mcwpInfo.curSegment == m_mcwpInfo.numWaypoints-1) {
 		avgFactor = avgFactor + (1.0-avgFactor)*factor;
