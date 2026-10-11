@@ -1,12 +1,13 @@
-# iOS Vulkan 1.2/1.3 device build V2
-name: build iOS shell V2
+# GeneralsX V2: preserve Vulkan 1.2/1.3 and samplerMirrorClampToEdge
+name: GeneralsX V2 | iOS Shell
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - a13-ios-build
+      - generealss-spideywv
+      - fix/mods-visible-cross-platform-sync
     paths:
       - 'GeneralsMD/**'
       - 'launcher_web/**'
@@ -40,7 +41,7 @@ concurrency:
 
 jobs:
   build:
-    name: GeneralsXZH iOS shell
+    name: GeneralsX V2 iOS shell
     runs-on: macos-latest
     timeout-minutes: 150
     env:
@@ -84,7 +85,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: .ci-cache/vcpkg
-          key: ios-online-v2-vcpkg-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-context.outputs.toolchain }}-${{ hashFiles('vcpkg.json', 'vcpkg-lock.json', 'vcpkg_ports/gamenetworkingsockets/**', 'cmake/**', 'CMakePresets.json', '.github/workflows/build-ios-shell.yml') }}
+          key: ios-online-vcpkg-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-context.outputs.toolchain }}-${{ hashFiles('vcpkg.json', 'vcpkg-lock.json', 'vcpkg_ports/gamenetworkingsockets/**', 'cmake/**', 'CMakePresets.json', '.github/workflows/build-ios-shell.yml') }}
           restore-keys: |
             ios-online-vcpkg-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-context.outputs.toolchain }}-
 
@@ -93,7 +94,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ios-online-v2-ccache-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-context.outputs.toolchain }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ios-online-ccache-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-context.outputs.toolchain }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             ios-online-ccache-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-context.outputs.toolchain }}-
 
@@ -131,6 +132,13 @@ jobs:
         run: |
           ./scripts/build/ios/fetch-moltenvk.sh
           ./scripts/build/ios/stage-fonts.sh
+
+      - name: Verify Vulkan feature configuration (V2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "V2 does not override Vulkan 1.2, Vulkan 1.3, or samplerMirrorClampToEdge."
+          echo "No DXVK compatibility patch or sed feature-bit override is applied by this workflow."
 
       - name: Configure iOS Online Hub
         env:
@@ -208,7 +216,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: GeneralsXZH-ios-build-logs
+          name: GeneralsX-v2-ios-build-logs
           path: logs/
           if-no-files-found: ignore
           retention-days: 7
@@ -216,7 +224,7 @@ jobs:
       - name: Summary
         if: success()
         run: |
-          echo "## iOS Online Hub shell V2" >> "${GITHUB_STEP_SUMMARY}"
+          echo "## GeneralsX V2 iOS Online Hub shell" >> "${GITHUB_STEP_SUMMARY}"
           echo "- Engine: GeneralsXZH arm64 + Generals Online" >> "${GITHUB_STEP_SUMMARY}"
           echo "- Deterministic math: enabled" >> "${GITHUB_STEP_SUMMARY}"
           echo "- Launcher: native UIKit Hub" >> "${GITHUB_STEP_SUMMARY}"
