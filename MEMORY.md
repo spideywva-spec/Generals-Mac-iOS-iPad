@@ -766,3 +766,12 @@
 - Frame-100 iOS CRC stages: objects `0xF3DD1F88` count=223, rng `0xB1A3E449` rngCRC `0xCAE7A439`, partition `0x3E927AE4`, players `0x7D412908`, final AI `0x9F21ADE5`. Frame 0 final `0xFA5172AF`; frame 200 final `0x8CBDD8CB`. Revision marker probe at frame100 `with=0x6D183AB3`, selected `without-change`; do NOT force marker.
 - Lobby shown near end: lobby 170739, match 4299261, map Alpine Assault (2), iOS owner `weyva`; lobby exe CRC `560676586`, ini CRC `2180732466`. Need correlate screenshot PC details before asserting platform-side state; the log itself only contains iOS state and received peer CRC.
 - No fix committed; root cause remains unknown. Must compare actual PC screenshot, authoritative peer/host CRC origin, and iOS GameLogic CRC send/receive paths; do not substitute API VersionManifest executable CRC for runtime simulation CRC. Protected `a13-ios-build` unchanged.
+
+
+## Новый лог и скриншот PC (2026-10-11)
+- Ветка `logs` содержит `generals-stderr.log` (blob `84461119317562116a5f9a7f50c77e107b41b583`, ~289 KB) и PC screenshot `{43ED32FE-9CBA-48F7-92FE-2B8B2FF2DB4F}.png` (blob `65ad8da00e766835e304a21a0e4c01d0e8aaeebe`). Скриншот обнаружен, но его содержимое пока не просмотрено, поэтому не приписывать ему выводы.
+- Новый iOS лог прочитан через GitHub connector, НЕ скачан на локальный диск: попытка curl raw.githubusercontent.com не удалась из-за DNS (`Could not resolve host`).
+- Новый матч: lobby `170739`, match `4299261`, `Alpine Assault (2)`, 2 участника `weyva` и `spideywva`, runtime 1.4 build 601, networkVersion `0x00010004`, ONLINE-MATH-CRC `0x97B538BF` (apple). Lobby ExeCRC `560676586`, IniCRC `2180732466`.
+- Подтверждено событие `[ONLINE-DESYNC] detected frame=105 cached=2 connected=2 localPlayerIndex=2 localStateCRC=0xE348F7DE rngBase=0x252300D3 rngCRC=0xCAE7A439` (строка 1716). CRC локального игрока 2 / slot 0: `0x9F21ADE5`, удалённого игрока 3 / slot 1: `0xC98F66B0` (1717–1718). `gameFrame=105 validatedFrame=100 runAhead=4` (1719). Это новый отдельный случай от frame=111 в предыдущем логе.
+- Нельзя пока утверждать, что снимок PC показывает именно этот матч или что проблема исправлена. Нужен визуальный разбор PNG, а также сопоставимый PC лог/CRC frame 100; приоритет — детерминированность симуляции и данные/версия, не слепой перенос TURN/retry.
+- В этой проверке исходники, `a13-ios-build` и CI не менялись. Следующий шаг: просмотреть PC PNG, проверить game-state CRC/версию PC и сравнить конкретные frame 100/105; затем точечное исправление в отдельной ветке и сборка.
