@@ -658,6 +658,41 @@ BOOL GXHubInstallTar(NSURL *packageURL, NSDictionary **installedManifest, NSErro
                     settingsError != nil ? settingsError.description.UTF8String : "unknown");
         }
     }
+    // Preserve user-modified Online defaults across profile updates. This file
+    // belongs to the installed profile, not to the engine's global Options.ini.
+    // Never silently discard it when a new archive contains its own defaults.
+    if ([profileId isEqualToString:@"online"])
+    {
+        NSString *relativeOptions = @"profile/DefaultOptions.ini";
+        NSString *oldOptions = [finalPath stringByAppendingPathComponent:relativeOptions];
+        if ([fm fileExistsAtPath:oldOptions])
+        {
+            NSString *newOptions = [stage stringByAppendingPathComponent:relativeOptions];
+            NSString *newOptionsDir = [newOptions stringByDeletingLastPathComponent];
+            NSError *preserveError = nil;
+            if (![fm createDirectoryAtPath:newOptionsDir
+               withIntermediateDirectories:YES attributes:nil error:&preserveError])
+            {
+                if (error != nullptr) *error = preserveError;
+                [fm removeItemAtPath:stage error:nil];
+                return NO;
+            }
+            if ([fm fileExistsAtPath:newOptions] &&
+                ![fm removeItemAtPath:newOptions error:&preserveError])
+            {
+                if (error != nullptr) *error = preserveError;
+                [fm removeItemAtPath:stage error:nil];
+                return NO;
+            }
+            if (![fm copyItemAtPath:oldOptions toPath:newOptions error:&preserveError])
+            {
+                if (error != nullptr) *error = preserveError;
+                [fm removeItemAtPath:stage error:nil];
+                return NO;
+            }
+            fprintf(stderr, "[HUB-SETTINGS] preserved online profile DefaultOptions.ini\\n");
+        }
+    }
     NSString *backupPath = [modsRoot stringByAppendingPathComponent:
         [@".backup-" stringByAppendingString:[NSUUID UUID].UUIDString]];
 
