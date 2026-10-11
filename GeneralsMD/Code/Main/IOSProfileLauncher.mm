@@ -2499,25 +2499,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     if (showCommonSettings)
     {
         [controlViews addObjectsFromArray:@[
-            [self sectionLabel:@"ГРАФИКА"],
-        [self sectionLabel:@"Сглаживание тумана войны — всегда включено (iOS)"],
-            [self switchRow:@"3D-тени" control:self.shadow3DSwitch],
-            [self switchRow:@"2D-тени" control:self.shadow2DSwitch],
-            [self switchRow:@"Тени облаков" control:self.cloudShadowsSwitch],
-            [self switchRow:@"Освещение поверхности" control:self.groundLightingSwitch],
-            [self switchRow:@"Плавные границы воды" control:self.softWaterSwitch],
-            [self switchRow:@"Юниты за зданиями" control:self.buildingOcclusionSwitch],
-            [self switchRow:@"Мелкие объекты / деревья" control:self.showPropsSwitch],
-            [self switchRow:@"Дополнительные анимации" control:self.extraAnimationsSwitch],
-            [self switchRow:@"Динамический LOD" control:self.dynamicLODSwitch],
-            [self switchRow:@"Эффекты нагрева" control:self.heatEffectsSwitch],
-            [self segmentedRow:@"Качество текстур движка" control:self.textureQualitySegment],
-            [self segmentedRow:@"Частицы" control:self.particleQualitySegment],
-            [self segmentedRow:@"Фильтрация текстур" control:self.textureFilterSegment],
-            [self segmentedRow:@"Анизотропия" control:self.anisotropySegment],
-            [self segmentedRow:@"MSAA" control:self.msaaSegment],
-
-            [self sectionLabel:@"КАМЕРА / ПРОИЗВОДИТЕЛЬНОСТЬ"],
+            [self sectionLabel:@"КАМЕРА / ЭКРАН / ДАЛЬНОСТЬ / FPS"],
             [self sliderRow:@"Максимальная высота камеры" slider:self.maxCameraSlider value:self.maxCameraValue],
             [self sliderRow:@"Минимальная высота камеры" slider:self.minCameraSlider value:self.minCameraValue],
             [self sliderRow:@"Наклон камеры" slider:self.cameraPitchSlider value:self.cameraPitchValue],
@@ -3299,34 +3281,10 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
 
 - (BOOL)saveGraphicsOptions:(NSError **)error
 {
-    NSInteger particleIndex = self.particleQualitySegment.selectedSegmentIndex;
-    NSInteger particleCount = particleIndex == 0 ? 1000 : (particleIndex == 2 ? 5000 : 2500);
-    NSArray<NSString *> *filters = @[@"Bilinear", @"Trilinear", @"Anisotropic"];
-    NSString *filter = filters[MAX(0, MIN(2, self.textureFilterSegment.selectedSegmentIndex))];
-    NSArray<NSString *> *anisotropyLevels = @[@"2", @"4", @"8", @"16"];
-    NSString *anisotropy = anisotropyLevels[MAX(0, MIN(3, self.anisotropySegment.selectedSegmentIndex))];
-    NSArray<NSString *> *msaaLevels = @[@"0", @"2", @"4", @"8"];
-    NSString *antiAliasing = msaaLevels[MAX(0, MIN(3, self.msaaSegment.selectedSegmentIndex))];
-
-    NSMutableDictionary<NSString *, NSString *> *options = ReadOnlineGraphicsOptions();
-    options[@"IdealStaticGameLOD"] = @"High";
-    options[@"StaticGameLOD"] = @"High";
-    options[@"UseShadowVolumes"] = @"No"; // iOS/MoltenVK: prevent rectangular shadow artifact
-    options[@"UseShadowDecals"] = self.shadow2DSwitch.on ? @"Yes" : @"No";
-    options[@"UseCloudMap"] = self.cloudShadowsSwitch.on ? @"Yes" : @"No";
-    options[@"UseLightMap"] = self.groundLightingSwitch.on ? @"Yes" : @"No";
-    options[@"ShowSoftWaterEdge"] = self.softWaterSwitch.on ? @"Yes" : @"No";
-    options[@"BuildingOcclusion"] = self.buildingOcclusionSwitch.on ? @"Yes" : @"No";
-    options[@"ShowTrees"] = self.showPropsSwitch.on ? @"Yes" : @"No";
-    options[@"ExtraAnimations"] = self.extraAnimationsSwitch.on ? @"Yes" : @"No";
-    options[@"DynamicLOD"] = self.dynamicLODSwitch.on ? @"Yes" : @"No";
-    options[@"HeatEffects"] = self.heatEffectsSwitch.on ? @"Yes" : @"No";
-    options[@"TextureReduction"] = [NSString stringWithFormat:@"%ld", (long)self.textureQualitySegment.selectedSegmentIndex];
-    options[@"MaxParticleCount"] = [NSString stringWithFormat:@"%ld", (long)particleCount];
-    options[@"TextureFilter"] = filter;
-    options[@"AnisotropyLevel"] = anisotropy;
-    options[@"AntiAliasing"] = antiAliasing;
-    return WriteOnlineGraphicsOptions(options, error);
+    // The simplified native settings screen edits camera/draw distance/FPS only.
+    // Do not rewrite hidden graphics options when saving those controls.
+    (void)error;
+    return YES;
 }
 
 - (BOOL)saveEnhancedSettingsAndOptions:(NSError **)error
