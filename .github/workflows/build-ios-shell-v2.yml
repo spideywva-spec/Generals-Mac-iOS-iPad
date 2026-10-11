@@ -5,8 +5,6 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
-      - generealss-spideywv
       - fix/mods-visible-cross-platform-sync
     paths:
       - 'GeneralsMD/**'
@@ -24,7 +22,6 @@ on:
       - 'vcpkg.json'
       - 'vcpkg_ports/gamenetworkingsockets/**'
       - 'vcpkg-lock.json'
-      - 'Patches/dxvk-ios.patch'
       - 'ios/**'
       - '!ios/version.env'
       - 'scripts/build/ios/package-shell.sh'
@@ -85,7 +82,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: .ci-cache/vcpkg
-          key: ios-online-vcpkg-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-context.outputs.toolchain }}-${{ hashFiles('vcpkg.json', 'vcpkg-lock.json', 'vcpkg_ports/gamenetworkingsockets/**', 'cmake/**', 'CMakePresets.json', '.github/workflows/build-ios-shell.yml') }}
+          key: ios-online-vcpkg-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-context.outputs.toolchain }}-${{ hashFiles('vcpkg.json', 'vcpkg-lock.json', 'vcpkg_ports/gamenetworkingsockets/**', 'cmake/**', 'CMakePresets.json', '.github/workflows/build-ios-shell-v2.yml') }}
           restore-keys: |
             ios-online-vcpkg-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-context.outputs.toolchain }}-
 
@@ -133,12 +130,17 @@ jobs:
           ./scripts/build/ios/fetch-moltenvk.sh
           ./scripts/build/ios/stage-fonts.sh
 
-      - name: Verify Vulkan feature configuration (V2)
+      - name: Verify unmodified DXVK Vulkan feature requests (supported GPUs only)
         shell: bash
         run: |
           set -euo pipefail
-          echo "V2 does not override Vulkan 1.2, Vulkan 1.3, or samplerMirrorClampToEdge."
-          echo "No DXVK compatibility patch or sed feature-bit override is applied by this workflow."
+          if git -C references/fbraz3-dxvk diff --quiet; then
+            echo "GeneralsX V2: DXVK source unmodified; Vulkan feature negotiation remains upstream."
+          else
+            echo "ERROR: DXVK has local modifications; V2 requires unmodified feature negotiation."
+            git -C references/fbraz3-dxvk diff --stat
+            exit 1
+          fi
 
       - name: Configure iOS Online Hub
         env:
