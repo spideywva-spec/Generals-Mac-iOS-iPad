@@ -599,9 +599,9 @@ NSString *DefaultIPadOverrides()
 {
     // GeneralsX @feature dvorovrus 26/09/2026 Default shared iPad tuning.
     return @"GameData\n"
-            @"  MaxCameraHeight = 550.0\n"
+            @"  MaxCameraHeight = 350.0\n"
             @"  MinCameraHeight = 70.0\n"
-            @"  CameraPitch = 37.0\n"
+            @"  CameraPitch = 35.0\n"
             @"  EnforceMaxCameraHeight = No\n"
             @"  KeyboardScrollSpeedFactor = 1.0\n"
             @"  TerrainDrawDistanceScale = 1.20\n"
@@ -1407,9 +1407,9 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
             values[@"anisotropy"] = [NSString stringWithFormat:@"%@x", SettingValue(options, @"AnisotropyLevel", @"8")];
             NSString *aa = SettingValue(options, @"AntiAliasing", @"0");
             values[@"msaa"] = [aa isEqualToString:@"0"] ? @"Off" : [aa stringByAppendingString:@"x"];
-            values[@"maxCamera"] = @([self floatSetting:@"MaxCameraHeight" contents:camera fallback:550.0f]);
+            values[@"maxCamera"] = @([self floatSetting:@"MaxCameraHeight" contents:camera fallback:350.0f]);
             values[@"minCamera"] = @([self floatSetting:@"MinCameraHeight" contents:camera fallback:70.0f]);
-            values[@"cameraPitch"] = @([self floatSetting:@"CameraPitch" contents:camera fallback:37.0f]);
+            values[@"cameraPitch"] = @([self floatSetting:@"CameraPitch" contents:camera fallback:35.0f]);
             values[@"enforceMax"] = @([self boolSetting:@"EnforceMaxCameraHeight" contents:camera fallback:NO]);
             values[@"scrollSpeed"] = @([self floatSetting:@"KeyboardScrollSpeedFactor" contents:camera fallback:1.0f]);
             values[@"drawDistance"] = @([self floatSetting:@"TerrainDrawDistanceScale" contents:camera fallback:1.20f]);
@@ -1477,9 +1477,9 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
                  "  UseFPSLimit = %@\n"
                  "  FramesPerSecondLimit = %.0f\n"
                  "End\n",
-                numberValue(@"maxCamera", 550.0),
+                numberValue(@"maxCamera", 350.0),
                 numberValue(@"minCamera", 70.0),
-                numberValue(@"cameraPitch", 37.0),
+                numberValue(@"cameraPitch", 35.0),
                 boolValue(@"enforceMax", NO) ? @"Yes" : @"No",
                 numberValue(@"scrollSpeed", 1.0),
                 numberValue(@"drawDistance", 1.20),
@@ -3115,9 +3115,9 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     [self resetEnhancedSettingsControls];
     [self loadGraphicsSettingsFromValues:DefaultContraSettings()];
 
-    self.maxCameraSlider.value = 550.0f;
+    self.maxCameraSlider.value = 350.0f;
     self.minCameraSlider.value = 70.0f;
-    self.cameraPitchSlider.value = 37.0f;
+    self.cameraPitchSlider.value = 35.0f;
     self.enforceMaxSwitch.on = NO;
     self.scrollSpeedSlider.value = 1.0f;
     self.drawDistanceSlider.value = 1.20f;
@@ -3156,9 +3156,9 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
                                                       error:&error];
     if (contents == nil)
     {
-        self.maxCameraSlider.value = 550.0f;
+        self.maxCameraSlider.value = 350.0f;
         self.minCameraSlider.value = 70.0f;
-        self.cameraPitchSlider.value = 37.0f;
+        self.cameraPitchSlider.value = 35.0f;
         self.enforceMaxSwitch.on = NO;
         self.scrollSpeedSlider.value = 1.0f;
         self.drawDistanceSlider.value = 1.20f;
@@ -3173,9 +3173,9 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     }
     else
     {
-        self.maxCameraSlider.value = [self floatSetting:@"MaxCameraHeight" contents:contents fallback:550.0f];
+        self.maxCameraSlider.value = [self floatSetting:@"MaxCameraHeight" contents:contents fallback:350.0f];
         self.minCameraSlider.value = [self floatSetting:@"MinCameraHeight" contents:contents fallback:70.0f];
-        self.cameraPitchSlider.value = [self floatSetting:@"CameraPitch" contents:contents fallback:37.0f];
+        self.cameraPitchSlider.value = [self floatSetting:@"CameraPitch" contents:contents fallback:35.0f];
         self.enforceMaxSwitch.on = [self boolSetting:@"EnforceMaxCameraHeight" contents:contents fallback:NO];
         self.scrollSpeedSlider.value = [self floatSetting:@"KeyboardScrollSpeedFactor" contents:contents fallback:1.0f];
         self.drawDistanceSlider.value = [self floatSetting:@"TerrainDrawDistanceScale" contents:contents fallback:1.20f];
