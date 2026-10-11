@@ -642,6 +642,7 @@ void GameEngine::init()
 				"  MaxCameraHeight = 350.0\n"
 				"  ; Slightly lower than vanilla (120) so casual zoom-in feels useful.\n"
 				"  MinCameraHeight = 100.0\n"
+					"  ; The launcher defaults to 350 height / 35 degree pitch / 70 minimum.\n"
 					"  ; Still soft-disabled so the user can push past max without a hard clamp.\n"
 					"  EnforceMaxCameraHeight = No\n"
 					"  ; Keyboard scroll - vanilla 0.5 is sluggish, double it.\n"
