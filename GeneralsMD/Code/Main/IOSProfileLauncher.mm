@@ -2500,6 +2500,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     {
         [controlViews addObjectsFromArray:@[
             [self sectionLabel:@"ГРАФИКА"],
+            [self sectionLabel:@"Сглаживание тумана войны — всегда включено (iOS)"],
             [self switchRow:@"3D-тени" control:self.shadow3DSwitch],
             [self switchRow:@"2D-тени" control:self.shadow2DSwitch],
             [self switchRow:@"Тени облаков" control:self.cloudShadowsSwitch],
