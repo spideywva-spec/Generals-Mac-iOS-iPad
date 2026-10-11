@@ -2496,20 +2496,6 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         ]];
     }
 
-    if (showCommonSettings)
-    {
-        [controlViews addObjectsFromArray:@[
-            [self sectionLabel:@"КАМЕРА / СКОРОСТЬ ПРОКРУТКИ / ДАЛЬНОСТЬ / FPS"],
-            [self sliderRow:@"Максимальная высота камеры" slider:self.maxCameraSlider value:self.maxCameraValue],
-            [self sliderRow:@"Минимальная высота камеры" slider:self.minCameraSlider value:self.minCameraValue],
-            [self sliderRow:@"Наклон камеры" slider:self.cameraPitchSlider value:self.cameraPitchValue],
-            [self switchRow:@"Ограничивать максимальную высоту камеры" control:self.enforceMaxSwitch],
-            [self sliderRow:@"Скорость прокрутки клавишами / у края" slider:self.scrollSpeedSlider value:self.scrollSpeedValue],
-            [self sliderRow:@"Дальность прорисовки ландшафта" slider:self.drawDistanceSlider value:self.drawDistanceValue],
-            [self switchRow:@"Лимит FPS" control:self.fpsLimitSwitch],
-            [self sliderRow:@"Кадров в секунду" slider:self.fpsSlider value:self.fpsValue],
-        ]];
-    }
 
     UIStackView *controls = [[UIStackView alloc] initWithArrangedSubviews:controlViews];
     controls.translatesAutoresizingMaskIntoConstraints = NO;
