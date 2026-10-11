@@ -317,9 +317,16 @@ NSDictionary<NSString *, NSString *> *OnlineGraphicsDefaults()
     };
 }
 
+NSString *OnlineDefaultOptionsPath()
+{
+    return [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/Mods/online/profile/DefaultOptions.ini"];
+}
+
 NSMutableDictionary<NSString *, NSString *> *ReadOnlineGraphicsOptions()
 {
+    // The Online profile is authoritative; keep Options.ini as a compatibility fallback.
     NSMutableDictionary<NSString *, NSString *> *values = ReadKeyValueFile(EngineOptionsPath());
+    [values addEntriesFromDictionary:ReadKeyValueFile(OnlineDefaultOptionsPath())];
     [OnlineGraphicsDefaults() enumerateKeysAndObjectsUsingBlock:
         ^(NSString *key, NSString *value, BOOL *stop) {
             if (values[key] == nil)
@@ -382,6 +389,20 @@ BOOL WriteKeyValueFile(NSString *path, NSDictionary<NSString *, NSString *> *val
     for (NSString *key in keys)
         [output appendFormat:@"%@ = %@\n", key, values[key]];
     return [output writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:error];
+}
+
+// Write both the Online mod defaults and the engine compatibility file.
+// Do not create a partial Online profile before its mod package is installed.
+BOOL WriteOnlineGraphicsOptions(NSDictionary<NSString *, NSString *> *values, NSError **error)
+{
+    NSString *profile = [OnlineDefaultOptionsPath() stringByDeletingLastPathComponent];
+    BOOL isDirectory = NO;
+    if ([[NSFileManager defaultManager] fileExistsAtPath:profile isDirectory:&isDirectory] && isDirectory)
+    {
+        if (!WriteKeyValueFile(OnlineDefaultOptionsPath(), values, error))
+            return NO;
+    }
+    return WriteKeyValueFile(EngineOptionsPath(), values, error);
 }
 
 /*
@@ -1489,7 +1510,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
             options[@"AnisotropyLevel"] = [stringValue(@"anisotropy", @"8x") stringByReplacingOccurrencesOfString:@"x" withString:@""];
             NSString *msaa = stringValue(@"msaa", @"Off");
             options[@"AntiAliasing"] = [msaa isEqualToString:@"Off"] ? @"0" : [msaa stringByReplacingOccurrencesOfString:@"x" withString:@""];
-            if (ok) ok = WriteKeyValueFile(EngineOptionsPath(), options, &saveError);
+            if (ok) ok = WriteOnlineGraphicsOptions(options, &saveError);
         }
         if (!ok)
         {
@@ -3302,7 +3323,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     options[@"TextureFilter"] = filter;
     options[@"AnisotropyLevel"] = anisotropy;
     options[@"AntiAliasing"] = antiAliasing;
-    return WriteKeyValueFile(EngineOptionsPath(), options, error);
+    return WriteOnlineGraphicsOptions(options, error);
 }
 
 - (BOOL)saveEnhancedSettingsAndOptions:(NSError **)error
