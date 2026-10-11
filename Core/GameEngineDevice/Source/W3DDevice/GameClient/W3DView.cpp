@@ -1321,7 +1321,14 @@ Bool W3DView::updateCameraMovements()
 		m_previousLookAtPosition = getPosition();
 		// TheSuperHackers @tweak The scripted camera movement is now decoupled from the render update.
 		// The scripted camera will still move when the time is frozen, but not when the game is halted.
-		moveAlongWaypointPath(TheFramePacer->getLogicTimeStepMilliseconds(FramePacer::IgnoreFrozenTime));
+		// The Shell Map simulation runs at its own 30 Hz cadence, while this view
+		// updates at the render rate. Advance its scripted camera using real render
+		// elapsed time, not the simulation's nominal logic-frame duration.
+		// Network matches retain the original frame-pacer behavior.
+		const Real cameraStepMs = TheGameLogic->isInShellGame()
+			? min(100.0f, TheFramePacer->getUpdateTime() * 1000.0f)
+			: TheFramePacer->getLogicTimeStepMilliseconds(FramePacer::IgnoreFrozenTime);
+		moveAlongWaypointPath(cameraStepMs);
 		didUpdate = true;
 	}
 	if (hasScriptedState(Scripted_CameraLock))
