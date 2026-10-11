@@ -676,8 +676,10 @@ const settingsDefaults = {
     buildingOcclusion: true,
     showProps: true,
     extraAnimations: true,
+    idealStaticGameLOD: "Высокое",
+    staticGameLOD: "Высокое",
     dynamicLOD: false,
-    heatEffects: false,
+    heatEffects: true,
     textureQuality: "Высокое",
     particles: "Среднее",
     textureFilter: "Анизотропная",
@@ -717,6 +719,8 @@ const settingsDefaults = {
 // Keep the web UI translated while converting values at the bridge boundary.
 const nativeSettingLabels = {
   game: {
+    idealStaticGameLOD: { "Высокое": "High", "Среднее": "Medium", "Низкое": "Low" },
+    staticGameLOD: { "Высокое": "High", "Среднее": "Medium", "Низкое": "Low" },
     textureQuality: { "Высокое": "High", "Среднее": "Medium", "Низкое": "Low" },
     particles: { "Низкое": "Low", "Среднее": "Medium", "Высокое": "High" },
     textureFilter: { "Билинейная": "Bilinear", "Трилинейная": "Trilinear", "Анизотропная": "Anisotropic" },
@@ -1516,6 +1520,8 @@ function renderGameSettings() {
       ${settingRow("Юниты за зданиями", toggleControl("game", "buildingOcclusion"))}
       ${settingRow("Мелкие объекты / деревья", toggleControl("game", "showProps"))}
       ${settingRow("Дополнительные анимации", toggleControl("game", "extraAnimations"))}
+      ${settingRow("Предпочтительная детализация (IdealStaticGameLOD)", segmentControl("game", "idealStaticGameLOD", ["Высокое", "Среднее", "Низкое"]))}
+      ${settingRow("Детализация игры (StaticGameLOD)", segmentControl("game", "staticGameLOD", ["Высокое", "Среднее", "Низкое"]))}
       ${settingRow("Динамический LOD", toggleControl("game", "dynamicLOD"))}
       ${settingRow("Эффекты нагрева", toggleControl("game", "heatEffects"))}
       ${settingRow("Качество текстур", segmentControl("game", "textureQuality", ["Высокое", "Среднее", "Низкое"]))}
