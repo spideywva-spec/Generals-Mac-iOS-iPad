@@ -27,3 +27,9 @@ Commit: `4c45fd73a8b89ec2bfac5b2737e7ff60c66c8c`
 `IOSProfileLauncher.mm` now supplies the five repository `DefaultOptions.ini` values as fallbacks when loading/saving Online graphics settings: `IdealStaticGameLOD=High`, `StaticGameLOD=High`, `TextureReduction=0`, `HeatEffects=Yes`, `DynamicLOD=No`. Existing user values in the global engine `Options.ini` take precedence. The native and web launcher both use these fallbacks; neither overwrites an existing graphics choice merely by reading settings. The FPS slider/limit and A13 build configuration are unchanged.
 
 **Not implemented:** a new per-profile graphics file writer or new LOD selection UI; no claim of measured FPS improvement. Revert commit `4c45fd73a8b89ec2bfac5b2737e7ff60c66c8c` to undo this launcher change. Compilation and runtime verification are still required.
+
+## 2026-10-11 — visible launcher controls for DefaultOptions.ini
+
+Commits: `99ff569c1ea742f2b750f9e6d607ad007e3acff0` (web UI), `eff165aa13b8ecbcbe155082a2ab2c5b980cd06f` (native bridge).
+
+Added **visible** Russian segmented settings for `IdealStaticGameLOD` and `StaticGameLOD` (High/Medium/Low) to the web launcher's Graphics section. Existing UI controls for `TextureReduction` (texture quality), `HeatEffects`, and `DynamicLOD` remain visible. The native settingsLoad/settingsSave bridge now reads and persists both LOD selections in `Options.ini`, validates the allowed values, and no longer hardcodes both to High at save time. Web default for HeatEffects is corrected to Yes. This is a UI/persistence change, not a measured FPS optimization. Native/UIKit fallback does not yet have separate LOD selectors. Revert the two commits above in reverse order to undo these UI controls; earlier fallback commit `4c45fd7` can be reverted separately. No Vulkan, A13 workflow, or SDL3GameEngine changes.
