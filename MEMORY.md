@@ -781,3 +781,12 @@
 - Match: https://strata.gamereplays.org/zh/match/4299358 ; 1v1 Barren Badlands, lobby `[AS][⛊] Generals Online Lobby44`, game version `216B3EEA`, data pack Community Patch 1.0.1 (`500_900_CommunityPatch_CoreINI_81FB5632.big`), 2026-10-11 07:35–07:37 GMT, duration 0m 11s, cash $10,000, camera height 310. Both participants marked Lost; one created 1 unit and 1 building, other 0. One replay and five screenshots linked by matchdata.playgenerals.online. The short duration and both Lost are consistent with an early failed match, but do NOT alone prove desync cause.
 - Important: previous iOS log in `logs/generals-stderr.log` described DIFFERENT match 4299261 on Alpine Assault (2), desync at frame 105. Do not conflate the two matches. Compare game version and data-pack hashes between peers and check Community Patch 1.0.1 availability on iOS; need iOS/PC logs from match 4299358 to confirm.
 - Screenshot/replay links supplied in conversation; no claim that downloaded or parsed.
+
+
+## 2026-10-11 — PopupCommunicator defensive guards (unverified)
+- Working branch: `fix/mods-visible-cross-platform-sync`; commits `37c101104c42a2f9c5d70559d78672bb30a120f7` and `5af00b12bb8659c7bc4c6f8cd6cd59dc6b10e17c`.
+- File: `GeneralsMD/Code/GameEngine/Source/GameClient/GUI/GUICallbacks/Menus/PopupCommunicator.cpp`.
+- Added null guards around parent focus/modal initialization, `GBM_SELECTED` control dereference, and ESC synthetic button event. These are defensive changes, NOT a proven fix for reported SIGSEGV (stack lacks symbols).
+- Camera Shell Map movement and cross-platform network desync remain UNFIXED. Do not claim they are fixed. No A13 Vulkan/build workflow, IOSProfileLauncher, or SDL3GameEngine edits.
+- Rollback: revert the two commits in reverse order (`5af00b12`, then `37c10110`) on the working branch; do not reset the protected `a13-ios-build`.
+- Local GitHub clone unavailable in execution container due to DNS resolution failure; compile and runtime cross-platform testing not performed.
