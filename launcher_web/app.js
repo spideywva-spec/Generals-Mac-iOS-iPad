@@ -1509,7 +1509,19 @@ function settingRow(label, control) {
 }
 
 function renderGameSettings() {
-  return "";
+  return `
+    <div class="setting-section">
+      <h3>Камера · Прокрутка · Дальность прорисовки · FPS</h3>
+      ${settingRow("Максимальная высота камеры", rangeControl("game", "maxCamera", 300, 800, 10))}
+      ${settingRow("Минимальная высота камеры", rangeControl("game", "minCamera", 40, 150, 5))}
+      ${settingRow("Наклон камеры", rangeControl("game", "cameraPitch", 20, 60, 1, "°"))}
+      ${settingRow("Ограничение высоты камеры", toggleControl("game", "enforceMax"))}
+      ${settingRow("Скорость прокрутки", rangeControl("game", "scrollSpeed", 0.5, 2, 0.1, "×"))}
+      ${settingRow("Дальность прорисовки", rangeControl("game", "drawDistance", 0.5, 2, 0.05, "×"))}
+      ${settingRow("Ограничение FPS", toggleControl("game", "fpsLimit"))}
+      ${settingRow("Кадров в секунду", rangeControl("game", "fps", 30, 120, 5, " FPS"))}
+    </div>
+  `;
 }
 
 function renderEnhancedSettings() {
