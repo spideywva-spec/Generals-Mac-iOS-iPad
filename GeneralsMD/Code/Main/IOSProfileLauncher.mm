@@ -1374,6 +1374,8 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
             values[@"buildingOcclusion"] = @(SettingBoolValue(options, @"BuildingOcclusion", YES));
             values[@"showProps"] = @(SettingBoolValue(options, @"ShowTrees", YES));
             values[@"extraAnimations"] = @(SettingBoolValue(options, @"ExtraAnimations", YES));
+            values[@"idealStaticGameLOD"] = SettingValue(options, @"IdealStaticGameLOD", @"High");
+            values[@"staticGameLOD"] = SettingValue(options, @"StaticGameLOD", @"High");
             values[@"dynamicLOD"] = @(SettingBoolValue(options, @"DynamicLOD", NO));
             values[@"heatEffects"] = @(SettingBoolValue(options, @"HeatEffects", YES));
             NSInteger textureReduction = [SettingValue(options, @"TextureReduction", @"0") integerValue];
@@ -1464,8 +1466,11 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
                 numberValue(@"fps", 60.0)];
             ok = [camera writeToFile:IPadOverridesPath() atomically:YES encoding:NSUTF8StringEncoding error:&saveError];
             NSMutableDictionary *options = ReadOnlineGraphicsOptions();
-            options[@"IdealStaticGameLOD"] = @"High";
-            options[@"StaticGameLOD"] = @"High";
+            NSArray<NSString *> *lodChoices = @[@"Low", @"Medium", @"High"];
+            NSString *idealLOD = stringValue(@"idealStaticGameLOD", SettingValue(options, @"IdealStaticGameLOD", @"High"));
+            NSString *staticLOD = stringValue(@"staticGameLOD", SettingValue(options, @"StaticGameLOD", @"High"));
+            options[@"IdealStaticGameLOD"] = [lodChoices containsObject:idealLOD] ? idealLOD : @"High";
+            options[@"StaticGameLOD"] = [lodChoices containsObject:staticLOD] ? staticLOD : @"High";
             options[@"UseShadowVolumes"] = boolValue(@"shadow3D", NO) ? @"Yes" : @"No";
             options[@"UseShadowDecals"] = boolValue(@"shadow2D", YES) ? @"Yes" : @"No";
             options[@"UseCloudMap"] = boolValue(@"cloudShadows", NO) ? @"Yes" : @"No";
