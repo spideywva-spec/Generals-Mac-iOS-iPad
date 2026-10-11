@@ -2499,7 +2499,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     if (showCommonSettings)
     {
         [controlViews addObjectsFromArray:@[
-            [self sectionLabel:@"КАМЕРА / ЭКРАН / ДАЛЬНОСТЬ / FPS"],
+            [self sectionLabel:@"КАМЕРА / СКОРОСТЬ ПРОКРУТКИ / ДАЛЬНОСТЬ / FPS"],
             [self sliderRow:@"Максимальная высота камеры" slider:self.maxCameraSlider value:self.maxCameraValue],
             [self sliderRow:@"Минимальная высота камеры" slider:self.minCameraSlider value:self.minCameraValue],
             [self sliderRow:@"Наклон камеры" slider:self.cameraPitchSlider value:self.cameraPitchValue],
