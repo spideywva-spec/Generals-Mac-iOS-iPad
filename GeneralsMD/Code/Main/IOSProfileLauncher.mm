@@ -420,8 +420,8 @@ void EnsureIOSShadowVolumeCompatibility()
 
     NSString *markerPath = [[optionsPath stringByDeletingLastPathComponent]
         stringByAppendingPathComponent:@"IOSShadowVolumeCompatV1"];
-    if ([fm fileExistsAtPath:markerPath])
-        return;
+    // Always re-check: launcher settings may have been saved after the initial migration.
+    // A one-time marker cannot protect against subsequent writes.
 
     NSMutableDictionary<NSString *, NSString *> *options = ReadKeyValueFile(optionsPath);
     if (SettingBoolValue(options, @"UseShadowVolumes", NO))
@@ -1492,7 +1492,9 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
             NSString *staticLOD = stringValue(@"staticGameLOD", SettingValue(options, @"StaticGameLOD", @"High"));
             options[@"IdealStaticGameLOD"] = [lodChoices containsObject:idealLOD] ? idealLOD : @"High";
             options[@"StaticGameLOD"] = [lodChoices containsObject:staticLOD] ? staticLOD : @"High";
-            options[@"UseShadowVolumes"] = boolValue(@"shadow3D", NO) ? @"Yes" : @"No";
+            // Volumetric shadows cause a dark rectangular overlay on iOS/MoltenVK.
+            // Never re-enable them when saving unrelated settings.
+            options[@"UseShadowVolumes"] = @"No";
             options[@"UseShadowDecals"] = boolValue(@"shadow2D", YES) ? @"Yes" : @"No";
             options[@"UseCloudMap"] = boolValue(@"cloudShadows", NO) ? @"Yes" : @"No";
             options[@"UseLightMap"] = boolValue(@"groundLighting", YES) ? @"Yes" : @"No";
@@ -3001,7 +3003,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
 {
     self.shadow3DSwitch.on = SettingBoolValue(values, @"UseShadowVolumes", NO);
     self.shadow2DSwitch.on = SettingBoolValue(values, @"UseShadowDecals", YES);
-    self.cloudShadowsSwitch.on = SettingBoolValue(values, @"UseCloudMap", YES);
+    self.cloudShadowsSwitch.on = SettingBoolValue(values, @"UseCloudMap", NO);
     self.groundLightingSwitch.on = SettingBoolValue(values, @"UseLightMap", YES);
     self.softWaterSwitch.on = SettingBoolValue(values, @"ShowSoftWaterEdge", YES);
     self.buildingOcclusionSwitch.on = SettingBoolValue(values, @"BuildingOcclusion", YES);
@@ -3071,7 +3073,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     self.contraWaterSwitch.on = SettingBoolValue(defaults, @"WaterEffects", YES);
     self.contraExtraBuildingPropsSwitch.on = SettingBoolValue(defaults, @"ExtraBuildingProps", YES);
 
-    self.shadow3DSwitch.on = SettingBoolValue(defaults, @"UseShadowVolumes", YES);
+    self.shadow3DSwitch.on = NO; // iOS/MoltenVK does not support safe volume shadows
     self.shadow2DSwitch.on = SettingBoolValue(defaults, @"UseShadowDecals", YES);
     self.cloudShadowsSwitch.on = SettingBoolValue(defaults, @"UseCloudMap", NO);
     self.groundLightingSwitch.on = SettingBoolValue(defaults, @"UseLightMap", YES);
@@ -3308,7 +3310,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     NSMutableDictionary<NSString *, NSString *> *options = ReadOnlineGraphicsOptions();
     options[@"IdealStaticGameLOD"] = @"High";
     options[@"StaticGameLOD"] = @"High";
-    options[@"UseShadowVolumes"] = self.shadow3DSwitch.on ? @"Yes" : @"No";
+    options[@"UseShadowVolumes"] = @"No"; // iOS/MoltenVK: prevent rectangular shadow artifact
     options[@"UseShadowDecals"] = self.shadow2DSwitch.on ? @"Yes" : @"No";
     options[@"UseCloudMap"] = self.cloudShadowsSwitch.on ? @"Yes" : @"No";
     options[@"UseLightMap"] = self.groundLightingSwitch.on ? @"Yes" : @"No";
