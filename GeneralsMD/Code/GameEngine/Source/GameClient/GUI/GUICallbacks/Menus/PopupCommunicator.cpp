@@ -120,7 +120,7 @@ WindowMsgHandledType PopupCommunicatorInput( GameWindow *window, UnsignedInt msg
 					// send a simulated selected event to the parent window of the
 					// back/exit button
 					//
-					if( BitIsSet( state, KEY_STATE_UP ) )
+					if( BitIsSet( state, KEY_STATE_UP ) && window != nullptr && buttonOk != nullptr )
 					{
 
 						TheWindowManager->winSendSystemMsg( window, GBM_SELECTED,
