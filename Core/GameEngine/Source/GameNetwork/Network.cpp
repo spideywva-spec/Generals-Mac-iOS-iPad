@@ -337,7 +337,13 @@ void Network::init()
 
 	m_lastFrame = 0;
 	m_runAhead = min(max(30, MIN_RUNAHEAD), MAX_FRAMES_AHEAD/2); ///< @todo: don't hard-code the run-ahead.
+#if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
+	// Match the negotiated 60 Hz Generals Online client from the first network
+	// frame. Run-ahead commands can still adjust the rate for every peer.
+	m_frameRate = GENERALS_ONLINE_HIGH_FPS_LIMIT;
+#else
 	m_frameRate = 30;
+#endif
 	m_lastExecutionFrame = m_runAhead - 1; // subtract 1 since we're starting on frame 0
 	m_lastFrameCompleted = m_runAhead - 1; // subtract 1 since we're starting on frame 0
 	m_frameDataReady = FALSE;
