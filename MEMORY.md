@@ -775,3 +775,9 @@
 - Подтверждено событие `[ONLINE-DESYNC] detected frame=105 cached=2 connected=2 localPlayerIndex=2 localStateCRC=0xE348F7DE rngBase=0x252300D3 rngCRC=0xCAE7A439` (строка 1716). CRC локального игрока 2 / slot 0: `0x9F21ADE5`, удалённого игрока 3 / slot 1: `0xC98F66B0` (1717–1718). `gameFrame=105 validatedFrame=100 runAhead=4` (1719). Это новый отдельный случай от frame=111 в предыдущем логе.
 - Нельзя пока утверждать, что снимок PC показывает именно этот матч или что проблема исправлена. Нужен визуальный разбор PNG, а также сопоставимый PC лог/CRC frame 100; приоритет — детерминированность симуляции и данные/версия, не слепой перенос TURN/retry.
 - В этой проверке исходники, `a13-ios-build` и CI не менялись. Следующий шаг: просмотреть PC PNG, проверить game-state CRC/версию PC и сравнить конкретные frame 100/105; затем точечное исправление в отдельной ветке и сборка.
+
+
+## 2026-10-11 — STRATA match 4299358 (user-provided match details)
+- Match: https://strata.gamereplays.org/zh/match/4299358 ; 1v1 Barren Badlands, lobby `[AS][⛊] Generals Online Lobby44`, game version `216B3EEA`, data pack Community Patch 1.0.1 (`500_900_CommunityPatch_CoreINI_81FB5632.big`), 2026-10-11 07:35–07:37 GMT, duration 0m 11s, cash $10,000, camera height 310. Both participants marked Lost; one created 1 unit and 1 building, other 0. One replay and five screenshots linked by matchdata.playgenerals.online. The short duration and both Lost are consistent with an early failed match, but do NOT alone prove desync cause.
+- Important: previous iOS log in `logs/generals-stderr.log` described DIFFERENT match 4299261 on Alpine Assault (2), desync at frame 105. Do not conflate the two matches. Compare game version and data-pack hashes between peers and check Community Patch 1.0.1 availability on iOS; need iOS/PC logs from match 4299358 to confirm.
+- Screenshot/replay links supplied in conversation; no claim that downloaded or parsed.
