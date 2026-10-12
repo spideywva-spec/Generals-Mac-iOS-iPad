@@ -124,3 +124,10 @@
 - Imported the existing `memory-notes/MEMORY.md` from that same source branch as the starting notes.
 - Import commit: `06edff711ae5d438d189af017354fe75d6a8c8a1`.
 - Verified the listed files exist on `port-from-chatgpt` and their blob SHAs match the source branch. No build, CI run, or runtime test was performed; launcher/engine integration and dependencies still need validation.
+
+
+## 2026-10-12 — added build-ios.yml with samplerMirrorClampToEdge disabled
+- Added `.github/workflows/build-ios.yml` on `port-from-chatgpt`; initial commit `b7ce7f487f83a7e4beff639eeefbb1f19f720b8a`, follow-up correction commit `11f901bfecdd5cfb453f3d65ee579a23af2a19bb`.
+- Workflow follows the existing iOS shell workflow but uses this branch's available CMake preset `ios-vulkan` (not `ios-vulkan-online`, which is absent in this upstream-based branch); removes the 12-patch step because `Patches/apple/` is absent; uploads the built arm64 executable and logs rather than calling absent `scripts/build/ios/package-shell.sh`.
+- DXVK compatibility step forces only `samplerMirrorClampToEdge = VK_FALSE` in D3D9/D3D11 feature requests. Vulkan 1.2/1.3 are intentionally not disabled.
+- Added workflow path trigger for `.github/workflows/build-ios.yml`. Workflow has NOT been run; build success, preset configuration, and runtime behavior are unverified.
