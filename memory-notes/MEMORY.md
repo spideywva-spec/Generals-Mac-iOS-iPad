@@ -131,3 +131,10 @@
 - Workflow follows the existing iOS shell workflow but uses this branch's available CMake preset `ios-vulkan` (not `ios-vulkan-online`, which is absent in this upstream-based branch); removes the 12-patch step because `Patches/apple/` is absent; uploads the built arm64 executable and logs rather than calling absent `scripts/build/ios/package-shell.sh`.
 - DXVK compatibility step forces only `samplerMirrorClampToEdge = VK_FALSE` in D3D9/D3D11 feature requests. Vulkan 1.2/1.3 are intentionally not disabled.
 - Added workflow path trigger for `.github/workflows/build-ios.yml`. Workflow has NOT been run; build success, preset configuration, and runtime behavior are unverified.
+
+
+## 2026-10-12 — imported iOS mod manager and missing Hub files into port-from-chatgpt
+- User clarified that the next transfer should include list items 1–2 (`GeneralsMD/Code/Main/IOSModManager.h/.mm`) and the missing Hub-related files found by comparing `fix/mods-visible-cross-platform-sync` against `port-from-chatgpt`.
+- Added the two `IOSModManager` native files plus Hub catalog/version data, Hub build/publish scripts, Hub deployment docs, Hub catalog publishing workflow, and Zero Hour launcher web build/publish workflow/scripts from source branch `fix/mods-visible-cross-platform-sync` at tree `5075a7df19cfb8611511d8679d5e29f432508a97`.
+- No Vulkan version or `samplerMirrorClampToEdge` settings were changed in this transfer. The existing `.github/workflows/build-ios.yml` was not edited.
+- No build, CI workflow, or iOS runtime test was run. The transferred scripts/workflows and native manager integration still require dependency review and build validation.
