@@ -140,7 +140,7 @@ Bool W3DShadowManager::init()
 		const Bool acquired = initialized ? TheW3DVolumetricShadowManager->ReAcquireResources() : FALSE;
 		if (!initialized || !acquired)
 		{
-			fprintf(stderr, "[SHADOW-DIAG] volumetric initialization failed (init=%d resources=%d)\\n", initialized, acquired);
+			fprintf(stderr, "[SHADOW-DIAG] volumetric initialization failed (init=%d resources=%d)\n", initialized, acquired);
 			result = FALSE;
 		}
 	}
@@ -150,7 +150,7 @@ Bool W3DShadowManager::init()
 		const Bool acquired = initialized ? TheW3DProjectedShadowManager->ReAcquireResources() : FALSE;
 		if (!initialized || !acquired)
 		{
-			fprintf(stderr, "[SHADOW-DIAG] projected initialization failed (init=%d resources=%d)\\n", initialized, acquired);
+			fprintf(stderr, "[SHADOW-DIAG] projected initialization failed (init=%d resources=%d)\n", initialized, acquired);
 			result = FALSE;
 		}
 	}
