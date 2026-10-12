@@ -116,3 +116,11 @@
 ## 2026-10-12 Direct graphics copy from ammaarreshi
 - User explicitly requested direct upstream replacement, excluding SDL3GameEngine. Copied 20 graphics files in commits c5bd940, f1fc2df and cb496250 on fix/mods-visible-cross-platform-sync: W3D terrain, water, shadow, display, shader, view, particle, shroud, graphics LOD/options, DX8 renderer/wrapper/bitmap/polygon renderer. No SDL3GameEngine or workflows changed.
 - These exact overwrites intentionally discard previous A13-specific graphics fixes in overwritten files. Build and runtime compatibility not yet verified. Remaining WW3D2 texture/surface/asset files have NOT been copied.
+
+
+## 2026-10-12 — launcher and SDL3GameEngine imported into port-from-chatgpt
+- Target branch `port-from-chatgpt` was based on upstream `ammaarreshi/Generals-Mac-iOS-iPad` main commit `c5c8c4d3e757033d9ab464f6bd6e15e91e0e742f`, not `a13-ios-build`.
+- Imported from `fix/mods-visible-cross-platform-sync` at source commit `5075a7df19cfb8611511d8679d5e29f432508a97`: entire `launcher_web/` tree; `GeneralsMD/Code/Main/IOSProfileLauncher.h` and `.mm`; `GeneralsMD/Code/GameEngineDevice/Include/SDL3GameEngine.h`; `GeneralsMD/Code/GameEngineDevice/Source/SDL3GameEngine.cpp`.
+- Imported the existing `memory-notes/MEMORY.md` from that same source branch as the starting notes.
+- Import commit: `06edff711ae5d438d189af017354fe75d6a8c8a1`.
+- Verified the listed files exist on `port-from-chatgpt` and their blob SHAs match the source branch. No build, CI run, or runtime test was performed; launcher/engine integration and dependencies still need validation.
