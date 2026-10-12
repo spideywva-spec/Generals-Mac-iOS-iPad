@@ -60,3 +60,9 @@
 ### 2026-10-12: water reflection target format fallback
 - On Apple only, W3DWater now retries reflection texture creation with explicit WW3D_FORMAT_A8R8G8B8 if the display-format target fails. Does not override shader availability; only one identified render-target failure path is addressed.
 - Branch `fix/mods-visible-cross-platform-sync`; A13 and Vulkan workflows untouched. Device validation pending; this is not a verified fix for the three visual regressions.
+
+
+### 2026-10-12 — iOS reduced-size render-target fallbacks
+- Branch `fix/mods-visible-cross-platform-sync`: projected shadows now retry 128x128 and 64x64 alpha/non-alpha render targets if 512/256 fail (`W3DProjectedShadow.cpp`, commit `554aa6d5`).
+- Water reflection target now retries 256x256 and 128x128 alpha/non-alpha targets when default resolution fails (`W3DWater.cpp`, commit `79e945e3`).
+- These are resource allocation fallbacks, NOT a fix for disabled volumetric 3D shadows, missing wave shaders, terrain seams, fog or MSAA/anisotropic settings. Validate on-device and check fresh log. Do not change `a13-ios-build` or Vulkan workflow.
