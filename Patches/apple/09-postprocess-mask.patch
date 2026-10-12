@@ -1,6 +1,8 @@
 --- a/Core/GameEngineDevice/Source/W3DDevice/GameClient/W3DShaderManager.cpp
 +++ b/Core/GameEngineDevice/Source/W3DDevice/GameClient/W3DShaderManager.cpp
-@@ -701,1 +701,6 @@
+@@ -699,5 +699,10 @@
+ 
+ 	//Load an alpha mask texture that will mix foreground/background views.
 -	m_fadePatternTexture=WW3DAssetManager::Get_Instance()->Get_Texture("exmask_g.tga");
 +	m_fadePatternTexture=WW3DAssetManager::Get_Instance()->Get_Texture("exmask_g.tga");
 +#if defined(__APPLE__)
@@ -8,3 +10,5 @@
 +	if (!m_fadePatternTexture)
 +		DX8Wrapper::Set_Texture(0, nullptr);
 +#endif
+ 	if (!m_fadePatternTexture)
+ 		return FALSE;
