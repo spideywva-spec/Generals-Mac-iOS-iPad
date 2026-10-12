@@ -3548,8 +3548,17 @@ DX8Wrapper::Create_Render_Target (int width, int height, WW3DFormat format)
 
 	// If render target format isn't supported return null
 	if (!Get_Current_Caps()->Support_Render_To_Texture_Format(format)) {
+#if defined(__APPLE__)
+		// Apple Vulkan: try an alpha-capable render target instead of disabling the effect.
+		if (format != WW3D_FORMAT_A8R8G8B8 &&
+			Get_Current_Caps()->Support_Render_To_Texture_Format(WW3D_FORMAT_A8R8G8B8)) {
+			format = WW3D_FORMAT_A8R8G8B8;
+		} else
+#endif
+		{
 		WWDEBUG_SAY(("DX8Wrapper - Render target format is not supported"));
 		return nullptr;
+		}
 	}
 
 	//
@@ -3584,6 +3593,21 @@ DX8Wrapper::Create_Render_Target (int width, int height, WW3DFormat format)
 		REF_PTR_RELEASE(tex);
 	}
 
+#if defined(__APPLE__)
+	// Some MoltenVK/DXVK paths report support but reject allocation.
+	// Retry with RGBA8 at the same size. Never silently resize a shared
+	// render target: water, shroud and post effects may depend on its dimensions.
+	if (!tex && format != WW3D_FORMAT_A8R8G8B8 &&
+		Get_Current_Caps()->Support_Render_To_Texture_Format(WW3D_FORMAT_A8R8G8B8))
+	{
+		tex = NEW_REF(TextureClass,(width,height,WW3D_FORMAT_A8R8G8B8,
+			MIP_LEVELS_1,TextureClass::POOL_DEFAULT,true));
+		if (tex->Peek_D3D_Base_Texture() == nullptr)
+		{
+			REF_PTR_RELEASE(tex);
+		}
+	}
+#endif
 	return tex;
 }
 
