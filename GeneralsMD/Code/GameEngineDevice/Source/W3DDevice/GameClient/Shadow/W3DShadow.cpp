@@ -202,7 +202,24 @@ Shadow *W3DShadowManager::addShadow( RenderObjClass *robj, Shadow::ShadowTypeInf
 	if (type & SHADOW_VOLUME)
 	{
 		if (TheW3DVolumetricShadowManager)
-			return (Shadow *)TheW3DVolumetricShadowManager->addShadow(robj, shadowInfo, draw);
+		{
+			Shadow *volume = (Shadow *)TheW3DVolumetricShadowManager->addShadow(robj, shadowInfo, draw);
+			if (volume)
+				return volume;
+		}
+		// Stencil buffers / volume geometry may be unavailable on mobile.
+		// Fall back to the existing projected-shadow path rather than leaving
+		// vehicles and buildings without any shadow at all.
+#if defined(__APPLE__)
+		if (TheW3DProjectedShadowManager && shadowInfo)
+		{
+			Shadow::ShadowTypeInfo fallback = *shadowInfo;
+			fallback.m_type = SHADOW_DYNAMIC_PROJECTION;
+			Shadow *projected = (Shadow *)TheW3DProjectedShadowManager->addShadow(robj, &fallback, draw);
+			if (projected)
+				return projected;
+		}
+#endif
 	}
 
 	if (type & (SHADOW_PROJECTION | SHADOW_DYNAMIC_PROJECTION | SHADOW_DECAL | SHADOW_ALPHA_DECAL | SHADOW_ADDITIVE_DECAL))
