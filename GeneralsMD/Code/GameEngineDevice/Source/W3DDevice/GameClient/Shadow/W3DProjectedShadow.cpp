@@ -2185,7 +2185,15 @@ void W3DProjectedShadow::updateTexture(Vector3 &lightPos)
 		SurfaceClass *newSurface=TheW3DProjectedShadowManager->getRenderTarget()->Get_Surface_Level();
 
 		//Copy shadow from temporary video-memory surface into a permanent texture
-		oldSurface->Copy(0,0,0,0,DEFAULT_RENDER_TARGET_WIDTH,DEFAULT_RENDER_TARGET_HEIGHT,newSurface);
+		// The Apple fallback render target can be 256x256 rather than 512x512.
+		// Never copy outside either the generated surface or the cached texture.
+		SurfaceClass::SurfaceDescription sourceDesc, targetDesc;
+		newSurface->Get_Description(sourceDesc);
+		oldSurface->Get_Description(targetDesc);
+		const unsigned int copyWidth = sourceDesc.Width < targetDesc.Width ? sourceDesc.Width : targetDesc.Width;
+		const unsigned int copyHeight = sourceDesc.Height < targetDesc.Height ? sourceDesc.Height : targetDesc.Height;
+		if (copyWidth && copyHeight)
+			oldSurface->Copy(0,0,0,0,copyWidth,copyHeight,newSurface);
 		REF_PTR_RELEASE(newSurface);
 		REF_PTR_RELEASE(oldSurface);
 		m_shadowTexture[0]->updateBounds(TheW3DShadowManager->getLightPosWorld(0),m_robj);	//update local shadow bounds
