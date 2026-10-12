@@ -1,0 +1,10 @@
+--- a/Core/GameEngineDevice/Source/W3DDevice/GameClient/W3DShaderManager.cpp
++++ b/Core/GameEngineDevice/Source/W3DDevice/GameClient/W3DShaderManager.cpp
+@@ -701,1 +701,6 @@
+-	m_fadePatternTexture=WW3DAssetManager::Get_Instance()->Get_Texture("exmask_g.tga");
++	m_fadePatternTexture=WW3DAssetManager::Get_Instance()->Get_Texture("exmask_g.tga");
++#if defined(__APPLE__)
++	// A missing fade mask must not leave the previous texture bound on Metal.
++	if (!m_fadePatternTexture)
++		DX8Wrapper::Set_Texture(0, nullptr);
++#endif
