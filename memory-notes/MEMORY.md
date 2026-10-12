@@ -152,3 +152,5 @@
 - Wired GeneralsOnline source files into `GeneralsMD/Code/GameEngine/CMakeLists.txt`; added CURL WebSocket feature and GameNetworkingSockets 1.6.0 manifest dependency for iOS/Android.
 - Commits on `mysorez-online-port`: source import `4b7f1387f11db6aa593647d09a51f20cb536105a`; CMake integration `f7b9b40c5a59eec59dad5632e4bd8d04ab964429`; vcpkg dependency `5bf1e39e9afb2448abf7c2cdc6c4d97d7a837e33`; helper headers `20fc873d8b2fdc3cc09fff66979545cc02b040f3`.
 - This is an integration-in-progress, NOT a confirmed working online port. No iOS build or runtime test has run. Remaining work: resolve platform-specific Android glue, ensure GameNetworkingSockets builds/links for iOS, port the online menu/lobby entry points and all dependent engine changes, update/validate dependency lock data, run CI, and fix compile/runtime issues. Do not merge into `port-from-chatgpt` until verified.
+
+- Follow-up commits: `c4ef05d1d3f355c6c53f4332bc6fbda3cb5ca14b` recorded the import and remaining work in this file; `e1dec47b4d382d11cbc8bf20f1b486c8b678be4a` enabled the iOS workflow push trigger on this branch. CI run `38278551821` was confirmed queued; its result is not yet known.
