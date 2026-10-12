@@ -112,3 +112,7 @@
 - Compared the source `ammaarreshi/Generals-Mac-iOS-iPad` main tree with `fix/mods-visible-cross-platform-sync`: 35 different shared graphics-related source/header files (out of 1000 graphics-matching files). Blind wholesale replacement would erase iOS A13-specific rendering, terrain pitch, shadow and water fallbacks.
 - Ported the upstream coordinated per-render-frame cloud animation update into both Core FlatHeightMap.cpp and HeightMap.cpp, and added the upstream W3DShaderManager::updateCloud/TerrainShader2Stage::updateCloud declarations and implementation, retaining existing mod-related clock animation logic in updateNoise1. This changes the cloud offset update to frame-based rather than relying solely on shader pass calls.
 - Did not overwrite iOS rendering backends, build workflows, water/shadow fallback or mod files. Requires actual iOS build and rendering verification.
+
+## 2026-10-12 Direct graphics copy from ammaarreshi
+- User explicitly requested direct upstream replacement, excluding SDL3GameEngine. Copied 20 graphics files in commits c5bd940, f1fc2df and cb496250 on fix/mods-visible-cross-platform-sync: W3D terrain, water, shadow, display, shader, view, particle, shroud, graphics LOD/options, DX8 renderer/wrapper/bitmap/polygon renderer. No SDL3GameEngine or workflows changed.
+- These exact overwrites intentionally discard previous A13-specific graphics fixes in overwritten files. Build and runtime compatibility not yet verified. Remaining WW3D2 texture/surface/asset files have NOT been copied.
