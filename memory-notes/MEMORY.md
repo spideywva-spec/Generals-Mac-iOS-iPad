@@ -29,3 +29,7 @@
 - 073360e: only allocate the reflection render target after BOTH wave shader stages load; release any partial shader handles and select translucent water if either stage or target fails. This avoids leaked handles and expensive unusable targets while preserving shared water resource initialization.
 - a7d1406: correct escaped newline characters in water fallback diagnostics.
 - Scope: fix/mods-visible-cross-platform-sync only. No Vulkan/workflow changes. No iOS build/device verification; these changes protect the fallback, not restoration of unavailable shader effects.
+
+## 2026-10-12 projected shadows
+- 2ea548d: W3DProjectedShadowManager::ReAcquireResources checks both render-target format attempts and returns FALSE with diagnostic if neither is available, rather than continuing with null render target. This is a safety/diagnostic fix; it does not solve missing shadows or broken terrain textures without actual runtime evidence.
+- Branch fix/mods-visible-cross-platform-sync only; no A13 or Vulkan workflow modifications.
