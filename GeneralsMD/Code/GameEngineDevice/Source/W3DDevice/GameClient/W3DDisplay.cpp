@@ -1978,8 +1978,9 @@ void W3DDisplay::calculateTerrainLOD()
 	TerrainLOD goodLOD = TERRAIN_LOD_MIN;
 	TerrainLOD curLOD = TERRAIN_LOD_AUTOMATIC;
 	Int count = 0;
-#ifdef RTS_DEBUG
-	// just go to TERRAIN_LOD_NO_WATER, mirror off.
+#if defined(RTS_DEBUG) && defined(_WIN32)
+	// The legacy Windows debug shortcut disables water mirrors. Do not
+	// apply it to iOS/Linux: debug builds must retain normal LOD selection.
 	TheWritableGlobalData->m_terrainLOD = TERRAIN_LOD_NO_WATER;
 	m_3DScene->drawTerrainOnly(false);
 	TheTerrainRenderObject->adjustTerrainLOD(0);
