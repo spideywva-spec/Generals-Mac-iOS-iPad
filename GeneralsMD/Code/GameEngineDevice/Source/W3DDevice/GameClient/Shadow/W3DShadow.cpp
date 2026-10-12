@@ -132,15 +132,27 @@ Bool W3DShadowManager::init()
 {
 	Bool result=TRUE;
 
-	if	(TheW3DVolumetricShadowManager && TheW3DVolumetricShadowManager->init())
+	// Do not report successful shadow initialization when a manager or its
+	// render-target resources failed to initialize. Keep trying both managers.
+	if (TheW3DVolumetricShadowManager)
 	{
-		if (TheW3DVolumetricShadowManager->ReAcquireResources())
-			result = TRUE;
+		const Bool initialized = TheW3DVolumetricShadowManager->init();
+		const Bool acquired = initialized ? TheW3DVolumetricShadowManager->ReAcquireResources() : FALSE;
+		if (!initialized || !acquired)
+		{
+			fprintf(stderr, "[SHADOW-DIAG] volumetric initialization failed (init=%d resources=%d)\\n", initialized, acquired);
+			result = FALSE;
+		}
 	}
-	if ( TheW3DProjectedShadowManager && TheW3DProjectedShadowManager->init())
+	if (TheW3DProjectedShadowManager)
 	{
-		if (TheW3DProjectedShadowManager->ReAcquireResources())
-			result = TRUE;
+		const Bool initialized = TheW3DProjectedShadowManager->init();
+		const Bool acquired = initialized ? TheW3DProjectedShadowManager->ReAcquireResources() : FALSE;
+		if (!initialized || !acquired)
+		{
+			fprintf(stderr, "[SHADOW-DIAG] projected initialization failed (init=%d resources=%d)\\n", initialized, acquired);
+			result = FALSE;
+		}
 	}
 
 	return result;
