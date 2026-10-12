@@ -42,3 +42,6 @@
 
 ### 2026-10-12: independent shadow initialization
 - Commits 2b82ba6 and follow-up formatting: projected render-target failure no longer forces the entire W3DShadowManager init to fail when volumetric shadows initialized successfully. The projected render-target failure itself remains unresolved, and there is no device verification. No changes to water, terrain, Vulkan, or A13 build workflows.
+
+### 2026-10-12: render target caps bypass for non-Windows (d9d5782)
+- `Core/Libraries/Source/WWVegas/WW3D2/dx8wrapper.cpp`: in the single-texture `DX8Wrapper::Create_Render_Target`, non-Windows no longer rejects a requested format solely on legacy D3D8 caps; tries actual texture allocation and retains the existing null-result check. Windows unchanged. Intended to address projected shadow render-target failure and possibly reflection render targets. Does not supply missing wave shader files. Not built or device-tested. Black terrain texture issue still unresolved.
