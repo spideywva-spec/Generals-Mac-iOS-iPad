@@ -144,3 +144,11 @@
 - At the user's request, deleted these three workflows from `port-from-chatgpt`: `.github/workflows/build-zero-hour-launcher-vite.yml`, `.github/workflows/build-zero-hour-launcher-windows.yml`, and `.github/workflows/publish-hub-catalog-r2.yml`.
 - Deletion commits, in order: `8c01f8cd5278859243e3acb8034a414d6b5e69fb`, `20915325eb5067ef3a8bc1dc05f05d78d5bd5dc1`, `81c34729b7140b021b115caac9ae86d4a6721f5a`.
 - This removes those three automatic/manual GitHub Actions workflow definitions. Other Hub catalog data, scripts, and workflows were left untouched. No build or workflow run was performed.
+
+
+## 2026-10-12 — MYSOREZ GeneralsOnline import started on mysorez-online-port
+- Created isolated branch `mysorez-online-port` from `port-from-chatgpt`; left `port-from-chatgpt` and `a13-ios-build` unchanged.
+- Imported 40 files from `MYSOREZ/GeneralsZH-Android-Port` into the matching `GeneralsMD/Code/GameEngine/{Include,Source}/GameNetwork/GeneralsOnline/` paths: service/auth/lobby/rooms/social/stats/matchmaking, HTTP, NGMP game, NetworkMesh, NextGenTransport, packet/bitstream headers, JSON and stb_image headers. Also imported `GXTrace.h` and `GXRemoteConfig.h` required by upstream NetworkMesh.
+- Wired GeneralsOnline source files into `GeneralsMD/Code/GameEngine/CMakeLists.txt`; added CURL WebSocket feature and GameNetworkingSockets 1.6.0 manifest dependency for iOS/Android.
+- Commits on `mysorez-online-port`: source import `4b7f1387f11db6aa593647d09a51f20cb536105a`; CMake integration `f7b9b40c5a59eec59dad5632e4bd8d04ab964429`; vcpkg dependency `5bf1e39e9afb2448abf7c2cdc6c4d97d7a837e33`; helper headers `20fc873d8b2fdc3cc09fff66979545cc02b040f3`.
+- This is an integration-in-progress, NOT a confirmed working online port. No iOS build or runtime test has run. Remaining work: resolve platform-specific Android glue, ensure GameNetworkingSockets builds/links for iOS, port the online menu/lobby entry points and all dependent engine changes, update/validate dependency lock data, run CI, and fix compile/runtime issues. Do not merge into `port-from-chatgpt` until verified.
