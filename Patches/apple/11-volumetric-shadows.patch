@@ -1,0 +1,11 @@
+--- a/GeneralsMD/Code/GameEngineDevice/Source/W3DDevice/GameClient/Shadow/W3DVolumetricShadow.cpp
++++ b/GeneralsMD/Code/GameEngineDevice/Source/W3DDevice/GameClient/Shadow/W3DVolumetricShadow.cpp
+@@ -3396,2 +3396,6 @@
+-    m_pDev->SetRenderState( D3DRS_STENCILENABLE, TRUE );
+-    m_pDev->SetRenderState( D3DRS_STENCILFUNC, D3DCMP_LESSEQUAL );
++    m_pDev->SetRenderState( D3DRS_STENCILENABLE, TRUE );
++#if defined(__APPLE__)
++	// Initialize stencil reference explicitly for Apple stencil comparisons.
++	m_pDev->SetRenderState(D3DRS_STENCILREF, 1);
++#endif
++    m_pDev->SetRenderState( D3DRS_STENCILFUNC, D3DCMP_LESSEQUAL );
