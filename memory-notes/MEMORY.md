@@ -138,3 +138,9 @@
 - Added the two `IOSModManager` native files plus Hub catalog/version data, Hub build/publish scripts, Hub deployment docs, Hub catalog publishing workflow, and Zero Hour launcher web build/publish workflow/scripts from source branch `fix/mods-visible-cross-platform-sync` at tree `5075a7df19cfb8611511d8679d5e29f432508a97`.
 - No Vulkan version or `samplerMirrorClampToEdge` settings were changed in this transfer. The existing `.github/workflows/build-ios.yml` was not edited.
 - No build, CI workflow, or iOS runtime test was run. The transferred scripts/workflows and native manager integration still require dependency review and build validation.
+
+
+## 2026-10-12 — removed three unwanted legacy launcher workflows
+- At the user's request, deleted these three workflows from `port-from-chatgpt`: `.github/workflows/build-zero-hour-launcher-vite.yml`, `.github/workflows/build-zero-hour-launcher-windows.yml`, and `.github/workflows/publish-hub-catalog-r2.yml`.
+- Deletion commits, in order: `8c01f8cd5278859243e3acb8034a414d6b5e69fb`, `20915325eb5067ef3a8bc1dc05f05d78d5bd5dc1`, `81c34729b7140b021b115caac9ae86d4a6721f5a`.
+- This removes those three automatic/manual GitHub Actions workflow definitions. Other Hub catalog data, scripts, and workflows were left untouched. No build or workflow run was performed.
