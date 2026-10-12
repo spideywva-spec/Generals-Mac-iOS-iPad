@@ -679,16 +679,11 @@ void W3DShroud::render(CameraClass *cam)
 
 	pSurface->Unlock();
 */
-	// Keep fog-of-war texture smoothing enabled on iOS, even after launcher settings change.
-#if defined(__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__)
-	const TextureFilterClass::FilterType filter = TextureFilterClass::FILTER_TYPE_DEFAULT;
-#else
-	const TextureFilterClass::FilterType filter = m_shroudFilter;
-#endif
-	if (m_pDstTexture->Get_Filter().Get_Mag_Filter() != filter)
-		m_pDstTexture->Get_Filter().Set_Mag_Filter(filter);
-	if (m_pDstTexture->Get_Filter().Get_Min_Filter() != filter)
-		m_pDstTexture->Get_Filter().Set_Min_Filter(filter);
+	if (m_pDstTexture->Get_Filter().Get_Mag_Filter() != m_shroudFilter)
+	{
+		m_pDstTexture->Get_Filter().Set_Mag_Filter(m_shroudFilter);
+		m_pDstTexture->Get_Filter().Set_Min_Filter(m_shroudFilter);
+	}
 
 	//Update video memory texture with sysmem copy
 	SurfaceClass* pDestSurface;
@@ -782,12 +777,10 @@ void W3DShroud::interpolateFogLevels(RECT *rect)
 //-----------------------------------------------------------------------------
 void W3DShroud::setShroudFilter(Bool enable)
 {
-#if defined(__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__)
-	(void)enable;
-	m_shroudFilter=TextureFilterClass::FILTER_TYPE_DEFAULT;
-#else
-	m_shroudFilter=enable ? TextureFilterClass::FILTER_TYPE_DEFAULT : TextureFilterClass::FILTER_TYPE_NONE;
-#endif
+	if (enable)
+		m_shroudFilter=TextureFilterClass::FILTER_TYPE_DEFAULT;
+	else
+		m_shroudFilter=TextureFilterClass::FILTER_TYPE_NONE;
 }
 
 //-----------------------------------------------------------------------------

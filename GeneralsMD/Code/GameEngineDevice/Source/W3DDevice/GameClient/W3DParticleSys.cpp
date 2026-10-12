@@ -35,7 +35,6 @@
 #include "W3DDevice/GameClient/W3DSmudge.h"
 #include "W3DDevice/GameClient/W3DSnow.h"
 #include "WW3D2/camera.h"
-#include <cstring>
 
 
 //------------------------------------------------------------------------------ Performance Timers
@@ -243,33 +242,7 @@ void W3DParticleSystemManager::doParticles(RenderInfoClass &rinfo)
 		if ( count == 0 )
 			continue;	//this system has no particles to render
 
-		const char *particleTextureName = sys->getParticleTypeName().str();
-		TextureClass *texture = W3DDisplay::m_assetManager->Get_Texture( particleTextureName );
-
-		// Focused compatibility diagnostic for the fire/flame artifacts reported on
-		// the SDL3/DXVK path. Keep a hard budget so normal gameplay logs stay small.
-		static Int fireParticleDiagBudget = 40;
-		if (fireParticleDiagBudget > 0 && particleTextureName != nullptr &&
-		    (strstr(particleTextureName, "fire") != nullptr ||
-		     strstr(particleTextureName, "Fire") != nullptr ||
-		     strstr(particleTextureName, "flame") != nullptr ||
-		     strstr(particleTextureName, "Flame") != nullptr))
-		{
-			--fireParticleDiagBudget;
-			fprintf(stderr,
-			        "[PARTICLE-DIAG] texture='%s' shader=%d count=%d streak=%d billboard=%d volumeDepth=%u firstRGBA=%.3f,%.3f,%.3f,%.3f firstSize=%.3f\n",
-			        particleTextureName,
-			        (int)sys->getShaderType(),
-			        (int)count,
-			        sys->isUsingStreak() ? 1 : 0,
-			        sys->shouldBillboard() ? 1 : 0,
-			        (unsigned)sys->getVolumeParticleDepth(),
-			        (double)RGBAArray[0].X,
-			        (double)RGBAArray[0].Y,
-			        (double)RGBAArray[0].Z,
-			        (double)RGBAArray[0].W,
-			        (double)sizeArray[0]);
-		}
+		TextureClass *texture = W3DDisplay::m_assetManager->Get_Texture( sys->getParticleTypeName().str() );
 
 		if ( m_streakLine && sys->isUsingStreak() && (count >= 2) )
 		{

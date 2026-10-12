@@ -1321,14 +1321,7 @@ Bool W3DView::updateCameraMovements()
 		m_previousLookAtPosition = getPosition();
 		// TheSuperHackers @tweak The scripted camera movement is now decoupled from the render update.
 		// The scripted camera will still move when the time is frozen, but not when the game is halted.
-		// The Shell Map simulation runs at its own 30 Hz cadence, while this view
-		// updates at the render rate. Advance its scripted camera using real render
-		// elapsed time, not the simulation's nominal logic-frame duration.
-		// Network matches retain the original frame-pacer behavior.
-		const Real cameraStepMs = TheGameLogic->isInShellGame()
-			? min(100.0f, TheFramePacer->getUpdateTime() * 1000.0f)
-			: TheFramePacer->getLogicTimeStepMilliseconds(FramePacer::IgnoreFrozenTime);
-		moveAlongWaypointPath(cameraStepMs);
+		moveAlongWaypointPath(TheFramePacer->getLogicTimeStepMilliseconds(FramePacer::IgnoreFrozenTime));
 		didUpdate = true;
 	}
 	if (hasScriptedState(Scripted_CameraLock))
@@ -3531,19 +3524,11 @@ void W3DView::moveAlongWaypointPath(Real milliseconds)
 		}
 	}
 	Real avgFactor = 1.0/m_mcwpInfo.rollingAverageFrames;
-	// The shell-map camera must interpolate on every rendered frame. Its
-	// scripted shutter can otherwise skip visible camera updates even though
-	// the shell units intentionally keep their independent 30 Hz logic tick.
-	// Preserve the original shutter behavior in actual matches.
-	if (TheGameLogic->isInShellGame()) {
-		m_mcwpInfo.curShutter = 1;
-	} else {
-		m_mcwpInfo.curShutter--;
-		if (m_mcwpInfo.curShutter>0) {
-			return;
-		}
-		m_mcwpInfo.curShutter = m_mcwpInfo.shutter;
+	m_mcwpInfo.curShutter--;
+	if (m_mcwpInfo.curShutter>0) {
+		return;
 	}
+	m_mcwpInfo.curShutter = m_mcwpInfo.shutter;
 	Real factor = m_mcwpInfo.curSegDistance / m_mcwpInfo.waySegLength[m_mcwpInfo.curSegment];
 	if (m_mcwpInfo.curSegment == m_mcwpInfo.numWaypoints-1) {
 		avgFactor = avgFactor + (1.0-avgFactor)*factor;

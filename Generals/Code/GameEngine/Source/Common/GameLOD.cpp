@@ -623,13 +623,7 @@ void GameLODManager::applyStaticLODLevel(StaticGameLODLevel level)
 		TheWritableGlobalData->m_useLightMap=lodInfo->m_useLightMap;
 		TheWritableGlobalData->m_showSoftWaterEdge=lodInfo->m_showSoftWaterEdge;
 		//Check if shoreline blending mode has changed
-		if (m_currentStaticLOD == STATIC_GAME_LOD_UNKNOWN ||
-#if defined(__APPLE__)
-			((level == STATIC_GAME_LOD_CUSTOM) ? lodInfo->m_showSoftWaterEdge : (level >= STATIC_GAME_LOD_MEDIUM)) !=
-			((m_currentStaticLOD == STATIC_GAME_LOD_CUSTOM) ? prevLodInfo->m_showSoftWaterEdge : (m_currentStaticLOD >= STATIC_GAME_LOD_MEDIUM)))
-#else
-			lodInfo->m_showSoftWaterEdge != prevLodInfo->m_showSoftWaterEdge)
-#endif
+		if (m_currentStaticLOD == STATIC_GAME_LOD_UNKNOWN || lodInfo->m_showSoftWaterEdge != prevLodInfo->m_showSoftWaterEdge)
 		{
 			if (TheTerrainVisual)
 				TheTerrainVisual->setShoreLineDetail();
