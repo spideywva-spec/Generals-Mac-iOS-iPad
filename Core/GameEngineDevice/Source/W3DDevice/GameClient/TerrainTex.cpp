@@ -141,7 +141,7 @@ int TerrainTextureClass::update(WorldHeightMap *htMap)
 				pBGR += (tilePixelExtent-1-j)*TILE_BYTES_PER_PIXEL*tilePixelExtent; // invert to match.
 				Int row = position.y+j;
 				UnsignedByte *pBGRX = ((UnsignedByte*)locked_rect.pBits) +
-							(row)*surface_desc.Width*pixelBytes;
+							(row)*locked_rect.Pitch;
 
 				Int column = position.x;
 				pBGRX += column*pixelBytes;
@@ -164,7 +164,7 @@ int TerrainTextureClass::update(WorldHeightMap *htMap)
 			for (j=0; j<width; j++) {
 				Int row = origin.y+j;
 				UnsignedByte *pBGRX = ((UnsignedByte*)locked_rect.pBits) +
-							(row)*surface_desc.Width*pixelBytes;
+							(row)*locked_rect.Pitch;
 
 				Int column = origin.x;
 				pBGRX += column*pixelBytes;
@@ -179,13 +179,13 @@ int TerrainTextureClass::update(WorldHeightMap *htMap)
 				// copy before.
 				Int row = origin.y-j-1;
 				UnsignedByte *pBGRX = ((UnsignedByte*)locked_rect.pBits) +
-							(row)*surface_desc.Width*pixelBytes;
+							(row)*locked_rect.Pitch;
 				UnsignedByte *target = pBGRX+(origin.x-4)*pixelBytes;
 				memcpy(target, target+width*surface_desc.Width*pixelBytes, (width+8)*pixelBytes);
 				// copy after.
 				row = origin.y+j;
 				pBGRX = ((UnsignedByte*)locked_rect.pBits) +
-							(row)*surface_desc.Width*pixelBytes;
+							(row)*locked_rect.Pitch;
 				target = pBGRX+(origin.x-4)*pixelBytes;
 				memcpy(target+width*surface_desc.Width*pixelBytes, target, (width+8)*pixelBytes);
 			}
@@ -275,7 +275,7 @@ int TerrainTextureClass::update(WorldHeightMap *htMap)
 						row += TILE_OFFSET/2;
 						row += TILE_OFFSET*(cellY/2);
 						UnsignedByte *pBGRX = ((UnsignedByte*)locked_rect.pBits) +
-									(row)*surface_desc.Width*pixelBytes;
+									(row)*locked_rect.Pitch;
 
 						Int column = cellX*tilePixelExtent;
 						column += TILE_OFFSET*(cellX/2);
@@ -303,7 +303,7 @@ int TerrainTextureClass::update(WorldHeightMap *htMap)
 					row += TILE_OFFSET/2;
 					row += TILE_OFFSET*(cellY/2);
 					UnsignedByte *pBGRX = ((UnsignedByte*)locked_rect.pBits) +
-								(row)*surface_desc.Width*pixelBytes;
+								(row)*locked_rect.Pitch;
 
 					Int column = cellX*tilePixelExtent;
 					column += TILE_OFFSET*(cellX/2);
@@ -812,7 +812,7 @@ int AlphaEdgeTextureClass::update(WorldHeightMap *htMap)
 				UnsignedByte *pBGR = htMap->getEdgeTile(tileNdx)->getRGBDataForWidth(tilePixelExtent);
 				pBGR += (tilePixelExtent-1-j)*TILE_BYTES_PER_PIXEL*tilePixelExtent; // invert to match.
 				UnsignedByte *pBGRX = ((UnsignedByte*)locked_rect.pBits) +
-							(row)*surface_desc.Width*pixelBytes;
+							(row)*locked_rect.Pitch;
 				pBGRX += column*pixelBytes;
 
 				for (i=0; i<tilePixelExtent; i++) {

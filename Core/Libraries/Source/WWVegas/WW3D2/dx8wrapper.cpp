@@ -1399,6 +1399,14 @@ bool DX8Wrapper::Set_Render_Device(int dev, int width, int height, int bits, int
 	** Set default for depth stencil format if auto Z buffer failed.
 	*/
 	if (_PresentParameters.AutoDepthStencilFormat==D3DFMT_UNKNOWN) {
+#if defined(__APPLE__)
+		// Preserve real stencil shadows when DXVK supports D24S8 but the
+		// initial mode enumeration failed. Never claim stencil without a
+		// successful depth/stencil format and backbuffer compatibility test.
+		if (Test_Z_Mode(DisplayFormat, _PresentParameters.BackBufferFormat, D3DFMT_D24S8))
+			_PresentParameters.AutoDepthStencilFormat = D3DFMT_D24S8;
+		else
+#endif
 		if (BitDepth==32) {
 			_PresentParameters.AutoDepthStencilFormat=D3DFMT_D32;
 		}

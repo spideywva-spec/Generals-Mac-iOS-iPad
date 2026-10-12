@@ -66,3 +66,9 @@
 - Branch `fix/mods-visible-cross-platform-sync`: projected shadows now retry 128x128 and 64x64 alpha/non-alpha render targets if 512/256 fail (`W3DProjectedShadow.cpp`, commit `554aa6d5`).
 - Water reflection target now retries 256x256 and 128x128 alpha/non-alpha targets when default resolution fails (`W3DWater.cpp`, commit `79e945e3`).
 - These are resource allocation fallbacks, NOT a fix for disabled volumetric 3D shadows, missing wave shaders, terrain seams, fog or MSAA/anisotropic settings. Validate on-device and check fresh log. Do not change `a13-ios-build` or Vulkan workflow.
+
+
+### 2026-10-12 — iOS stencil depth selection and terrain atlas pitch
+- Apple-only: when depth mode detection fails, retry validated D24S8 depth/stencil before falling back to non-stencil depth. Does not falsely report stencil support; stencil shadows still require DXVK/MoltenVK compatibility.
+- TerrainTextureClass::update: use actual D3D locked surface row pitch when writing tile pixels; avoids corruption and black seams on drivers with padded texture rows.
+- Scope: fix/mods-visible-cross-platform-sync only; A13 branch and iOS workflows untouched. Water shader/reflection and actual on-device output remain to be validated.
