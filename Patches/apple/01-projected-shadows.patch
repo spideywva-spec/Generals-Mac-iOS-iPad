@@ -1,0 +1,20 @@
+--- a/GeneralsMD/Code/GameEngineDevice/Source/W3DDevice/GameClient/Shadow/W3DProjectedShadow.cpp
++++ b/GeneralsMD/Code/GameEngineDevice/Source/W3DDevice/GameClient/Shadow/W3DProjectedShadow.cpp
+@@ -270,3 +270,14 @@
+-			m_dynamicRenderTarget=DX8Wrapper::Create_Render_Target (DEFAULT_RENDER_TARGET_WIDTH, DEFAULT_RENDER_TARGET_HEIGHT);
+-	}
+-
++			m_dynamicRenderTarget=DX8Wrapper::Create_Render_Target (DEFAULT_RENDER_TARGET_WIDTH, DEFAULT_RENDER_TARGET_HEIGHT);
++	}
++#if defined(__APPLE__)
++	// Apple/MoltenVK: retain projected shadows if the legacy target is unsupported.
++	if (!m_dynamicRenderTarget) {
++		m_renderTargetHasAlpha = TRUE;
++		m_dynamicRenderTarget = DX8Wrapper::Create_Render_Target(256, 256, WW3D_FORMAT_A8R8G8B8);
++	}
++	if (!m_dynamicRenderTarget) {
++		m_renderTargetHasAlpha = FALSE;
++		m_dynamicRenderTarget = DX8Wrapper::Create_Render_Target(256, 256);
++	}
++#endif
++
