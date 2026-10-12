@@ -320,13 +320,6 @@ public:
 
 	void						Log_Statistics_String(bool only_visible);
 	static void				Request_Log_Statistics();
-	static unsigned			Get_Texture_Category_Count();
-	static unsigned			Get_FVF_Category_Count();
-	static unsigned			Get_Registered_Mesh_Count();
-	static unsigned			Get_Pending_Texture_Category_Count();
-	static unsigned			Get_Pending_FVF_Category_Count();
-	static unsigned			Get_Temp_Vertex_Count();
-	static unsigned			Get_Temp_Normal_Count();
 
 	void						Register_Mesh_Type(MeshModelClass* mmc);
 	void						Unregister_Mesh_Type(MeshModelClass* mmc);

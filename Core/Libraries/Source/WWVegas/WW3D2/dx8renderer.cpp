@@ -60,10 +60,6 @@
 #include "camera.h"
 #include "stripoptimizer.h"
 #include "meshgeometry.h"
-#include <cstdio>
-#include <set>
-#include <string>
-#include <cctype>
 
 /*
 ** Global Instance of the DX8MeshRender
@@ -78,140 +74,6 @@ static DynamicVectorClass<Vector3>				_TempNormalBuffer;
 static MultiListClass<MeshModelClass>			_RegisteredMeshList;
 static TextureCategoryList							texture_category_delete_list;
 static FVFCategoryList								fvf_category_container_delete_list;
-static unsigned _DX8TextureCategoryCount = 0;
-static unsigned _DX8FVFCategoryCount = 0;
-static unsigned _DX8RegisteredMeshCount = 0;
-
-// GeneralsX @diagnostic dvorovrus 27/09/2026
-// Texture loading is now healthy on iOS, but some Contra submeshes still render
-// black. Log the fixed-function material/shader state once per suspicious mesh
-// so we can distinguish bad pixel data from TEXTURE*DIFFUSE/material-stage issues.
-static std::set<std::string> s_materialDiagSeen;
-
-static std::string Material_Diag_Lower(const char *value)
-{
-	std::string out = value != nullptr ? value : "";
-	for (char &c : out)
-		c = (char)std::tolower((unsigned char)c);
-	return out;
-}
-
-static bool Material_Diag_Texture_Is_Target(const TextureClass *texture)
-{
-	if (texture == nullptr)
-		return false;
-
-	const std::string name = Material_Diag_Lower(texture->Get_Texture_Name().str());
-	return name.find("supply") != std::string::npos ||
-	       name.find("tread") != std::string::npos ||
-	       name.find("crate") != std::string::npos ||
-	       name.find("fueltrk") != std::string::npos;
-}
-
-static void Log_Material_Diag_Once(
-	const MeshClass *mesh,
-	TextureClass *texture0,
-	TextureClass *texture1,
-	VertexMaterialClass *material,
-	const ShaderClass &shader)
-{
-#if defined(__APPLE__) && defined(GENERALS_ONLINE)
-	// This diagnostic was added for Contra material debugging. In an Online
-	// match it executes from the render hot path and performs string/set work
-	// even after a mesh has already been seen, so keep it out of Apple Online.
-	return;
-#endif
-	if (mesh == nullptr)
-		return;
-
-	Vector3 diffuse(0.0f, 0.0f, 0.0f);
-	Vector3 ambient(0.0f, 0.0f, 0.0f);
-	Vector3 emissive(0.0f, 0.0f, 0.0f);
-	float opacity = 1.0f;
-	int lighting = -1;
-	int diffuseSource = -1;
-	int ambientSource = -1;
-	int emissiveSource = -1;
-	const char *materialName = "<null>";
-
-	if (material != nullptr)
-	{
-		material->Get_Diffuse(&diffuse);
-		material->Get_Ambient(&ambient);
-		material->Get_Emissive(&emissive);
-		opacity = material->Get_Opacity();
-		lighting = material->Get_Lighting() ? 1 : 0;
-		diffuseSource = (int)material->Get_Diffuse_Color_Source();
-		ambientSource = (int)material->Get_Ambient_Color_Source();
-		emissiveSource = (int)material->Get_Emissive_Color_Source();
-		materialName = material->Get_Name();
-	}
-
-	const bool targetTexture =
-		Material_Diag_Texture_Is_Target(texture0) ||
-		Material_Diag_Texture_Is_Target(texture1);
-
-	// Also catch likely-black fixed-function categories even when the user has
-	// not named the affected texture yet. Keep this deliberately conservative.
-	const float materialLight =
-		diffuse.X + diffuse.Y + diffuse.Z +
-		ambient.X + ambient.Y + ambient.Z +
-		emissive.X + emissive.Y + emissive.Z;
-	const bool suspiciousDarkMaterial =
-		material != nullptr &&
-		materialLight < 0.02f &&
-		shader.Get_Texturing() != ShaderClass::TEXTURING_DISABLE;
-
-	const bool vertexColorModulation =
-		material != nullptr &&
-		(diffuseSource != (int)VertexMaterialClass::MATERIAL ||
-		 ambientSource != (int)VertexMaterialClass::MATERIAL ||
-		 emissiveSource != (int)VertexMaterialClass::MATERIAL);
-
-	if (!targetTexture && !suspiciousDarkMaterial && !vertexColorModulation)
-		return;
-
-	const char *tex0 = texture0 != nullptr ? texture0->Get_Texture_Name().str() : "<null>";
-	const char *tex1 = texture1 != nullptr ? texture1->Get_Texture_Name().str() : "<null>";
-	const char *meshName = mesh->Get_Name() != nullptr ? mesh->Get_Name() : "<unnamed>";
-
-	char keyBuffer[1024];
-	snprintf(keyBuffer, sizeof(keyBuffer), "%s|%s|%s|%s|%08x",
-	         meshName, tex0, tex1, materialName != nullptr ? materialName : "<null>",
-	         shader.Get_Bits());
-	if (!s_materialDiagSeen.insert(keyBuffer).second)
-		return;
-
-	fprintf(stderr,
-	        "[MATERIAL-DIAG] mesh='%s' tex0='%s' tex1='%s' material='%s' "
-	        "shader=0x%08x texturing=%d primaryGradient=%d secondaryGradient=%d "
-	        "alphaTest=%d srcBlend=%d dstBlend=%d detailColor=%d detailAlpha=%d "
-	        "lighting=%d diffuse=%.3f,%.3f,%.3f ambient=%.3f,%.3f,%.3f "
-	        "emissive=%.3f,%.3f,%.3f opacity=%.3f sources(diffuse/ambient/emissive)=%d/%d/%d "
-	        "targetTexture=%d suspiciousDark=%d vertexColorSource=%d\n",
-	        meshName,
-	        tex0,
-	        tex1,
-	        materialName != nullptr ? materialName : "<null>",
-	        shader.Get_Bits(),
-	        (int)shader.Get_Texturing(),
-	        (int)shader.Get_Primary_Gradient(),
-	        (int)shader.Get_Secondary_Gradient(),
-	        (int)shader.Get_Alpha_Test(),
-	        (int)shader.Get_Src_Blend_Func(),
-	        (int)shader.Get_Dst_Blend_Func(),
-	        (int)shader.Get_Post_Detail_Color_Func(),
-	        (int)shader.Get_Post_Detail_Alpha_Func(),
-	        lighting,
-	        (double)diffuse.X, (double)diffuse.Y, (double)diffuse.Z,
-	        (double)ambient.X, (double)ambient.Y, (double)ambient.Z,
-	        (double)emissive.X, (double)emissive.Y, (double)emissive.Z,
-	        (double)opacity,
-	        diffuseSource, ambientSource, emissiveSource,
-	        targetTexture ? 1 : 0,
-	        suspiciousDarkMaterial ? 1 : 0,
-	        vertexColorModulation ? 1 : 0);
-}
 
 // helper data structure
 class PolyRemover : public MultiListObjectClass
@@ -346,7 +208,6 @@ DX8TextureCategoryClass::DX8TextureCategoryClass(
 	}
 
 	if (material) material->Add_Ref();
-	++_DX8TextureCategoryCount;
 }
 
 DX8TextureCategoryClass::~DX8TextureCategoryClass()
@@ -363,8 +224,6 @@ DX8TextureCategoryClass::~DX8TextureCategoryClass()
 	REF_PTR_RELEASE(material);
 
 	DEBUG_ASSERTCRASH(render_task_head == nullptr, ("~DX8TextureCategoryClass: Leaking render tasks"));
-	if (_DX8TextureCategoryCount > 0)
-		--_DX8TextureCategoryCount;
 }
 
 void DX8TextureCategoryClass::Add_Render_Task(DX8PolygonRendererClass * p_renderer,MeshClass * p_mesh)
@@ -582,7 +441,6 @@ DX8FVFCategoryContainer::DX8FVFCategoryContainer(unsigned FVF_,bool sorting_)
 	if ((FVF&D3DFVF_TEX6)==D3DFVF_TEX6) uv_coordinate_channels=6;
 	if ((FVF&D3DFVF_TEX7)==D3DFVF_TEX7) uv_coordinate_channels=7;
 	if ((FVF&D3DFVF_TEX8)==D3DFVF_TEX8) uv_coordinate_channels=8;
-	++_DX8FVFCategoryCount;
 }
 
 // ----------------------------------------------------------------------------
@@ -596,8 +454,6 @@ DX8FVFCategoryContainer::~DX8FVFCategoryContainer()
 			delete tex;
 		}
 	}
-	if (_DX8FVFCategoryCount > 0)
-		--_DX8FVFCategoryCount;
 }
 
 // ----------------------------------------------------------------------------
@@ -1878,13 +1734,6 @@ void DX8TextureCategoryClass::Render()
 		DX8PolygonRendererClass * renderer = prt->Peek_Polygon_Renderer();
 		MeshClass * mesh = prt->Peek_Mesh();
 
-		Log_Material_Diag_Once(
-			mesh,
-			Peek_Texture(0),
-			Peek_Texture(1),
-			vmaterial,
-			theShader);
-
 		if (mesh->Get_Base_Vertex_Offset() == VERTEX_BUFFER_OVERFLOW)	//check if this mesh is valid
 		{	//skip this mesh so it gets rendered later after vertices are filled in.
 			last_prt = prt;
@@ -2163,41 +2012,6 @@ void DX8MeshRendererClass::Clear_Pending_Delete_Lists()
 	}
 }
 
-unsigned DX8MeshRendererClass::Get_Texture_Category_Count()
-{
-	return _DX8TextureCategoryCount;
-}
-
-unsigned DX8MeshRendererClass::Get_FVF_Category_Count()
-{
-	return _DX8FVFCategoryCount;
-}
-
-unsigned DX8MeshRendererClass::Get_Registered_Mesh_Count()
-{
-	return _DX8RegisteredMeshCount;
-}
-
-unsigned DX8MeshRendererClass::Get_Pending_Texture_Category_Count()
-{
-	return (unsigned)texture_category_delete_list.Count();
-}
-
-unsigned DX8MeshRendererClass::Get_Pending_FVF_Category_Count()
-{
-	return (unsigned)fvf_category_container_delete_list.Count();
-}
-
-unsigned DX8MeshRendererClass::Get_Temp_Vertex_Count()
-{
-	return (unsigned)_TempVertexBuffer.Count();
-}
-
-unsigned DX8MeshRendererClass::Get_Temp_Normal_Count()
-{
-	return (unsigned)_TempNormalBuffer.Count();
-}
-
 // ----------------------------------------------------------------------------
 
 static void Add_Rigid_Mesh_To_Container(FVFCategoryList* container_list,unsigned fvf,MeshModelClass* mmc)
@@ -2228,13 +2042,7 @@ void DX8MeshRendererClass::Unregister_Mesh_Type(MeshModelClass* mmc)
 	while (DX8PolygonRendererClass* n=mmc->PolygonRendererList.Remove_Head()) {
 		delete n;
 	}
-	if (_RegisteredMeshList.Contains(mmc)) {
-		_RegisteredMeshList.Remove(mmc);
-		if (_DX8RegisteredMeshCount > 0)
-			--_DX8RegisteredMeshCount;
-	} else {
-		_RegisteredMeshList.Remove(mmc);
-	}
+	_RegisteredMeshList.Remove(mmc);
 
 	// Also remove the gap filler!
 	if (mmc->GapFiller) {
@@ -2320,7 +2128,6 @@ void DX8MeshRendererClass::Register_Mesh_Type(MeshModelClass* mmc)
 			*/
 			if (mmc->PolygonRendererList.Is_Empty() == false) {
 				_RegisteredMeshList.Add_Tail(mmc);
-				++_DX8RegisteredMeshCount;
 			}
 			else {
 				WWDEBUG_SAY(("Error: Register_Mesh_Type failed! file: %s line: %d",__FILE__,__LINE__));
@@ -2455,7 +2262,6 @@ void DX8MeshRendererClass::Invalidate( bool shutdown)
 {
 	WWMEMLOG(MEM_RENDERER);
 	_RegisteredMeshList.Reset_List();
-	_DX8RegisteredMeshCount = 0;
 
 	for (int i=0;i<texture_category_container_lists_rigid.Count();++i) {
 		Invalidate_FVF_Category_Container_List(*texture_category_container_lists_rigid[i]);
