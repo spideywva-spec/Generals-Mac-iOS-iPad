@@ -1,9 +1,13 @@
 --- a/Core/GameEngineDevice/Source/W3DDevice/GameClient/W3DTerrainTracks.cpp
 +++ b/Core/GameEngineDevice/Source/W3DDevice/GameClient/W3DTerrainTracks.cpp
-@@ -838,1 +838,5 @@
--if (mod->m_activeEdgeCount >= 2 && mod->Is_Really_Visible())
+@@ -836,5 +836,9 @@
+ 			Vector2 *endPointUV;
+ 
+-			if (mod->m_activeEdgeCount >= 2 && mod->Is_Really_Visible())
 +if (mod->m_activeEdgeCount >= 2 && mod->Is_Really_Visible()
 +#if defined(__APPLE__)
 +				&& mod->m_stageZeroTexture != nullptr
 +#endif
 +				)
+ 			{
+ 				for (i=0,index=mod->m_bottomIndex; i<mod->m_activeEdgeCount; i++,index++)
