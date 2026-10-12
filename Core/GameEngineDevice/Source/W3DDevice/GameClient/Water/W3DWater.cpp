@@ -932,6 +932,14 @@ void WaterRenderObjClass::ReAcquireResources()
 			// disabling the reflection pass.
 			if (!m_pReflectionTexture)
 				m_pReflectionTexture = DX8Wrapper::Create_Render_Target(SEA_REFLECTION_SIZE, SEA_REFLECTION_SIZE, WW3D_FORMAT_A8R8G8B8);
+			// Use a smaller reflection surface when the full-size target is
+			// unsupported. Reflection quality degrades rather than disappearing.
+			for (unsigned int size = 256; !m_pReflectionTexture && size >= 128; size /= 2)
+			{
+				m_pReflectionTexture = DX8Wrapper::Create_Render_Target(size, size, WW3D_FORMAT_A8R8G8B8);
+				if (!m_pReflectionTexture)
+					m_pReflectionTexture = DX8Wrapper::Create_Render_Target(size, size);
+			}
 #endif
 			if (!m_pReflectionTexture)
 			{
