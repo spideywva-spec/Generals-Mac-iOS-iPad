@@ -971,6 +971,19 @@ void WaterRenderObjClass::ReAcquireResources()
 			hr = 	DX8Wrapper::_Get_D3D_Device8()->CreatePixelShader((DWORD*)compiledShader->GetBufferPointer(), &m_trapezoidWaterPixelShader);
 			compiledShader->Release();
 		}
+#else
+		// iOS/Linux cannot call D3DXAssembleShader. Load precompiled D3D8
+		// shader bytecode from the game VFS when the optional assets exist.
+		// Failure is non-fatal: the existing fixed-function water path remains.
+		if (FAILED(W3DShaderManager::LoadAndCreateD3DShader(
+			"shaders\\riverwater.pso", nullptr, 0, false, &m_riverWaterPixelShader)))
+			fprintf(stderr, "[WATER_SHADER] riverwater.pso unavailable; using fallback\\n");
+		if (FAILED(W3DShaderManager::LoadAndCreateD3DShader(
+			"shaders\\water.pso", nullptr, 0, false, &m_waterPixelShader)))
+			fprintf(stderr, "[WATER_SHADER] water.pso unavailable; using fallback\\n");
+		if (FAILED(W3DShaderManager::LoadAndCreateD3DShader(
+			"shaders\\trapezoidwater.pso", nullptr, 0, false, &m_trapezoidWaterPixelShader)))
+			fprintf(stderr, "[WATER_SHADER] trapezoidwater.pso unavailable; using fallback\\n");
 #endif // _WIN32 - Runtime shader compilation
 	}
 
