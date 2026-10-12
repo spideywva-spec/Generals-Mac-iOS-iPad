@@ -1,8 +1,12 @@
 --- a/GeneralsMD/Code/GameEngineDevice/Source/W3DDevice/GameClient/Shadow/W3DProjectedShadow.cpp
 +++ b/GeneralsMD/Code/GameEngineDevice/Source/W3DDevice/GameClient/Shadow/W3DProjectedShadow.cpp
-@@ -270,2 +270,13 @@
- 			m_dynamicRenderTarget=DX8Wrapper::Create_Render_Target (DEFAULT_RENDER_TARGET_WIDTH, DEFAULT_RENDER_TARGET_HEIGHT);
- 	}
+@@ -268,6 +268,17 @@
+ 			//failed to get a render target with alpha.
+ 			//try again without.
+-			m_dynamicRenderTarget=DX8Wrapper::Create_Render_Target (DEFAULT_RENDER_TARGET_WIDTH, DEFAULT_RENDER_TARGET_HEIGHT);
+-	}
++			m_dynamicRenderTarget=DX8Wrapper::Create_Render_Target (DEFAULT_RENDER_TARGET_WIDTH, DEFAULT_RENDER_TARGET_HEIGHT);
++	}
 +#if defined(__APPLE__)
 +	// Apple/MoltenVK: retry a supported color target for projected shadows.
 +	if (!m_dynamicRenderTarget) {
@@ -14,3 +18,5 @@
 +		m_dynamicRenderTarget = DX8Wrapper::Create_Render_Target(256, 256);
 +	}
 +#endif
+ 
+ 	LPDIRECT3DDEVICE8 m_pDev=DX8Wrapper::_Get_D3D_Device8();
