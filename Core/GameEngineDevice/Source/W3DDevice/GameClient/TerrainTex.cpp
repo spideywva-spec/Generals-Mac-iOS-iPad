@@ -181,7 +181,7 @@ int TerrainTextureClass::update(WorldHeightMap *htMap)
 				UnsignedByte *pBGRX = ((UnsignedByte*)locked_rect.pBits) +
 							(row)*locked_rect.Pitch;
 				UnsignedByte *target = pBGRX+(origin.x-4)*pixelBytes;
-				memcpy(target, target+width*locked_rect.Pitch, (width+8)*pixelBytes);
+				memcpy(target, target+(width+j)*locked_rect.Pitch, (width+8)*pixelBytes);
 				// copy after.
 				row = origin.y+j;
 				pBGRX = ((UnsignedByte*)locked_rect.pBits) +
