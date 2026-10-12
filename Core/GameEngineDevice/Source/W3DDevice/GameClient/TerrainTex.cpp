@@ -385,7 +385,7 @@ Bool TerrainTextureClass::updateFlat(WorldHeightMap *htMap, Int xCell, Int yCell
 	DX8_ErrorCode(surface_level->GetDesc(&surface_desc));
 	DEBUG_ASSERTCRASH((Int)surface_desc.Width == cellWidth*pixelsPerCell, ("Bitmap too small."));
 	DEBUG_ASSERTCRASH((Int)surface_desc.Height == cellWidth*pixelsPerCell, ("Bitmap too small."));
-	if (surface_desc.Width != cellWidth*pixelsPerCell) {
+	if (surface_desc.Width != cellWidth*pixelsPerCell || surface_desc.Height != cellWidth*pixelsPerCell) {
 		return false;
 	}
 

@@ -102,3 +102,8 @@
 ## 2026-10-12 — texture atlas border diagnostic
 - В TerrainTex.cpp исправлено чтение верхней обёртки: исходный код для всех четырёх строк читал одну строку из-за width*Pitch вместо (width+j)*Pitch. Нижнюю обёртку НЕ менять до проверки направления копирования и адресов.
 - Водные отражения и 3D тени не подтверждены; сборка/тест на iPhone не выполнялись.
+
+## 2026-10-12 — graphics preset shoreline state and terrain validation
+- In both Generals and GeneralsMD GameLOD.cpp, shoreline-detail refresh now compares effective iOS preset settings rather than only raw INI flags; fixes preset transitions where soft water edge changes but INI flags match.
+- TerrainTex.cpp updateFlat rejects both incorrect atlas width and incorrect height before writing.
+- No Vulkan/A13 workflows or launcher changed. These changes require iOS build and visual testing; they are not proof that 3D stencil shadows, reflections, or MSAA work.
