@@ -926,6 +926,13 @@ void WaterRenderObjClass::ReAcquireResources()
 		else
 		{
 			m_pReflectionTexture = DX8Wrapper::Create_Render_Target(SEA_REFLECTION_SIZE, SEA_REFLECTION_SIZE);
+#if defined(__APPLE__)
+			// On MoltenVK the display-format target may be rejected even when an
+			// explicit 32-bit color render target is supported. Try that before
+			// disabling the reflection pass.
+			if (!m_pReflectionTexture)
+				m_pReflectionTexture = DX8Wrapper::Create_Render_Target(SEA_REFLECTION_SIZE, SEA_REFLECTION_SIZE, WW3D_FORMAT_A8R8G8B8);
+#endif
 			if (!m_pReflectionTexture)
 			{
 				fprintf(stderr, "[WATER_SHADER] reflection target unavailable; using translucent water\n");
