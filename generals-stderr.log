@@ -1,15 +1,16 @@
-[HUB] iOS working directory (legacy Files-visible Online base): /private/var/mobile/Containers/Data/Application/EB9B8057-B0C5-4352-81B3-3355DB182EDA/Documents/Mods/online/profile
+[HUB] iOS working directory (legacy Files-visible Online base): /private/var/mobile/Containers/Data/Application/DB0D178C-3C0E-4B25-ADBE-13088EF77344/Documents/Mods/online/profile
 =================================================
  Command & Conquer Generals: Zero Hour (Linux)
  SDL3 + DXVK Build
 =================================================
 
 [GO-VERSION] runtime=1.4 build=601 networkVersion=0x00010004
-[HUB-STORAGE] canonical mods root='/var/mobile/Containers/Data/Application/EB9B8057-B0C5-4352-81B3-3355DB182EDA/Documents/Mods'\n[HUB-WEB] loading remote launcher url='https://generals-zh-launcher.onrender.com'
+[HUB-STORAGE] canonical mods root='/var/mobile/Containers/Data/Application/DB0D178C-3C0E-4B25-ADBE-13088EF77344/Documents/Mods'\n[HUB-WEB] loading remote launcher url='https://generals-zh-launcher.onrender.com'
 [HUB-CATALOG] refresh-start url='https://pub-08941af8fe30421ba31f2314049303cb.r2.dev/catalog.json' channel='stable'
 INFO: iOS native launcher presented
-[HUB-DIAG] exported 12 files to '/var/mobile/Containers/Data/Application/EB9B8057-B0C5-4352-81B3-3355DB182EDA/Documents/Диагностика'
-[HUB-CATALOG] refresh-ok schema=2 bytes=7818 path='/var/mobile/Containers/Data/Application/EB9B8057-B0C5-4352-81B3-3355DB182EDA/Library/Application Support/GeneralsX/Hub/HubCatalog.remote.json'
+[HUB-DIAG] exported 12 files to '/var/mobile/Containers/Data/Application/DB0D178C-3C0E-4B25-ADBE-13088EF77344/Documents/Диагностика'
+[HUB-CATALOG] refresh-ok schema=2 bytes=7818 path='/var/mobile/Containers/Data/Application/DB0D178C-3C0E-4B25-ADBE-13088EF77344/Library/Application Support/GeneralsX/Hub/HubCatalog.remote.json'
+[HUB-PLAY] profile='online' baseInstalled=1 selectedInstalled=1 catalogEntry=1
 [HUB-PLAY] profile='online' baseInstalled=1 selectedInstalled=1 catalogEntry=1
 INFO: iOS native launcher selected profile: online
 INFO: iOS launcher selected profile: online
@@ -37,7 +38,7 @@ INFO: SDL3GameEngine::createArchiveFileSystem() -> StdBIGFileSystem
 [SUBSYS] initSubsystem('TheWritableGlobalData') START
 [SUBSYS] initSubsystem('TheWritableGlobalData') - About to call sys->init()
 [SUBSYS] initSubsystem('TheWritableGlobalData') - sys->init() completed
-[DEBUG] [2026-10-12 16:10:28] Loaded Generals Online community patch (GeneralsOnlineGameData/500_900_CommunityPatch_CoreINI.big)
+[DEBUG] [2026-10-12 16:26:37] Loaded Generals Online community patch (GeneralsOnlineGameData/500_900_CommunityPatch_CoreINI.big)
 [DEBUG] 
 
 [SUBSYS] initSubsystem('TheGameText') START
@@ -165,12 +166,12 @@ INFO: SDL3GameEngine::createThingFactory() -> W3DThingFactory
 INFO: SDL3GameEngine::createGameClient() -> W3DGameClient
 [SUBSYS] initSubsystem('TheGameClient') START
 [SUBSYS] initSubsystem('TheGameClient') - About to call sys->init()
-DEBUG: About to call WW3D::Init() with ApplicationHWnd=0x11e18b800
+DEBUG: About to call WW3D::Init() with ApplicationHWnd=0x107ef9000
 DEBUG: DX8Wrapper::Init() - Loading libdxvk_d3d8.dylib (Apple)...
 DEBUG: DX8Wrapper::Init() - LoadLibrary result: 0x7e95a880
 DEBUG: DX8Wrapper::Init() - Getting Direct3DCreate8 function pointer...
 DEBUG: DX8Wrapper::Init() - About to call Direct3DCreate8(D3D_SDK_VERSION=220)
-DEBUG: DX8Wrapper::Init() - Window handle: 0x11e18b800
+DEBUG: DX8Wrapper::Init() - Window handle: 0x107ef9000
 [mvk-info] MoltenVK version 1.4.1, supporting Vulkan version 1.4.334.
 	The following 152 Vulkan extensions are supported:
 	VK_KHR_16bit_storage v1
@@ -342,7 +343,7 @@ DEBUG: DX8Wrapper::Init() - Window handle: 0x11e18b800
 	VK_KHR_surface v25
 	VK_EXT_metal_surface v1
 	VK_EXT_surface_maintenance1 v1
-DEBUG: DX8Wrapper::Init() - Direct3DCreate8 returned: 0x107cea860
+DEBUG: DX8Wrapper::Init() - Direct3DCreate8 returned: 0x10a4ea720
 DEBUG: WW3D::Init() returned: 0 (WW3D_ERROR_OK)
 DEBUG: Showing SDL3 window after WW3D init...
 [DEBUG-WIN] W3DDisplay::init() - TheGlobalData->m_windowed=0
@@ -379,6 +380,7 @@ DEBUG: Showing SDL3 window after WW3D init...
 [GRAPHICS-DIAG] render-device width=1792 height=828 bitDepth=16 windowed=0 backBufferFormat=3 viewportHeightScale=0.800 msaa=0 filter=4 anisotropy=8
 [GRAPHICS-DIAG] texture-formats A8R8G8B8=0 X8R8G8B8=0 A4R4G4B4=0 R5G6B5=0 DXT1=0 DXT3=0 DXT5=0
 [GRAPHICS-DIAG] caps raster=0x00736191 dither=1 textureCaps=0x0001ecc5 textureOpCaps=0x03ffffff maxStages=8 maxTextures=8 pixelShader=0xffff0104 vertexShader=0xfffe0101
+INFO: iOS native launcher selected profile: online
 [ASSET_LOAD] Attempting to load shader (PIXEL): file='shaders\terrain.pso'
 [ASSET_PATH] Original: 'shaders\terrain.pso' -> Normalized: 'shaders/terrain.pso'
 [ASSET_LOAD] File found: path='shaders/terrain.pso' size=60 bytes
@@ -481,7 +483,7 @@ DEBUG: Shell::push() marked as pending, will load 'Menus/MainMenu.wnd' next fram
 DEBUG: Shell::update() - Processing pending push: 'Menus/MainMenu.wnd'
 DEBUG: Shell::doPush() called with layoutFile='Menus/MainMenu.wnd'
 DEBUG: About to call TheWindowManager->winCreateLayout('Menus/MainMenu.wnd')
-DEBUG: winCreateLayout returned: 0x157aa0ce0
+DEBUG: winCreateLayout returned: 0x15adac0e0
 DEBUG: Shell::doPush() completed successfully
 DEBUG: Shell::update() - Push completed
 [RESOURCE-DIAG] phase=display-reset-before prototypes=3 textures=80 textureMB=69.1 unusedTextures=0 unusedTextureMB=0.0
@@ -489,64 +491,889 @@ DEBUG: Shell::update() - Push completed
 [RESOURCE-DIAG] phase=display-reset-after prototypes=3 textures=80 textureMB=69.1 unusedTextures=0 unusedTextureMB=0.0
 [RENDER-MEM] phase=display-reset-after frame=0 vbCount=68 vbVertices=255520 vbMB=6.33 ibCount=74 ibIndices=416492 ibMB=0.79 surfaces=137 surfaceMB=1.35 meshModels=3 matDescs=3 shareGeomCount=14 shareGeomMB=0.00 shareMatCount=4 shareMatMB=0.00 shareOtherCount=4 shareOtherMB=0.02 polyRenderers=0 textureCats=0 fvfCats=0 registeredMeshes=0 pendingTextureCats=0 pendingFvfCats=0 tempVertices=0 tempNormals=0
 INFO: SDL3GameEngine::execute() - entering main loop
-[mvk-info] Created 3 swapchain images with size (1792, 828) and contents scale 2.0 in layer SDL_uikitmetalview (SDL_uikitviewcontroller) (0x11e2c8c80) on screen Main Screen.
+[mvk-info] Created 3 swapchain images with size (1792, 828) and contents scale 2.0 in layer SDL_uikitmetalview (SDL_uikitviewcontroller) (0x11073e2c0) on screen Main Screen.
 INFO: OSDisplaySetBusyState(false, false) - Linux stub
 [RESOURCE-DIAG] phase=asset-purge-before prototypes=10 textures=85 textureMB=78.4 unusedTextures=2 unusedTextureMB=8.0
 [RENDER-MEM] phase=asset-purge-before frame=0 vbCount=69 vbVertices=260520 vbMB=6.54 ibCount=75 ibIndices=421492 ibMB=0.80 surfaces=146 surfaceMB=1.42 meshModels=9 matDescs=9 shareGeomCount=50 shareGeomMB=0.01 shareMatCount=10 shareMatMB=0.00 shareOtherCount=4 shareOtherMB=0.02 polyRenderers=0 textureCats=0 fvfCats=0 registeredMeshes=0 pendingTextureCats=0 pendingFvfCats=0 tempVertices=0 tempNormals=0
 [RESOURCE-DIAG] phase=asset-purge-after prototypes=0 textures=83 textureMB=70.4 unusedTextures=0 unusedTextureMB=0.0
 [RENDER-MEM] phase=asset-purge-after frame=0 vbCount=69 vbVertices=260520 vbMB=6.54 ibCount=75 ibIndices=421492 ibMB=0.80 surfaces=146 surfaceMB=1.42 meshModels=8 matDescs=8 shareGeomCount=48 shareGeomMB=0.01 shareMatCount=9 shareMatMB=0.00 shareOtherCount=4 shareOtherMB=0.02 polyRenderers=0 textureCats=0 fvfCats=0 registeredMeshes=0 pendingTextureCats=0 pendingFvfCats=0 tempVertices=0 tempNormals=0
-[CLOUD-PATH] shader=4 pass=0 cached=0 impl=0x102462128 passes=1
-[CLOUD-DIAG] source=sync sample=1 tick=1666 deltaMs=1666 offset=-0.033320,-0.049980 slide=-0.020000,-0.030000
+[IOS-MEMORY-WARNING] received relievedMB=0.00
+[CLOUD-PATH] shader=4 pass=0 cached=0 impl=0x104c16128 passes=1
+[CLOUD-DIAG] source=sync sample=1 tick=1700 deltaMs=1700 offset=-0.034000,-0.051000 slide=-0.020000,-0.030000
 [CLOUD-XFORM] sample=1 path=terrain-dual stage=2 requested41=2.628217 requested42=-2.013173 applied41=2.628217 applied42=-2.013173 tcIndex=0x00020000 flags=0x00000002
-[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x102462198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
 [CLOUD-XFORM] sample=1 path=road-dual stage=1 requested41=2.628217 requested42=-2.013173 applied41=2.628217 applied42=-2.013173 tcIndex=0x00020000 flags=0x00000002
-[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x102462198 passes=1
-[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x102462198 passes=1
-[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x102462198 passes=1
-[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x102462198 passes=1
-[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x102462198 passes=1
-[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x102462198 passes=1
-[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x102462198 passes=1
-[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x102462198 passes=1
-[CLOUD-PATH] shader=4 pass=0 cached=0 impl=0x102462128 passes=1
-[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x102462198 passes=1
-[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x102462198 passes=1
-[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x102462198 passes=1
-[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x102462198 passes=1
-[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x102462198 passes=1
-[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x102462198 passes=1
-[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x102462198 passes=1
-[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x102462198 passes=1
-[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x102462198 passes=1
-
-[FATAL-SIGNAL] signal=11
-[FATAL-SIGNAL] native backtrace follows:
-0   GeneralsXZH                         0x00000001003a285c _ZL23AppleFatalSignalHandleri + 120
-1   libsystem_platform.dylib            0x0000000199b2621c 39AE6F2B-B6BA-3116-9D5B-F97A6D41FF20 + 16924
-2   GeneralsXZH                         0x00000001007f2a74 _ZN25W3DProjectedShadowManager10queueDecalEP18W3DProjectedShadow + 300
-3   GeneralsXZH                         0x0000000100869fac _ZN13W3DTreeBuffer9drawTreesEP11CameraClassP20RefMultiListIteratorI14RenderObjClassE + 736
-4   GeneralsXZH                         0x0000000100828b34 _ZN27BaseHeightMapRenderObjClass11renderTreesEP11CameraClass + 288
-5   GeneralsXZH                         0x000000010081a05c _ZN10RTS3DScene5FlushER15RenderInfoClass + 92
-6   GeneralsXZH                         0x00000001008ef564 _ZN4WW3D6RenderEP10SceneClassP11CameraClassbbRK7Vector3 + 284
-7   GeneralsXZH                         0x000000010081bdac _ZThn256_N10RTS3DScene4drawEv + 48
-8   GeneralsXZH                         0x000000010081bd34 _ZN10RTS3DScene8doRenderEP11CameraClass + 36
-9   GeneralsXZH                         0x000000010086e8a8 _ZN7W3DView4drawEv + 288
-10  GeneralsXZH                         0x0000000100729f70 _ZN7Display9drawViewsEv + 36
-11  GeneralsXZH                         0x000000010080810c _ZN10W3DDisplay4drawEv + 1180
-12  GeneralsXZH                         0x0000000100439ba8 _ZN10GameClient6updateEv + 1940
-13  GeneralsXZH                         0x00000001003b8944 _ZN10GameEngine6updateEv + 96
-14  GeneralsXZH                         0x00000001003b8ac0 _ZN10GameEngine7executeEv + 92
-15  GeneralsXZH                         0x0000000100823144 _ZN14SDL3GameEngine7executeEv + 56
-16  GeneralsXZH                         0x00000001003bbb50 _Z8GameMainv + 208
-17  GeneralsXZH                         0x00000001003a1ba4 SDL_main + 7060
-18  libSDL3.0.dylib                     0x00000001042a5ab8 -[SDLUIKitSceneDelegate postFinishLaunch] + 72
-19  Foundation                          0x000000018df7a7b0 __NSFireDelayedPerform + 376
-20  CoreFoundation                      0x000000018d9a7a90 9426FC9A-B36C-3096-B836-D17D6744A75B + 526992
-21  CoreFoundation                      0x000000018d9a7340 9426FC9A-B36C-3096-B836-D17D6744A75B + 525120
-22  CoreFoundation                      0x000000018d9a701c 9426FC9A-B36C-3096-B836-D17D6744A75B + 524316
-23  CoreFoundation                      0x000000018d961968 9426FC9A-B36C-3096-B836-D17D6744A75B + 239976
-24  CoreFoundation                      0x000000018d9627f4 9426FC9A-B36C-3096-B836-D17D6744A75B + 243700
-25  GraphicsServices                    0x000000023868df24 GSEventRunModal + 120
-26  UIKitCore                           0x0000000191c401cc UIApplicationMain + 336
-27  libSDL3.0.dylib                     0x00000001042a474c SDL_RunApp + 128
-28  dyld                                0x000000018d7b35b8 D3F59B02-EE07-371B-B091-3F150A078ED8 + 21944
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=4 pass=0 cached=0 impl=0x104c16128 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[mvk-warn] VK_ERROR_FEATURE_NOT_PRESENT: Metal does not support disabling primitive restart.
+[CLOUD-PATH] shader=4 pass=0 cached=0 impl=0x104c16128 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=4 pass=0 cached=0 impl=0x104c16128 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=4 pass=0 cached=0 impl=0x104c16128 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-PATH] shader=10 pass=0 cached=0 impl=0x104c16198 passes=1
+[CLOUD-DIAG] source=sync sample=120 tick=2000 deltaMs=0 offset=-0.040000,-0.060000 slide=-0.020000,-0.030000
+[CLOUD-XFORM] sample=120 path=road-dual stage=1 requested41=2.567414 requested42=-2.005704 applied41=2.567414 applied42=-2.005704 tcIndex=0x00020000 flags=0x00000002
+[CLOUD-DIAG] source=sync sample=300 tick=2600 deltaMs=0 offset=-0.052000,-0.078000 slide=-0.020000,-0.030000
+[CLOUD-XFORM] sample=300 path=road-dual stage=1 requested41=2.499190 requested42=-1.993620 applied41=2.499190 applied42=-1.993620 tcIndex=0x00020000 flags=0x00000002
+[CLOUD-XFORM] sample=120 path=terrain-dual stage=2 requested41=2.204515 requested42=-1.911792 applied41=2.204515 applied42=-1.911792 tcIndex=0x00020000 flags=0x00000002
+[CLOUD-XFORM] sample=300 path=terrain-dual stage=2 requested41=1.629875 requested42=-1.595951 applied41=1.629875 applied42=-1.595951 tcIndex=0x00020000 flags=0x00000002
+DEBUG: Shell::push() called with filename='Menus/SkirmishGameOptionsMenu.wnd'
+DEBUG: Shell::push() marked as pending, will load 'Menus/SkirmishGameOptionsMenu.wnd' next frame
+DEBUG: Shell::update() - Processing pending push: 'Menus/SkirmishGameOptionsMenu.wnd'
+DEBUG: Shell::doPush() called with layoutFile='Menus/SkirmishGameOptionsMenu.wnd'
+DEBUG: About to call TheWindowManager->winCreateLayout('Menus/SkirmishGameOptionsMenu.wnd')
+DEBUG: winCreateLayout returned: 0x15adac140
+DEBUG: Shell::doPush() completed successfully
+DEBUG: Shell::update() - Push completed
+DEBUG: SDL3GameEngine::reset()
+[RESOURCE-DIAG] phase=display-reset-before prototypes=2419 textures=558 textureMB=192.1 unusedTextures=18 unusedTextureMB=14.5
+[RENDER-MEM] phase=display-reset-before frame=0 vbCount=140 vbVertices=583626 vbMB=16.74 ibCount=84 ibIndices=597952 ibMB=1.14 surfaces=298 surfaceMB=2.66 meshModels=2135 matDescs=2135 shareGeomCount=12266 shareGeomMB=3.62 shareMatCount=2092 shareMatMB=1.26 shareOtherCount=4 shareOtherMB=0.02 polyRenderers=130 textureCats=85 fvfCats=6 registeredMeshes=120 pendingTextureCats=0 pendingFvfCats=0 tempVertices=0 tempNormals=0
+[RESOURCE-DIAG] phase=display-reset-after prototypes=2419 textures=540 textureMB=177.7 unusedTextures=0 unusedTextureMB=0.0
+[RENDER-MEM] phase=display-reset-after frame=0 vbCount=140 vbVertices=583626 vbMB=16.74 ibCount=84 ibIndices=597952 ibMB=1.14 surfaces=298 surfaceMB=2.66 meshModels=2135 matDescs=2135 shareGeomCount=12266 shareGeomMB=3.62 shareMatCount=2092 shareMatMB=1.26 shareOtherCount=4 shareOtherMB=0.02 polyRenderers=130 textureCats=85 fvfCats=6 registeredMeshes=120 pendingTextureCats=0 pendingFvfCats=0 tempVertices=0 tempNormals=0
+INFO: OSDisplaySetBusyState(false, false) - Linux stub
+INFO: OSDisplaySetBusyState(true, true) - Linux stub
+[RESOURCE-DIAG] phase=asset-purge-before prototypes=2419 textures=543 textureMB=182.7 unusedTextures=7 unusedTextureMB=5.2
+[RENDER-MEM] phase=asset-purge-before frame=0 vbCount=142 vbVertices=583692 vbMB=16.74 ibCount=85 ibIndices=598012 ibMB=1.14 surfaces=352 surfaceMB=3.20 meshModels=2135 matDescs=2135 shareGeomCount=12266 shareGeomMB=3.62 shareMatCount=2092 shareMatMB=1.26 shareOtherCount=4 shareOtherMB=0.02 polyRenderers=130 textureCats=85 fvfCats=6 registeredMeshes=120 pendingTextureCats=0 pendingFvfCats=0 tempVertices=0 tempNormals=0
+[RESOURCE-DIAG] phase=asset-purge-after prototypes=0 textures=93 textureMB=71.7 unusedTextures=0 unusedTextureMB=0.0
+[RENDER-MEM] phase=asset-purge-after frame=0 vbCount=137 vbVertices=563692 vbMB=16.10 ibCount=79 ibIndices=526012 ibMB=1.00 surfaces=352 surfaceMB=3.20 meshModels=8 matDescs=8 shareGeomCount=48 shareGeomMB=0.01 shareMatCount=9 shareMatMB=0.00 shareOtherCount=4 shareOtherMB=0.02 polyRenderers=0 textureCats=7 fvfCats=0 registeredMeshes=0 pendingTextureCats=7 pendingFvfCats=0 tempVertices=0 tempNormals=0
+[AI-SCRIPT-SOURCE] embeddedScripts=0 skirmishSides=14
+[AI-SCRIPT-SOURCE] source=default-filesystem archive='<none>' path='Data\Scripts\SkirmishScripts.scb'
+[AI-SCRIPT-SOURCE] result=parsed scriptLists=14
+[AI-SCRIPT-SOURCE] player='' side=0 result=attached
+[AI-SCRIPT-SOURCE] player='SkirmishAmerica' side=2 result=attached
+[AI-SCRIPT-SOURCE] player='SkirmishChina' side=3 result=attached
+[AI-SCRIPT-SOURCE] player='SkirmishGLA' side=4 result=attached
+[AI-SCRIPT-SOURCE] player='SkirmishAmericaAirForceGeneral' side=5 result=attached
+[AI-SCRIPT-SOURCE] player='SkirmishAmericaLaserGeneral' side=6 result=attached
+[AI-SCRIPT-SOURCE] player='SkirmishAmericaSuperWeaponGeneral' side=7 result=attached
+[AI-SCRIPT-SOURCE] player='SkirmishChinaTankGeneral' side=8 result=attached
+[AI-SCRIPT-SOURCE] player='SkirmishChinaNukeGeneral' side=9 result=attached
+[AI-SCRIPT-SOURCE] player='SkirmishChinaInfantryGeneral' side=10 result=attached
+[AI-SCRIPT-SOURCE] player='SkirmishGLADemolitionGeneral' side=11 result=attached
+[AI-SCRIPT-SOURCE] player='SkirmishGLAToxinGeneral' side=12 result=attached
+[AI-SCRIPT-SOURCE] player='SkirmishGLAStealthGeneral' side=13 result=attached
+[AI-SCRIPT-SOURCE] player='PlyrCivilian' side=1 result=attached
+[VICTORY-DIAG] cache slot=0 sourceIndex=2 playerIndex=2 local=1 objects=0 units=0 buildings=0
+[VICTORY-DIAG] cache slot=1 sourceIndex=3 playerIndex=3 local=0 objects=0 units=0 buildings=0
+[VICTORY-DIAG] cache slot=2 sourceIndex=4 playerIndex=4 local=0 objects=0 units=0 buildings=0
+[VICTORY-DIAG] cache slot=3 sourceIndex=5 playerIndex=5 local=0 objects=0 units=0 buildings=0
+[VICTORY-DIAG] cache slot=4 sourceIndex=6 playerIndex=6 local=0 objects=0 units=0 buildings=0
+[VICTORY-DIAG] cache slot=5 sourceIndex=7 playerIndex=7 local=0 objects=0 units=0 buildings=0
+[VICTORY-DIAG] cache slot=6 sourceIndex=8 playerIndex=8 local=0 objects=0 units=0 buildings=0
+[VICTORY-DIAG] cache slot=7 sourceIndex=9 playerIndex=9 local=0 objects=0 units=0 buildings=0
+[VICTORY-DIAG] cache-complete players=16 localSlot=0 observer=0
+[AI-DIAG] new-map playerIndex=3 side='GLAToxinGeneral' difficulty=2
+[AI-DIAG] matched-build-list playerIndex=3 side='GLAToxinGeneral' entries=14
+[AI-DIAG] initial-building playerIndex=3 side='GLAToxinGeneral' template='Chem_GLACommandCenter' result=ok objectID=353
+[AI-DIAG] new-map-complete playerIndex=3 side='GLAToxinGeneral' buildList=14 objects=1 units=1 victoryBuildings=1
+[AI-DIAG] new-map playerIndex=4 side='GLA' difficulty=2
+[AI-DIAG] matched-build-list playerIndex=4 side='GLA' entries=14
+[AI-DIAG] initial-building playerIndex=4 side='GLA' template='GLACommandCenter' result=ok objectID=354
+[AI-DIAG] new-map-complete playerIndex=4 side='GLA' buildList=14 objects=1 units=1 victoryBuildings=1
+[AI-DIAG] new-map playerIndex=5 side='GLA' difficulty=2
+[AI-DIAG] matched-build-list playerIndex=5 side='GLA' entries=14
+[AI-DIAG] initial-building playerIndex=5 side='GLA' template='GLACommandCenter' result=ok objectID=355
+[AI-DIAG] new-map-complete playerIndex=5 side='GLA' buildList=14 objects=1 units=1 victoryBuildings=1
+[AI-DIAG] new-map playerIndex=6 side='AmericaSuperWeaponGeneral' difficulty=2
+[AI-DIAG] matched-build-list playerIndex=6 side='AmericaSuperWeaponGeneral' entries=26
+[AI-DIAG] initial-building playerIndex=6 side='AmericaSuperWeaponGeneral' template='SupW_AmericaCommandCenter' result=ok objectID=356
+[AI-DIAG] new-map-complete playerIndex=6 side='AmericaSuperWeaponGeneral' buildList=26 objects=1 units=1 victoryBuildings=1
+[AI-DIAG] new-map playerIndex=7 side='ChinaTankGeneral' difficulty=2
+[AI-DIAG] matched-build-list playerIndex=7 side='ChinaTankGeneral' entries=20
+[AI-DIAG] initial-building playerIndex=7 side='ChinaTankGeneral' template='Tank_ChinaCommandCenter' result=ok objectID=357
+[AI-DIAG] new-map-complete playerIndex=7 side='ChinaTankGeneral' buildList=20 objects=1 units=1 victoryBuildings=1
+[AI-DIAG] new-map playerIndex=8 side='ChinaNukeGeneral' difficulty=2
+[AI-DIAG] matched-build-list playerIndex=8 side='ChinaNukeGeneral' entries=20
+[AI-DIAG] initial-building playerIndex=8 side='ChinaNukeGeneral' template='Nuke_ChinaCommandCenter' result=ok objectID=358
+[AI-DIAG] new-map-complete playerIndex=8 side='ChinaNukeGeneral' buildList=20 objects=1 units=1 victoryBuildings=1
+[AI-DIAG] new-map playerIndex=9 side='ChinaNukeGeneral' difficulty=2
+[AI-DIAG] matched-build-list playerIndex=9 side='ChinaNukeGeneral' entries=20
+[AI-DIAG] initial-building playerIndex=9 side='ChinaNukeGeneral' template='Nuke_ChinaCommandCenter' result=ok objectID=359
+[AI-DIAG] new-map-complete playerIndex=9 side='ChinaNukeGeneral' buildList=20 objects=1 units=1 victoryBuildings=1
+[CONTROLBAR-ACTIVE] default display=1792x828 parentPos=0,574 parentSize=1789,252 viewportScale=0.800
+[CONTROLBAR-ACTIVE] default display=1792x828 parentPos=0,574 parentSize=1789,252 viewportScale=0.800
+[CONTROLBAR-ACTIVE] default display=1792x828 parentPos=0,574 parentSize=1789,252 viewportScale=0.800
+[ONLINE-CRC-TRACE] frame=0 stage=start crc=0x00000000 rngBase=0x00BF2918 rngCRC=0x94055DE0
+[ONLINE-CRC-TRACE] frame=0 stage=objects crc=0x81BFEAF0 objectCount=359
+[ONLINE-CRC-TRACE] frame=0 stage=rng crc=0x978432C2 rngCRC=0x94055DE0
+[ONLINE-CRC-TRACE] frame=0 stage=partition crc=0xBA05DAE0
+[ONLINE-CRC-TRACE] frame=0 stage=players crc=0x39DFAD8A
+[ONLINE-CRC-TRACE] frame=0 stage=ai crc=0xD42909D0
+[ONLINE-CRC-TRACE] frame=0 stage=final crc=0xD42909D0
+[ONLINE-CRC-TRACE] frame=100 stage=start crc=0x00000000 rngBase=0x00BF2918 rngCRC=0xBE1373D0
+[ONLINE-CRC-OBJECT] frame=100 index=0 id=367 owner=9 template='Nuke_ChinaBarracks' before=0xD0B92844 after=0xEC02C4EA pos=3619.728271,4901.492188,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=1 id=366 owner=8 template='Nuke_ChinaBarracks' before=0xEC02C4EA after=0xDDCEC118 pos=2975.139404,3759.325439,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=2 id=365 owner=7 template='Tank_ChinaBarracks' before=0xDDCEC118 after=0x9188B97E pos=1165.599731,3684.475830,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=3 id=364 owner=6 template='SupW_AmericaBarracks' before=0x9188B97E after=0x88751835 pos=580.279846,5147.247559,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=4 id=363 owner=5 template='GLABarracks' before=0x88751835 after=0x1CA9EA2D pos=3119.006348,597.424927,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=5 id=362 owner=4 template='GLABarracks' before=0x1CA9EA2D after=0xB32BDA6F pos=2436.722168,1762.208740,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=6 id=361 owner=3 template='Chem_GLABarracks' before=0xB32BDA6F after=0x07A36F05 pos=1057.075562,1732.052246,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=7 id=360 owner=6 template='SpySatellitePing' before=0x07A36F05 after=0x32E85324 pos=1319.992065,1742.786255,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=8 id=359 owner=9 template='Nuke_ChinaCommandCenter' before=0x32E85324 after=0x1B797A05 pos=3370.614502,4894.109863,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=9 id=358 owner=8 template='Nuke_ChinaCommandCenter' before=0x1B797A05 after=0x56EAF2E2 pos=2726.025635,3751.943359,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=10 id=357 owner=7 template='Tank_ChinaCommandCenter' before=0x56EAF2E2 after=0x8B5479F6 pos=1338.839844,3740.634766,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=11 id=356 owner=6 template='SupW_AmericaCommandCenter' before=0x8B5479F6 after=0x35DD3FC5 pos=573.625977,4894.110352,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=12 id=355 owner=5 template='GLACommandCenter' before=0x35DD3FC5 after=0xD3151485 pos=3381.922607,608.158813,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=13 id=354 owner=4 template='GLACommandCenter' before=0xD3151485 after=0x76B009BC pos=2699.638428,1772.942627,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=14 id=353 owner=3 template='Chem_GLACommandCenter' before=0x76B009BC after=0x89B0376F pos=1319.991943,1742.786133,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=15 id=352 owner=9 template='Nuke_ChinaVehicleDozer' before=0x89B0376F after=0x556EC22B pos=3543.893799,4875.487305,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=16 id=350 owner=8 template='Nuke_ChinaVehicleDozer' before=0x556EC22B after=0x890A5540 pos=2874.453369,3710.374268,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=17 id=348 owner=7 template='Tank_ChinaVehicleDozer' before=0x890A5540 after=0xF1AC414A pos=1229.721924,3694.731445,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=18 id=346 owner=6 template='SupW_AmericaVehicleDozer' before=0xF1AC414A after=0x06175E21 pos=671.777954,4921.425293,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=19 id=344 owner=5 template='GLAInfantryWorker' before=0x06175E21 after=0xD6947910 pos=3243.391357,574.573853,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=20 id=342 owner=4 template='GLAInfantryWorker' before=0xD6947910 after=0x85BF530A pos=2618.286621,1677.841064,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=21 id=340 owner=3 template='Chem_GLAInfantryWorker' before=0x85BF530A after=0x4C0871EC pos=1307.759155,1641.544800,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=22 id=338 owner=2 template='Slth_GLAInfantryWorker' before=0x4C0871EC after=0x0249789C pos=695.166626,580.500000,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=23 id=337 owner=2 template='Slth_GLACommandCenter' before=0x0249789C after=0x9FBE62BE pos=622.629517,611.928101,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=24 id=336 owner=1 template='TechReinforcementPad' before=0x9FBE62BE after=0x0E9D6DAF pos=1452.904907,841.049072,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=25 id=335 owner=1 template='TechReinforcementPad' before=0x0E9D6DAF after=0xEEF14789 pos=2581.658691,832.031616,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=26 id=334 owner=1 template='TechRepairbay' before=0xEEF14789 after=0x92C7A16E pos=2004.407471,3765.812744,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=27 id=333 owner=1 template='TechRepairbay' before=0x92C7A16E after=0x707F60EC pos=2043.950073,1660.006592,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=28 id=332 owner=1 template='TechOilRefinery' before=0x707F60EC after=0x8A855A0B pos=2320.000000,510.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=29 id=331 owner=1 template='TechOilRefinery' before=0x8A855A0B after=0x43033F83 pos=1740.000000,530.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=30 id=330 owner=0 template='TechOilDerrick' before=0x43033F83 after=0x1DFC8181 pos=2360.000000,560.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=31 id=329 owner=0 template='TechOilDerrick' before=0x1DFC8181 after=0x0F51815D pos=2370.000000,460.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=32 id=328 owner=0 template='TechOilDerrick' before=0x0F51815D after=0xD9559625 pos=2270.000000,560.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=33 id=327 owner=0 template='TechOilDerrick' before=0xD9559625 after=0x4569269F pos=2270.000000,460.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=34 id=326 owner=0 template='TechOilDerrick' before=0x4569269F after=0x64BCD7DF pos=1690.000000,580.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=35 id=325 owner=0 template='TechOilDerrick' before=0x64BCD7DF after=0x58B42CCB pos=1790.000000,580.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=36 id=324 owner=0 template='TechOilDerrick' before=0x58B42CCB after=0x8FF43B78 pos=1690.000000,480.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=37 id=323 owner=0 template='TechOilDerrick' before=0x8FF43B78 after=0xFABD6F49 pos=1790.000000,480.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=38 id=322 owner=1 template='TechHospital' before=0xFABD6F49 after=0x5AC5FC5D pos=2024.871094,2758.329102,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=39 id=321 owner=1 template='TechHospitalBib' before=0x5AC5FC5D after=0x53FCCAE6 pos=2044.871094,2738.329102,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=40 id=320 owner=1 template='TechArtilleryPlatform' before=0x53FCCAE6 after=0xBE3C6887 pos=1686.937378,2384.341064,33.234055
+[ONLINE-CRC-OBJECT] frame=100 index=41 id=319 owner=1 template='TechArtilleryPlatform' before=0xBE3C6887 after=0x85816888 pos=2395.367188,2369.150146,31.882200
+[ONLINE-CRC-OBJECT] frame=100 index=42 id=318 owner=1 template='TechArtilleryPlatform' before=0x85816888 after=0xBC3BA6FA pos=2399.017822,3070.982178,31.874990
+[ONLINE-CRC-OBJECT] frame=100 index=43 id=317 owner=1 template='TechArtilleryPlatform' before=0xBC3BA6FA after=0x994E6322 pos=1702.526733,3066.460205,32.254150
+[ONLINE-CRC-OBJECT] frame=100 index=44 id=316 owner=1 template='SupplyDock' before=0x994E6322 after=0x5180E0A9 pos=3834.968750,166.913086,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=45 id=315 owner=1 template='SupplyDock' before=0x5180E0A9 after=0x32997144 pos=3095.044434,1397.368652,29.375000
+[ONLINE-CRC-OBJECT] frame=100 index=46 id=314 owner=1 template='SupplyDock' before=0x32997144 after=0x4DC1D437 pos=2501.831299,199.099976,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=47 id=313 owner=1 template='SupplyDock' before=0x4DC1D437 after=0xA23FC6BA pos=2129.681152,816.791748,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=48 id=312 owner=1 template='SupplyDock' before=0xA23FC6BA after=0x43B94627 pos=3850.078613,2653.410156,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=49 id=311 owner=1 template='SupplyDock' before=0x43B94627 after=0x98C5B6C9 pos=180.000000,2800.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=50 id=310 owner=1 template='SupplyDock' before=0x98C5B6C9 after=0xE42E611C pos=1486.263428,193.705200,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=51 id=309 owner=1 template='SupplyDock' before=0xE42E611C after=0x698A4E81 pos=1974.621338,815.524902,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=52 id=308 owner=1 template='SupplyDock' before=0x698A4E81 after=0x1C017701 pos=211.477783,194.827637,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=53 id=307 owner=1 template='SupplyDock' before=0x1C017701 after=0x8B647EE4 pos=950.000000,1340.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=54 id=306 owner=1 template='TechReinforcementPad' before=0x8B647EE4 after=0x2366701D pos=1460.000000,4480.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=55 id=305 owner=1 template='TechReinforcementPad' before=0x2366701D after=0x1575872C pos=2590.000000,4510.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=56 id=304 owner=1 template='TechOilRefinery' before=0x1575872C after=0xAD84E1E2 pos=2324.940430,4988.733398,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=57 id=303 owner=1 template='TechOilRefinery' before=0xAD84E1E2 after=0xC122E70D pos=1744.940308,5008.733398,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=58 id=302 owner=0 template='TechOilDerrick' before=0xC122E70D after=0x7C201839 pos=2364.940430,5038.733398,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=59 id=301 owner=0 template='TechOilDerrick' before=0x7C201839 after=0x96BCF6EB pos=2374.940430,4938.733398,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=60 id=300 owner=0 template='TechOilDerrick' before=0x96BCF6EB after=0x5A3BC119 pos=2274.940430,5038.733398,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=61 id=299 owner=0 template='TechOilDerrick' before=0x5A3BC119 after=0x74E767F6 pos=2274.940430,4938.733398,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=62 id=298 owner=0 template='TechOilDerrick' before=0x74E767F6 after=0xC24BA866 pos=1694.940308,5058.733398,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=63 id=297 owner=0 template='TechOilDerrick' before=0xC24BA866 after=0x19576E4A pos=1794.940308,5058.733398,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=64 id=296 owner=0 template='TechOilDerrick' before=0x19576E4A after=0xEF1D4F7C pos=1690.000000,4960.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=65 id=295 owner=0 template='TechOilDerrick' before=0xEF1D4F7C after=0xCAF9E164 pos=1794.940308,4958.733398,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=66 id=294 owner=1 template='SupplyDock' before=0xCAF9E164 after=0x454A6B63 pos=1320.000000,5330.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=67 id=293 owner=1 template='SupplyDock' before=0x454A6B63 after=0x9FB73E0C pos=1940.000000,4460.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=68 id=292 owner=1 template='SupplyDock' before=0x9FB73E0C after=0x70A695C3 pos=2585.896484,5331.094727,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=69 id=291 owner=1 template='SupplyDock' before=0x70A695C3 after=0x3683F38E pos=2090.000000,4460.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=70 id=290 owner=1 template='SupplyDock' before=0x3683F38E after=0x018683C4 pos=3800.000000,5300.000000,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=71 id=289 owner=1 template='SupplyDock' before=0x018683C4 after=0xBA8663C2 pos=3092.894775,4169.324219,30.401840
+[ONLINE-CRC-OBJECT] frame=100 index=72 id=288 owner=1 template='SupplyDock' before=0xBA8663C2 after=0xEE0D02D9 pos=174.374008,5329.840820,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=73 id=287 owner=1 template='SupplyDock' before=0xEE0D02D9 after=0xAC618E74 pos=901.408447,4172.960449,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=74 id=286 owner=1 template='AirfieldHanger02' before=0xAC618E74 after=0x125A397D pos=3864.544189,2448.595947,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=75 id=285 owner=1 template='AmericanAirport02' before=0x125A397D after=0xBB58DD28 pos=3840.000000,2850.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=76 id=284 owner=1 template='CBGerbl01' before=0xBB58DD28 after=0x70464CED pos=2463.963623,2616.769043,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=77 id=283 owner=1 template='CBGerbl03' before=0x70464CED after=0x9BFED609 pos=2718.457031,2598.552979,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=78 id=282 owner=1 template='CBGerbl04' before=0x9BFED609 after=0xA7B2B74E pos=2724.067627,2730.040039,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=79 id=281 owner=1 template='CBGerbl05' before=0xA7B2B74E after=0x28481484 pos=1738.690430,2628.662109,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=80 id=280 owner=1 template='CBGerbl06' before=0x28481484 after=0xDEA688AC pos=1773.570435,2764.085205,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=81 id=279 owner=1 template='CBGerbl05' before=0xDEA688AC after=0xB7F5D9ED pos=1515.493408,2800.384521,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=82 id=278 owner=1 template='CBGerbl06' before=0xB7F5D9ED after=0xA1C1DAF2 pos=1510.368652,2638.375977,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=83 id=277 owner=1 template='CBNukeB' before=0xA1C1DAF2 after=0x064D4EA9 pos=57.056747,2792.527100,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=84 id=276 owner=1 template='CBNukeC' before=0x064D4EA9 after=0x152129EA pos=160.000000,2960.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=85 id=275 owner=1 template='CBNukeA' before=0x152129EA after=0xE84DFEAE pos=155.689011,2576.416504,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=86 id=274 owner=1 template='MogadishuTower05Bib' before=0xE84DFEAE after=0xF7B7C7BC pos=3505.612549,2294.426025,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=87 id=273 owner=1 template='MogadishuTower05' before=0xF7B7C7BC after=0xE8189E99 pos=3505.612549,2294.426025,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=88 id=272 owner=1 template='MogadishuTower05' before=0xE8189E99 after=0xF63E4D82 pos=3740.000000,2290.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=89 id=271 owner=1 template='MogadishuTower05Bib' before=0xF63E4D82 after=0xD55F3F0D pos=3740.000000,2290.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=90 id=270 owner=1 template='MogadishuTower05Bib' before=0xD55F3F0D after=0xFC46C7BB pos=310.000000,2430.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=91 id=269 owner=1 template='MogadishuTower05' before=0xFC46C7BB after=0x777945A4 pos=310.000000,2430.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=92 id=268 owner=1 template='MogadishuTower05' before=0x777945A4 after=0x261D67B9 pos=527.392395,2419.110107,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=93 id=267 owner=1 template='MogadishuTower05Bib' before=0x261D67B9 after=0x1818810B pos=527.392395,2419.110107,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=94 id=266 owner=1 template='StanWatchTowerTall' before=0x1818810B after=0xC90A722A pos=547.626526,2999.104492,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=95 id=265 owner=1 template='StanWatchTowerTall' before=0xC90A722A after=0x5AB72D8F pos=310.000000,3000.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=96 id=264 owner=1 template='StanWatchTowerTallBib' before=0x5AB72D8F after=0xF57E3B65 pos=547.626526,2999.104492,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=97 id=263 owner=1 template='StanWatchTowerTallBib' before=0xF57E3B65 after=0x227A843B pos=310.000000,3000.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=98 id=262 owner=1 template='StanWatchTowerTall' before=0x227A843B after=0xE4D3B6A0 pos=3740.000000,2990.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=99 id=261 owner=1 template='StanWatchTowerTall' before=0xE4D3B6A0 after=0x93B8613A pos=3503.034180,3001.128418,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=100 id=260 owner=1 template='StanWatchTowerTallBib' before=0x93B8613A after=0xF83A8A8E pos=3740.000000,2990.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=101 id=259 owner=1 template='StanWatchTowerTallBib' before=0xF83A8A8E after=0xD5A99797 pos=3503.034180,3001.128418,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=102 id=258 owner=1 template='CivilianBunker01' before=0xD5A99797 after=0x1C6207D1 pos=2075.624023,1413.306763,61.523495
+[ONLINE-CRC-OBJECT] frame=100 index=103 id=257 owner=1 template='CivilianBunker01' before=0x1C6207D1 after=0x93EBF4E8 pos=1996.342407,1413.842529,61.406242
+[ONLINE-CRC-OBJECT] frame=100 index=104 id=256 owner=1 template='CivilianBunker01' before=0x93EBF4E8 after=0x6E5F7B42 pos=2070.000000,3960.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=105 id=255 owner=1 template='CivilianBunker01' before=0x6E5F7B42 after=0xB7CFDB44 pos=1980.000000,3960.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=106 id=254 owner=1 template='MogadishuTower04' before=0xB7CFDB44 after=0x80F1AF2F pos=2450.507568,2352.356445,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=107 id=253 owner=1 template='MogadishuTower04' before=0x80F1AF2F after=0xBDA02150 pos=2300.000000,2200.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=108 id=252 owner=1 template='MogadishuTower04Bib' before=0xBDA02150 after=0xDF810C84 pos=2450.507568,2352.356445,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=109 id=251 owner=1 template='MogadishuTower04Bib' before=0xDF810C84 after=0xB426EA95 pos=2300.000000,2200.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=110 id=250 owner=1 template='MogadishuTower04' before=0xB426EA95 after=0xA3996433 pos=1760.000000,2200.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=111 id=249 owner=1 template='MogadishuTower04Bib' before=0xA3996433 after=0x8D880B0B pos=1760.000000,2200.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=112 id=248 owner=1 template='MogadishuTower04' before=0x8D880B0B after=0x0DF18D0D pos=1604.220703,2375.185547,35.851688
+[ONLINE-CRC-OBJECT] frame=100 index=113 id=247 owner=1 template='MogadishuTower04Bib' before=0x0DF18D0D after=0x0D393436 pos=1604.220703,2375.185547,35.851688
+[ONLINE-CRC-OBJECT] frame=100 index=114 id=246 owner=1 template='MogadishuTower05' before=0x0D393436 after=0x808CD74A pos=2050.000000,2160.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=115 id=245 owner=1 template='MogadishuTower05Bib' before=0x808CD74A after=0xB1830C95 pos=2050.000000,2160.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=116 id=244 owner=1 template='MogadishuTower05' before=0xB1830C95 after=0x5EB6DB30 pos=2050.000000,520.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=117 id=243 owner=1 template='MogadishuTower05Bib' before=0x5EB6DB30 after=0x27A1CEED pos=2050.000000,520.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=118 id=242 owner=1 template='MogadishuTower05' before=0x27A1CEED after=0x33163DB5 pos=2090.000000,480.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=119 id=241 owner=1 template='MogadishuTower05Bib' before=0x33163DB5 after=0xF026242C pos=2090.000000,480.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=120 id=240 owner=1 template='MogadishuTower05' before=0xF026242C after=0x376F651A pos=2010.000000,480.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=121 id=239 owner=1 template='MogadishuTower05Bib' before=0x376F651A after=0xA5B379FE pos=2010.000000,480.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=122 id=238 owner=1 template='MogadishuTower05' before=0xA5B379FE after=0x4C3CADBF pos=2050.000000,430.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=123 id=237 owner=1 template='MogadishuTower05Bib' before=0x4C3CADBF after=0xB886E5D2 pos=2050.000000,430.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=124 id=236 owner=1 template='StanWatchTowerTall' before=0xB886E5D2 after=0xCD68DE95 pos=2040.000000,3240.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=125 id=235 owner=1 template='StanWatchTowerTallBib' before=0xCD68DE95 after=0x1D4A6CC5 pos=2040.000000,3240.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=126 id=234 owner=1 template='GuardTower' before=0x1D4A6CC5 after=0xC7A1BD1F pos=2453.796875,3043.881104,33.512695
+[ONLINE-CRC-OBJECT] frame=100 index=127 id=233 owner=1 template='GuardTower' before=0xC7A1BD1F after=0xBEE100E4 pos=2300.000000,3260.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=128 id=232 owner=1 template='GuardTower' before=0xBEE100E4 after=0xB0079327 pos=1760.000000,3240.000000,30.625000
+[ONLINE-CRC-OBJECT] frame=100 index=129 id=231 owner=1 template='GuardTower' before=0xB0079327 after=0xFC029ECD pos=1641.900879,3057.704590,37.524643
+[ONLINE-CRC-OBJECT] frame=100 index=130 id=230 owner=1 template='StanWatchTowerTall' before=0xFC029ECD after=0x6DAD0642 pos=2010.000000,5080.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=131 id=229 owner=1 template='StanWatchTowerTallBib' before=0x6DAD0642 after=0x78149188 pos=2010.000000,5080.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=132 id=228 owner=1 template='StanWatchTowerTall' before=0x78149188 after=0x19C84771 pos=2070.000000,5020.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=133 id=227 owner=1 template='StanWatchTowerTallBib' before=0x19C84771 after=0x2BC2B2FC pos=2070.000000,5020.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=134 id=226 owner=1 template='StanWatchTowerTall' before=0x2BC2B2FC after=0x581C8D33 pos=1950.000000,5030.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=135 id=225 owner=1 template='StanWatchTowerTallBib' before=0x581C8D33 after=0x1F7F32A1 pos=1950.000000,5030.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=136 id=224 owner=1 template='StanWatchTowerTall' before=0x1F7F32A1 after=0x7A6F4C7B pos=2010.000000,4950.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=137 id=223 owner=1 template='StanWatchTowerTallBib' before=0x7A6F4C7B after=0x2C35EB1C pos=2010.000000,4950.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=138 id=222 owner=1 template='CarCompact' before=0x2C35EB1C after=0xDDF4F1B6 pos=220.500000,2530.500000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=139 id=221 owner=1 template='CarCamaro' before=0xDDF4F1B6 after=0xE7AF6357 pos=220.500000,2510.500000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=140 id=220 owner=1 template='CarSUV01' before=0xE7AF6357 after=0x71307A5E pos=250.500000,2980.500000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=141 id=219 owner=1 template='CarTaxiCab01' before=0x71307A5E after=0x09F9DFCF pos=250.500000,2960.500000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=142 id=218 owner=1 template='CarLuxury04' before=0x09F9DFCF after=0xC93A83E6 pos=3800.500000,2310.500000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=143 id=217 owner=1 template='CarLuxury04' before=0xC93A83E6 after=0x5316A950 pos=3790.500000,2330.500000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=144 id=216 owner=1 template='CarLuxury02' before=0x5316A950 after=0xA990D1F2 pos=3800.500000,2960.500000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=145 id=215 owner=1 template='CarLuxury02' before=0xA990D1F2 after=0x1CF65A15 pos=3800.500000,2980.500000,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=146 id=214 owner=1 template='StatueLenin' before=0x1CF65A15 after=0xBD3F3F5B pos=2364.951660,2844.503174,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=147 id=213 owner=1 template='TruckWork' before=0xBD3F3F5B after=0x93EE0AFB pos=1625.000000,2765.000000,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=148 id=212 owner=1 template='TruckFarmer' before=0x93EE0AFB after=0xD9C9C7B2 pos=1665.000000,2765.000000,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=149 id=211 owner=1 template='TruckWork2' before=0xD9C9C7B2 after=0x2F7643DD pos=1870.500000,2710.500000,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=150 id=210 owner=1 template='RocksG02' before=0x2F7643DD after=0x4AEEEB88 pos=2836.851562,2253.789551,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=151 id=209 owner=1 template='RocksG03' before=0x4AEEEB88 after=0xDA209666 pos=777.770203,2324.880127,48.528107
+[ONLINE-CRC-OBJECT] frame=100 index=152 id=208 owner=1 template='RocksG04' before=0xDA209666 after=0x5D7B70A7 pos=35.862000,1538.616089,73.211487
+[ONLINE-CRC-OBJECT] frame=100 index=153 id=207 owner=1 template='RocksG04' before=0x5D7B70A7 after=0xFE63E769 pos=1222.002930,2285.894531,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=154 id=206 owner=1 template='RocksG04' before=0xFE63E769 after=0x83D9836D pos=3046.425293,2152.815430,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=155 id=205 owner=1 template='RocksG05' before=0x83D9836D after=0x0F51431F pos=3334.043701,2178.667480,52.466660
+[ONLINE-CRC-OBJECT] frame=100 index=156 id=204 owner=1 template='RocksG05' before=0x0F51431F after=0xB914F937 pos=3951.867920,1602.876465,65.053719
+[ONLINE-CRC-OBJECT] frame=100 index=157 id=203 owner=1 template='RocksG06' before=0xB914F937 after=0xD8F28F7F pos=3374.390137,1022.954224,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=158 id=202 owner=1 template='RocksG07' before=0xD8F28F7F after=0xA568E90E pos=2996.147949,937.903931,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=159 id=201 owner=1 template='RocksG08' before=0xA568E90E after=0x954867B2 pos=2796.672607,1246.822021,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=160 id=200 owner=1 template='RocksG09' before=0x954867B2 after=0x3781BBB7 pos=1940.734009,75.400940,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=161 id=199 owner=1 template='RocksG10' before=0x3781BBB7 after=0x87D151A9 pos=1354.085571,118.255615,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=162 id=198 owner=1 template='RocksG12' before=0x87D151A9 after=0xB867D71C pos=2808.652344,87.056519,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=163 id=197 owner=1 template='RocksG13' before=0xB867D71C after=0x2E8D99E1 pos=3973.714600,944.633789,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=164 id=196 owner=1 template='RocksG14' before=0x2E8D99E1 after=0x7B320829 pos=97.611328,2028.651001,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=165 id=195 owner=1 template='RocksG14' before=0x7B320829 after=0x80C0FA52 pos=64.777100,540.144836,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=166 id=194 owner=1 template='RocksG14' before=0x80C0FA52 after=0x2209F036 pos=990.332642,938.972656,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=167 id=193 owner=1 template='RocksG15' before=0x2209F036 after=0x55B23C9F pos=684.946655,1193.180176,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=168 id=192 owner=1 template='RocksG15' before=0x55B23C9F after=0xFEAAA3B4 pos=1029.996216,58.935547,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=169 id=191 owner=1 template='RocksG16' before=0xFEAAA3B4 after=0x3FAE6FCE pos=1269.383423,1260.351196,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=170 id=190 owner=1 template='RocksG16' before=0x3FAE6FCE after=0xD2986508 pos=3934.281738,519.078125,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=171 id=189 owner=1 template='RocksG17' before=0xD2986508 after=0x56998F4B pos=3184.493896,39.320557,93.834930
+[ONLINE-CRC-OBJECT] frame=100 index=172 id=188 owner=1 template='RocksG17' before=0x56998F4B after=0x015AF892 pos=2497.194092,71.227600,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=173 id=187 owner=1 template='RocksG17' before=0x015AF892 after=0x157CE776 pos=664.997009,1744.968018,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=174 id=186 owner=1 template='RocksG18' before=0x157CE776 after=0x1C74353D pos=72.478958,1018.489075,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=175 id=185 owner=1 template='RocksG19' before=0x1C74353D after=0x4897FA2E pos=469.063171,57.801758,93.887390
+[ONLINE-CRC-OBJECT] frame=100 index=176 id=184 owner=1 template='RocksG10' before=0x4897FA2E after=0x3F54B85A pos=2027.878418,1751.801147,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=177 id=183 owner=1 template='RocksG10' before=0x3F54B85A after=0xC0AE54FA pos=64.321869,2377.691650,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=178 id=182 owner=1 template='RocksG09' before=0xC0AE54FA after=0x1CA84BE7 pos=3897.229492,2253.904297,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=179 id=181 owner=1 template='SupplyDock' before=0x1CA84BE7 after=0x5E7FECC9 pos=200.000000,4030.000000,71.250000
+[ONLINE-CRC-OBJECT] frame=100 index=180 id=180 owner=1 template='SupplyDock' before=0x5E7FECC9 after=0x71E843F4 pos=3850.000000,4050.000000,74.375000
+[ONLINE-CRC-OBJECT] frame=100 index=181 id=179 owner=1 template='SupplyDock' before=0x71E843F4 after=0x3B3A6D91 pos=3840.000000,1140.000000,89.375000
+[ONLINE-CRC-OBJECT] frame=100 index=182 id=178 owner=1 template='SupplyDock' before=0x3B3A6D91 after=0x3DAF3DE4 pos=160.000000,1480.000000,75.625000
+[ONLINE-CRC-OBJECT] frame=100 index=183 id=177 owner=1 template='Amb_DesertNatureWindNight' before=0x3DAF3DE4 after=0xC32F822B pos=3622.623291,2423.460938,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=184 id=176 owner=1 template='Amb_DesertNatureWindNight' before=0xC32F822B after=0x17FFD0AA pos=3638.196533,1853.718872,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=185 id=175 owner=1 template='Amb_DesertNatureWindNight' before=0x17FFD0AA after=0xC923A7F3 pos=3624.292480,1157.444824,89.534698
+[ONLINE-CRC-OBJECT] frame=100 index=186 id=174 owner=1 template='Amb_DesertNatureWindNight' before=0xC923A7F3 after=0x2E566C6F pos=3299.821777,655.767395,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=187 id=173 owner=1 template='Amb_DesertNatureWindNight' before=0x2E566C6F after=0xFCB6B518 pos=3703.787354,403.012695,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=188 id=172 owner=1 template='Amb_DesertNatureWindNight' before=0xFCB6B518 after=0xF685B059 pos=2948.432129,507.063477,93.125000
+[ONLINE-CRC-OBJECT] frame=100 index=189 id=171 owner=1 template='Amb_DesertNatureWindNight' before=0xF685B059 after=0xF283E283 pos=2397.072510,505.066406,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=190 id=170 owner=1 template='Amb_DesertNatureWindNight' before=0xF283E283 after=0x34227064 pos=1815.174561,505.963501,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=191 id=169 owner=1 template='Amb_DesertNatureWindNight' before=0x34227064 after=0x53DFC2CD pos=1184.291992,498.909058,86.470383
+[ONLINE-CRC-OBJECT] frame=100 index=192 id=168 owner=1 template='Amb_DesertNatureWindNight' before=0x53DFC2CD after=0x01F79AAA pos=577.811157,479.657471,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=193 id=167 owner=1 template='Amb_DesertNatureWindNight' before=0x01F79AAA after=0xAF5B6B35 pos=277.424286,1100.076904,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=194 id=166 owner=1 template='Amb_DesertNatureWindNight' before=0xAF5B6B35 after=0x1758D51B pos=336.045410,1784.707764,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=195 id=165 owner=1 template='Amb_DesertNatureWindNight' before=0x1758D51B after=0x3595FEFE pos=585.276062,2361.467285,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=196 id=164 owner=1 template='Amb_DesertNatureWindNight' before=0x3595FEFE after=0xAFC84B58 pos=1344.966675,1823.888916,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=197 id=163 owner=1 template='Amb_DesertNatureWindNight' before=0xAFC84B58 after=0xC5E07950 pos=2300.457031,1823.889526,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=198 id=162 owner=1 template='Amb_DesertNatureWindNight' before=0xC5E07950 after=0x0440593C pos=3043.346680,1880.975708,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=199 id=161 owner=1 template='Amb_DesertNatureDayBirds2' before=0x0440593C after=0x34FE5A8C pos=749.083923,2736.116211,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=200 id=160 owner=1 template='Amb_DesertNatureDayBirds2' before=0x34FE5A8C after=0xBE07F553 pos=1620.244141,2776.228516,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=201 id=159 owner=1 template='Amb_DesertNatureDayBirds2' before=0xBE07F553 after=0xADE59565 pos=2518.716797,2715.083008,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=202 id=158 owner=1 template='Amb_DesertNatureDayBirds2' before=0xADE59565 after=0x0D0329EC pos=3179.984131,2702.036621,45.624008
+[ONLINE-CRC-OBJECT] frame=100 index=203 id=157 owner=1 template='Amb_DesertNatureDayBirds2' before=0x0D0329EC after=0x73B761B5 pos=3950.504395,2774.948730,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=204 id=156 owner=1 template='Amb_DesertNatureDayInsects3' before=0x73B761B5 after=0xF0B984CA pos=3495.639404,237.284546,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=205 id=155 owner=1 template='Amb_DesertNatureDayInsects3' before=0xF0B984CA after=0x0CA37F5F pos=3130.977051,982.761292,103.550377
+[ONLINE-CRC-OBJECT] frame=100 index=206 id=154 owner=1 template='Amb_DesertNatureDayInsects3' before=0x0CA37F5F after=0x5283D080 pos=2073.400146,504.559692,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=207 id=153 owner=1 template='Amb_DesertNatureDayInsects3' before=0x5283D080 after=0x3C3E72F9 pos=2066.633301,1580.201782,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=208 id=152 owner=1 template='Amb_DesertNatureDayInsects3' before=0x3C3E72F9 after=0xCCF40AC5 pos=3087.287842,1684.345703,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=209 id=151 owner=1 template='Amb_DesertNatureDayInsects3' before=0xCCF40AC5 after=0xA03439C8 pos=1459.476074,852.861633,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=210 id=150 owner=1 template='Amb_DesertNatureDayInsects3' before=0xA03439C8 after=0xD920C855 pos=1355.158813,150.761414,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=211 id=149 owner=1 template='Amb_DesertNatureDayInsects3' before=0xD920C855 after=0xF2F32C34 pos=904.014648,905.327148,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=212 id=148 owner=1 template='Amb_DesertNatureDayInsects3' before=0xF2F32C34 after=0x2FC6D449 pos=73.531921,930.709106,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=213 id=147 owner=1 template='Amb_DesertNatureDayInsects3' before=0x2FC6D449 after=0xF87A3D74 pos=140.562164,2010.224609,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=214 id=146 owner=1 template='Amb_DesertNatureDayInsects3' before=0xF87A3D74 after=0xCBBD8173 pos=1209.205200,2239.434814,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=215 id=145 owner=1 template='Amb_DesertNatureDayInsects3' before=0xCBBD8173 after=0x430060E8 pos=2351.098389,2121.616211,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=216 id=144 owner=1 template='Amb_DesertNatureDayInsects3' before=0x430060E8 after=0xF66CE39B pos=3361.083740,2104.266113,56.027100
+[ONLINE-CRC-OBJECT] frame=100 index=217 id=143 owner=1 template='Amb_DesertNatureDayInsects2' before=0xF66CE39B after=0x263A48D5 pos=3913.401611,1687.845093,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=218 id=142 owner=1 template='Amb_DesertNatureDayInsects3' before=0x263A48D5 after=0x7C930CFB pos=3990.704346,1004.968079,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=219 id=141 owner=1 template='Amb_DesertNatureDayInsects2' before=0x7C930CFB after=0x6D3F794F pos=3722.904297,681.379272,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=220 id=140 owner=1 template='Amb_DesertNatureDayInsects2' before=0x6D3F794F after=0xFAAF2926 pos=3173.291992,251.718872,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=221 id=139 owner=1 template='Amb_DesertNatureDayInsects2' before=0xFAAF2926 after=0x9AB6911E pos=2236.157227,126.839966,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=222 id=138 owner=1 template='Amb_DesertNatureDayInsects2' before=0x9AB6911E after=0x96256433 pos=1438.995361,549.915405,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=223 id=137 owner=1 template='Amb_DesertNatureDayInsects2' before=0x96256433 after=0x8AE5A911 pos=2069.124023,1163.207886,55.510490
+[ONLINE-CRC-OBJECT] frame=100 index=224 id=136 owner=1 template='Amb_DesertNatureDayInsects2' before=0x8AE5A911 after=0x2EC58C56 pos=803.105225,401.614868,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=225 id=135 owner=1 template='Amb_DesertNatureDayInsects2' before=0x2EC58C56 after=0x89B9571B pos=84.315674,559.004517,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=226 id=134 owner=1 template='Amb_DesertNatureDayInsects2' before=0x89B9571B after=0x135591D8 pos=658.758972,1461.567017,98.510437
+[ONLINE-CRC-OBJECT] frame=100 index=227 id=133 owner=1 template='Amb_DesertNatureDayInsects2' before=0x135591D8 after=0x134C1632 pos=78.432640,2142.307617,63.614799
+[ONLINE-CRC-OBJECT] frame=100 index=228 id=132 owner=1 template='Amb_DesertNatureDayInsects2' before=0x134C1632 after=0x6A14052C pos=915.125854,1950.701172,34.098454
+[ONLINE-CRC-OBJECT] frame=100 index=229 id=131 owner=1 template='Amb_DesertNatureDayInsects2' before=0x6A14052C after=0xF2FA7D2C pos=1600.324585,1660.592163,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=230 id=130 owner=1 template='Amb_DesertNatureDayInsects2' before=0xF2FA7D2C after=0x5763EEC7 pos=2687.642090,1614.550415,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=231 id=129 owner=1 template='Amb_DesertNatureDayInsects' before=0x5763EEC7 after=0xE937329A pos=2990.781494,913.410522,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=232 id=128 owner=1 template='Amb_DesertNatureDayInsects' before=0xE937329A after=0xFEE05C57 pos=1022.637207,36.822266,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=233 id=127 owner=1 template='Amb_DesertNatureDayInsects' before=0xFEE05C57 after=0xD059E9E3 pos=119.154419,2434.045410,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=234 id=126 owner=1 template='Amb_DesertNatureDayInsects' before=0xD059E9E3 after=0xE5DF24F2 pos=3244.289551,2193.394043,48.178909
+[ONLINE-CRC-OBJECT] frame=100 index=235 id=125 owner=1 template='Amb_DesertNatureDayInsects2' before=0xE5DF24F2 after=0x6BBE92A5 pos=2032.665405,1703.930908,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=236 id=124 owner=1 template='Amb_DesertNatureWindThinLoop' before=0x6BBE92A5 after=0x03AC1E41 pos=3161.188721,2249.228027,121.469032
+[ONLINE-CRC-OBJECT] frame=100 index=237 id=123 owner=1 template='Amb_DesertNatureWindThinLoop' before=0x03AC1E41 after=0x105D38B0 pos=1789.733398,2313.457764,27.283888
+[ONLINE-CRC-OBJECT] frame=100 index=238 id=122 owner=1 template='Amb_DesertNatureWindThinLoop' before=0x105D38B0 after=0x99FE2BBC pos=904.451599,2331.128906,105.151184
+[ONLINE-CRC-OBJECT] frame=100 index=239 id=121 owner=1 template='Amb_DesertNatureWindThinLoop' before=0x99FE2BBC after=0x7B4100B2 pos=215.719330,2395.914551,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=240 id=120 owner=1 template='Amb_DesertNatureWindThinLoop' before=0x7B4100B2 after=0xC7561B54 pos=788.760620,1593.675537,100.860054
+[ONLINE-CRC-OBJECT] frame=100 index=241 id=119 owner=1 template='Amb_DesertNatureWindThinLoop' before=0xC7561B54 after=0x6AF55D83 pos=2859.484619,1049.502686,109.600510
+[ONLINE-CRC-OBJECT] frame=100 index=242 id=118 owner=1 template='Amb_DesertNatureWindThinLoop' before=0x6AF55D83 after=0xF4C4CE24 pos=3314.026611,1604.053467,120.141739
+[ONLINE-CRC-OBJECT] frame=100 index=243 id=117 owner=1 template='Amb_DesertNatureWindThinLoop' before=0xF4C4CE24 after=0xA4A1E129 pos=3302.906738,1200.288086,119.123398
+[ONLINE-CRC-OBJECT] frame=100 index=244 id=116 owner=1 template='Amb_DesertNatureWindThinLoop' before=0xA4A1E129 after=0xFA25BF89 pos=3826.034424,2254.309082,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=245 id=115 owner=1 template='Amb_DesertNatureWindThinLoop' before=0xFA25BF89 after=0x8B6A96D7 pos=1259.401733,991.733887,123.675224
+[ONLINE-CRC-OBJECT] frame=100 index=246 id=114 owner=1 template='Amb_DesertNatureWindThinLoop' before=0x8B6A96D7 after=0x662B3275 pos=871.722412,1107.301270,106.467064
+[ONLINE-CRC-OBJECT] frame=100 index=247 id=113 owner=1 template='Amb_DesertNatureWindThinLoop' before=0x662B3275 after=0x071A589B pos=1256.112305,-11.627197,115.120995
+[ONLINE-CRC-OBJECT] frame=100 index=248 id=112 owner=1 template='Amb_DesertNatureWindThinLoop' before=0x071A589B after=0xCED44636 pos=1889.999634,-82.461670,115.807808
+[ONLINE-CRC-OBJECT] frame=100 index=249 id=111 owner=1 template='Amb_DesertNatureWindThinLoop' before=0xCED44636 after=0x42018453 pos=2705.183105,60.439240,123.750000
+[ONLINE-CRC-OBJECT] frame=100 index=250 id=110 owner=1 template='Amb_WinterNatureWind' before=0x42018453 after=0x018DE028 pos=403.227386,3175.020996,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=251 id=109 owner=1 template='Amb_WinterNatureWind' before=0x018DE028 after=0x7E73488F pos=376.016937,3712.905273,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=252 id=108 owner=1 template='Amb_WinterNatureWind' before=0x7E73488F after=0x0F2E56DE pos=366.066101,4297.155762,90.269470
+[ONLINE-CRC-OBJECT] frame=100 index=253 id=107 owner=1 template='Amb_WinterNatureWind' before=0x0F2E56DE after=0x66293622 pos=419.517944,4816.506836,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=254 id=106 owner=1 template='Amb_WinterNatureWind' before=0x66293622 after=0x9389517A pos=948.099731,4863.097168,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=255 id=105 owner=1 template='Amb_WinterNatureWind' before=0x9389517A after=0x8A48F2CF pos=1476.757080,4965.379883,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=256 id=104 owner=1 template='Amb_WinterNatureWind' before=0x8A48F2CF after=0x44CCC099 pos=2029.561401,4889.550293,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=257 id=103 owner=1 template='Amb_WinterNatureWind' before=0x44CCC099 after=0x1ED29DC9 pos=2533.534180,4770.738770,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=258 id=102 owner=1 template='Amb_WinterNatureWind' before=0x1ED29DC9 after=0xEABF642D pos=3045.333252,4802.636719,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=259 id=101 owner=1 template='Amb_WinterNatureWind' before=0xEABF642D after=0x51BA9E58 pos=3487.201416,4883.956543,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=260 id=100 owner=1 template='Amb_WinterNatureWind' before=0x51BA9E58 after=0x191DFE6F pos=3621.819092,4290.950684,88.809418
+[ONLINE-CRC-OBJECT] frame=100 index=261 id=99 owner=1 template='Amb_WinterNatureWind' before=0x191DFE6F after=0x32017537 pos=3630.340332,3803.065430,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=262 id=98 owner=1 template='Amb_WinterNatureWind' before=0x32017537 after=0x48214D35 pos=3629.644775,3046.816406,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=263 id=97 owner=1 template='Amb_WinterNatureWind' before=0x48214D35 after=0x3CAAED89 pos=3182.226318,3480.164551,32.778282
+[ONLINE-CRC-OBJECT] frame=100 index=264 id=95 owner=1 template='Amb_WinterNatureWind' before=0x3CAAED89 after=0xBD3C33B8 pos=2161.901123,3614.532471,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=265 id=94 owner=1 template='Amb_WinterNatureWind' before=0xBD3C33B8 after=0xBD6491F3 pos=1846.532593,4380.916016,57.671776
+[ONLINE-CRC-OBJECT] frame=100 index=266 id=92 owner=1 template='Amb_WinterNatureWind' before=0xBD6491F3 after=0x0FECC5DA pos=778.804443,3422.462402,44.599159
+[ONLINE-CRC-OBJECT] frame=100 index=267 id=91 owner=1 template='Amb_WinterNatureWind' before=0x0FECC5DA after=0x3221620C pos=1958.621216,3094.530273,21.336174
+[ONLINE-CRC-OBJECT] frame=100 index=268 id=90 owner=1 template='Amb_WinterNatureWindCold' before=0x3221620C after=0x8E7378C2 pos=3106.205078,2932.534668,124.620880
+[ONLINE-CRC-OBJECT] frame=100 index=269 id=89 owner=1 template='Amb_WinterNatureWindCold' before=0x8E7378C2 after=0xACE056CA pos=879.300110,2974.542725,123.706268
+[ONLINE-CRC-OBJECT] frame=100 index=270 id=88 owner=1 template='Amb_WinterNatureWindLoop' before=0xACE056CA after=0xA457FC26 pos=745.518372,3842.082031,104.071350
+[ONLINE-CRC-OBJECT] frame=100 index=271 id=87 owner=1 template='Amb_WinterNatureWindLoop' before=0xA457FC26 after=0x5229D26F pos=784.981384,4243.581055,117.120575
+[ONLINE-CRC-OBJECT] frame=100 index=272 id=86 owner=1 template='Amb_WinterNatureWindLoop' before=0x5229D26F after=0xE5FADF24 pos=1243.958618,4353.040039,96.702042
+[ONLINE-CRC-OBJECT] frame=100 index=273 id=85 owner=1 template='Amb_WinterNatureWindLoop' before=0xE5FADF24 after=0x0A995830 pos=2762.640625,4321.069824,97.961235
+[ONLINE-CRC-OBJECT] frame=100 index=274 id=84 owner=1 template='Amb_WinterNatureWindLoop' before=0x0A995830 after=0x3EC59146 pos=3172.522217,4308.994629,112.577271
+[ONLINE-CRC-OBJECT] frame=100 index=275 id=83 owner=1 template='Amb_WinterNatureWindLoop' before=0x3EC59146 after=0xE5AEE6BE pos=3270.021484,3804.521973,124.986458
+[ONLINE-CRC-OBJECT] frame=100 index=276 id=82 owner=1 template='Amb_WinterNatureWindLoop' before=0xE5AEE6BE after=0xDDFC0146 pos=1079.584473,2983.497070,123.602257
+[ONLINE-CRC-OBJECT] frame=100 index=277 id=81 owner=1 template='Amb_WinterNatureWindLoop' before=0xDDFC0146 after=0x4E8CA065 pos=2985.494141,2926.887451,155.553986
+[ONLINE-CRC-OBJECT] frame=100 index=278 id=80 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0x4E8CA065 after=0x3F227AEC pos=214.403641,4267.666504,87.354164
+[ONLINE-CRC-OBJECT] frame=100 index=279 id=79 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0x3F227AEC after=0xA388473F pos=219.453491,4978.555664,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=280 id=78 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0xA388473F after=0xB63E2F48 pos=843.294312,5041.383789,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=281 id=77 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0xB63E2F48 after=0x74404E19 pos=1695.805420,3953.628418,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=282 id=76 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0x74404E19 after=0x06EE12C7 pos=2323.161133,4016.568359,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=283 id=75 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0x06EE12C7 after=0x8072A351 pos=3776.650391,4956.302734,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=284 id=74 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0x8072A351 after=0xF0485AA6 pos=3478.115723,3583.844238,61.608028
+[ONLINE-CRC-OBJECT] frame=100 index=285 id=73 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0xF0485AA6 after=0x8700320C pos=1123.861938,2736.333984,27.017260
+[ONLINE-CRC-OBJECT] frame=100 index=286 id=72 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0x8700320C after=0x554F63AA pos=163.250061,3645.289307,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=287 id=71 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0x554F63AA after=0xE2E1EBBE pos=2341.961670,2838.183105,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=288 id=70 owner=1 template='Amb_TemperateTownDayAmbientLoop' before=0xE2E1EBBE after=0x84AF0BA8 pos=2089.834473,2727.110352,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=289 id=69 owner=1 template='Amb_WinterNatureWindCold' before=0x84AF0BA8 after=0x200FA020 pos=13.161987,3814.295898,105.315620
+[ONLINE-CRC-OBJECT] frame=100 index=290 id=68 owner=1 template='Amb_WinterNatureWindCold' before=0x200FA020 after=0xE603F645 pos=33.675442,4734.875000,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=291 id=67 owner=1 template='Amb_WinterNatureWindCold' before=0xE603F645 after=0xAA016348 pos=607.965759,5417.397949,95.634995
+[ONLINE-CRC-OBJECT] frame=100 index=292 id=66 owner=1 template='Amb_WinterNatureWindCold' before=0xAA016348 after=0x31D31786 pos=1138.161987,5297.633301,117.945877
+[ONLINE-CRC-OBJECT] frame=100 index=293 id=65 owner=1 template='Amb_WinterNatureWindCold' before=0x31D31786 after=0x9569A872 pos=1869.448242,5420.454590,70.322838
+[ONLINE-CRC-OBJECT] frame=100 index=294 id=64 owner=1 template='Amb_WinterNatureWindCold' before=0x9569A872 after=0x702416E8 pos=2781.514404,5250.178223,123.901688
+[ONLINE-CRC-OBJECT] frame=100 index=295 id=63 owner=1 template='Amb_WinterNatureWindCold' before=0x702416E8 after=0x27DBD522 pos=3603.230957,5402.114258,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=296 id=62 owner=1 template='Amb_WinterNatureWindCold' before=0x27DBD522 after=0xB2AF4BC2 pos=3966.689209,5012.436523,102.930717
+[ONLINE-CRC-OBJECT] frame=100 index=297 id=61 owner=1 template='Amb_WinterNatureWindCold' before=0xB2AF4BC2 after=0x134BD2EA pos=3983.896484,3743.745361,105.095596
+[ONLINE-CRC-OBJECT] frame=100 index=298 id=60 owner=1 template='Amb_WinterNatureWindCold' before=0x134BD2EA after=0x0256DF5C pos=3951.973633,3260.664551,123.519821
+[ONLINE-CRC-OBJECT] frame=100 index=299 id=59 owner=1 template='Amb_TemperateForestBirdsLoop' before=0x0256DF5C after=0x38550F0E pos=1713.379761,3865.741211,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=300 id=58 owner=1 template='Amb_TemperateForestBirdsLoop' before=0x38550F0E after=0x85E5A82E pos=554.465332,3511.947754,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=301 id=57 owner=1 template='Amb_TemperateForestBirds' before=0x85E5A82E after=0x268D7EF6 pos=156.739410,4642.351562,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=302 id=56 owner=1 template='Amb_TemperateForestBirds' before=0x268D7EF6 after=0xCC254E12 pos=743.649292,4703.548340,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=303 id=55 owner=1 template='Amb_TemperateForestBirds' before=0xCC254E12 after=0x9EAA2BE1 pos=1778.864746,4684.219238,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=304 id=54 owner=1 template='Amb_TemperateForestBirds' before=0x9EAA2BE1 after=0xA39FAC55 pos=2278.604736,4661.439941,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=305 id=53 owner=1 template='Amb_TemperateForestBirds' before=0xA39FAC55 after=0x92986F7B pos=3565.716309,5215.455078,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=306 id=52 owner=1 template='Amb_TemperateForestBirds' before=0x92986F7B after=0x7A2F3219 pos=3821.724121,4566.896484,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=307 id=51 owner=1 template='Amb_TemperateForestBirds' before=0x7A2F3219 after=0x0E6CFA8E pos=3818.009277,3727.815918,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=308 id=50 owner=1 template='Amb_TemperateForestBirds' before=0x0E6CFA8E after=0x4CE63FF3 pos=2910.485840,3537.436523,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=309 id=49 owner=1 template='Amb_TemperateForestBirds' before=0x4CE63FF3 after=0xC3B333DD pos=2492.077148,3618.761230,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=310 id=48 owner=1 template='Amb_TemperateForestBirds' before=0xC3B333DD after=0x3097A2A6 pos=1881.745972,3051.812988,17.613316
+[ONLINE-CRC-OBJECT] frame=100 index=311 id=47 owner=1 template='Amb_TemperateForestBirds' before=0x3097A2A6 after=0x75B7E206 pos=943.443726,2758.196289,45.819530
+[ONLINE-CRC-OBJECT] frame=100 index=312 id=46 owner=1 template='Amb_TemperateForestBirds' before=0x75B7E206 after=0x21A919EF pos=3382.644531,2690.633301,58.875713
+[ONLINE-CRC-OBJECT] frame=100 index=313 id=45 owner=1 template='Amb_TemperateForestBirds' before=0x21A919EF after=0x094B6C4C pos=259.656494,3431.982178,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=314 id=44 owner=1 template='Amb_DesertNatureDayBirds2' before=0x094B6C4C after=0x09094A18 pos=521.341125,3981.614746,69.475922
+[ONLINE-CRC-OBJECT] frame=100 index=315 id=43 owner=1 template='Amb_DesertNatureDayBirds2' before=0x09094A18 after=0x86EF451F pos=415.041718,5299.610352,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=316 id=42 owner=1 template='Amb_DesertNatureDayBirds2' before=0x86EF451F after=0x0663D704 pos=1347.384888,4596.120117,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=317 id=41 owner=1 template='Amb_DesertNatureDayBirds2' before=0x0663D704 after=0x3C027DCE pos=991.221436,4069.523926,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=318 id=40 owner=1 template='Amb_DesertNatureDayBirds2' before=0x3C027DCE after=0xB99737FC pos=1771.009888,3524.907471,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=319 id=39 owner=1 template='Amb_DesertNatureDayBirds2' before=0xB99737FC after=0xC3A828DA pos=2712.922363,4073.897705,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=320 id=38 owner=1 template='Amb_DesertNatureDayBirds2' before=0xC3A828DA after=0x0A48D0C2 pos=3802.029053,3650.909424,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=321 id=37 owner=1 template='Amb_DesertNatureDayBirds2' before=0x0A48D0C2 after=0x19AF73B4 pos=3052.700928,5269.929199,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=322 id=36 owner=1 template='Amb_DesertNatureDayBirds2' before=0x19AF73B4 after=0xC8DECE72 pos=3280.845459,4485.750000,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=323 id=35 owner=1 template='Amb_DesertNatureDayBirds2' before=0xC8DECE72 after=0xD4A6E361 pos=237.736816,2824.410400,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=324 id=34 owner=1 template='Amb_DesertNatureDayBirds2' before=0xD4A6E361 after=0x936FB040 pos=2165.344482,4737.636719,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=325 id=33 owner=1 template='Amb_DesertNatureDayBirds2' before=0x936FB040 after=0x98DF78EF pos=2869.182617,3323.989990,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=326 id=32 owner=1 template='Amb_DesertNatureDayBirds2' before=0x98DF78EF after=0x73C3B443 pos=1000.856140,3313.992188,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=327 id=31 owner=1 template='Amb_TemperateTownDayAmbientLoop' before=0x73C3B443 after=0x190EB906 pos=3708.234131,2673.652344,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=328 id=30 owner=1 template='Amb_TemperateTownDayAmbientLoop' before=0x190EB906 after=0x23E144CF pos=307.459900,2751.917969,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=329 id=29 owner=1 template='Amb_TemperateForestBirdsLoop' before=0x23E144CF after=0xB1F81DE0 pos=2600.128174,3610.042969,31.250000
+[ONLINE-CRC-OBJECT] frame=100 index=330 id=28 owner=1 template='Amb_TemperateForestBirdsLoop' before=0xB1F81DE0 after=0x1B660E2B pos=3774.094727,3753.177246,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=331 id=27 owner=1 template='Amb_TemperateForestBirdsLoop' before=0x1B660E2B after=0xBF6E63F2 pos=3788.730469,4887.016113,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=332 id=26 owner=1 template='Amb_TemperateForestBirdsLoop' before=0xBF6E63F2 after=0x4C51C453 pos=2264.844727,4759.179199,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=333 id=25 owner=1 template='Amb_TemperateForestBirdsLoop' before=0x4C51C453 after=0x73481A6B pos=778.202515,4682.396973,93.750000
+[ONLINE-CRC-OBJECT] frame=100 index=334 id=24 owner=1 template='Amb_TemperateForestBirdsLoop' before=0x73481A6B after=0x4A2493B4 pos=423.939026,2771.260986,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=335 id=23 owner=1 template='Amb_TemperateForestBirdsLoop' before=0x4A2493B4 after=0xB521EEE8 pos=3896.268555,2756.549805,62.500000
+[ONLINE-CRC-OBJECT] frame=100 index=336 id=22 owner=1 template='Amb_TemperateForestBirdsLoop' before=0xB521EEE8 after=0x2BEAC974 pos=3152.907227,2620.901855,43.306713
+[ONLINE-CRC-OBJECT] frame=100 index=337 id=21 owner=1 template='Hedge1' before=0x2BEAC974 after=0xAEFE97DD pos=1675.916504,2805.306152,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=338 id=20 owner=1 template='Hedge1' before=0xAEFE97DD after=0xE5FDD72E pos=1659.370117,2805.199951,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=339 id=19 owner=1 template='Hedge1' before=0xE5FDD72E after=0x4AB09835 pos=1642.930054,2805.241211,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=340 id=18 owner=1 template='Hedge1' before=0x4AB09835 after=0x9A1598D8 pos=1626.193481,2805.241211,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=341 id=17 owner=1 template='Hedge1' before=0x9A1598D8 after=0xA5D9C40C pos=1613.100342,2805.565674,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=342 id=16 owner=1 template='Hedge1' before=0xA5D9C40C after=0x213848C0 pos=2054.558105,2636.392090,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=343 id=15 owner=1 template='Hedge1' before=0x213848C0 after=0x720F4A5F pos=2043.129150,2647.804688,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=344 id=14 owner=1 template='Hedge1' before=0x720F4A5F after=0x04CC709E pos=2032.400024,2658.818115,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=345 id=13 owner=1 template='Hedge1' before=0x04CC709E after=0x28F4929A pos=2021.996582,2669.113770,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=346 id=12 owner=1 template='Hedge1' before=0x28F4929A after=0xF085365E pos=2008.621460,2683.694580,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=347 id=11 owner=1 template='Hedge1' before=0xF085365E after=0xA4D80BF4 pos=1647.635010,2631.559570,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=348 id=10 owner=1 template='Hedge1' before=0xA4D80BF4 after=0xEECA4F9C pos=1631.059082,2632.574951,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=349 id=9 owner=1 template='Hedge1' before=0xEECA4F9C after=0x89CEAC3A pos=1614.409058,2632.830078,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=350 id=8 owner=1 template='Hedge1' before=0x89CEAC3A after=0xB3078704 pos=1606.558105,2633.342041,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=351 id=7 owner=1 template='Chalet3' before=0xB3078704 after=0x6D490818 pos=2238.610107,2781.473389,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=352 id=6 owner=1 template='GermanTownHouse1' before=0x6D490818 after=0x343E6771 pos=2379.574463,2729.847412,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=353 id=5 owner=1 template='GermanTownHouse2' before=0x343E6771 after=0xA971D81B pos=2326.778809,2734.885498,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=354 id=4 owner=1 template='GermanWindMill01' before=0xA971D81B after=0x5F147767 pos=1377.309204,2803.168701,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=355 id=3 owner=1 template='GermanCotage01' before=0x5F147767 after=0x0187449A pos=1386.236938,2662.694824,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=356 id=2 owner=1 template='CBGerbl06' before=0x0187449A after=0x8550F5DB pos=2441.539062,2742.258789,10.000000
+[ONLINE-CRC-OBJECT] frame=100 index=357 id=1 owner=1 template='GermanTownHouse1' before=0x8550F5DB after=0x26AB9101 pos=2462.135986,2802.197021,10.000000
+[ONLINE-CRC-TRACE] frame=100 stage=objects crc=0x26AB9101 objectCount=358
+[ONLINE-CRC-TRACE] frame=100 stage=rng crc=0x0A6A96D3 rngCRC=0xBE1373D0
+[ONLINE-CRC-TRACE] frame=100 stage=partition crc=0x99F3930A
+[ONLINE-CRC-TRACE] frame=100 stage=players crc=0xE0A9A41F
+[ONLINE-CRC-TRACE] frame=100 stage=ai crc=0x5E2251A7
+[ONLINE-CRC-REVISION-PROBE] frame=100 without=0x5E2251A7 with=0xF4963BFB revision=0x474F0001 selected=without-change\n[ONLINE-CRC-TRACE] frame=100 stage=final crc=0x5E2251A7
+[ONLINE-CRC-PROBE] frame=100 variant=legacy-wide stage=objects crc=0x26AB9101
+[ONLINE-CRC-PROBE] frame=100 variant=legacy-wide stage=rng crc=0x0A6A96D3
+[ONLINE-CRC-PROBE] frame=100 variant=legacy-wide stage=partition crc=0x99F3930A
+[ONLINE-CRC-PROBE] frame=100 variant=legacy-wide stage=players crc=0xE0A9A41F
+[ONLINE-CRC-PROBE] frame=100 variant=legacy-wide stage=final crc=0x5E2251A7 current=0x5E2251A7
+[ONLINE-CRC-TRACE] frame=200 stage=start crc=0x00000000 rngBase=0x00BF2918 rngCRC=0xC7D19BE0
+[ONLINE-CRC-OBJECT] frame=200 index=0 id=370 owner=5 template='GLAInfantryWorker' before=0xD0B92844 after=0x67070976 pos=3352.443848,578.679626,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=1 id=369 owner=3 template='Chem_GLAInfantryWorker' before=0x67070976 after=0x82D33F6E pos=1290.512817,1713.307007,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=2 id=368 owner=4 template='GLAInfantryWorker' before=0x82D33F6E after=0x73AA38F7 pos=2670.159668,1743.463379,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=3 id=367 owner=9 template='Nuke_ChinaBarracks' before=0x73AA38F7 after=0x331115DD pos=3619.728271,4901.492188,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=4 id=366 owner=8 template='Nuke_ChinaBarracks' before=0x331115DD after=0x59CFE6A2 pos=2975.139404,3759.325439,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=5 id=365 owner=7 template='Tank_ChinaBarracks' before=0x59CFE6A2 after=0x657CC7F4 pos=1165.599731,3684.475830,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=6 id=364 owner=6 template='SupW_AmericaBarracks' before=0x657CC7F4 after=0xCFB23796 pos=580.279846,5147.247559,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=7 id=363 owner=5 template='GLABarracks' before=0xCFB23796 after=0x982588E2 pos=3119.006348,597.424927,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=8 id=362 owner=4 template='GLABarracks' before=0x982588E2 after=0x7EF3F139 pos=2436.722168,1762.208740,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=9 id=361 owner=3 template='Chem_GLABarracks' before=0x7EF3F139 after=0xB31FEC26 pos=1057.075562,1732.052246,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=10 id=360 owner=6 template='SpySatellitePing' before=0xB31FEC26 after=0xF4B21B3C pos=1319.992065,1742.786255,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=11 id=359 owner=9 template='Nuke_ChinaCommandCenter' before=0xF4B21B3C after=0x3A25F781 pos=3370.614502,4894.109863,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=12 id=358 owner=8 template='Nuke_ChinaCommandCenter' before=0x3A25F781 after=0x52ACBD2A pos=2726.025635,3751.943359,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=13 id=357 owner=7 template='Tank_ChinaCommandCenter' before=0x52ACBD2A after=0x40742573 pos=1338.839844,3740.634766,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=14 id=356 owner=6 template='SupW_AmericaCommandCenter' before=0x40742573 after=0x7DD80190 pos=573.625977,4894.110352,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=15 id=355 owner=5 template='GLACommandCenter' before=0x7DD80190 after=0x4FCA73A9 pos=3381.922607,608.158813,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=16 id=354 owner=4 template='GLACommandCenter' before=0x4FCA73A9 after=0x39F80402 pos=2699.638428,1772.942627,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=17 id=353 owner=3 template='Chem_GLACommandCenter' before=0x39F80402 after=0xB12CECCE pos=1319.991943,1742.786133,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=18 id=352 owner=9 template='Nuke_ChinaVehicleDozer' before=0xB12CECCE after=0x5E090F1D pos=3559.820312,4880.294922,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=19 id=350 owner=8 template='Nuke_ChinaVehicleDozer' before=0x5E090F1D after=0xE64AD9CF pos=2929.793457,3730.246338,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=20 id=348 owner=7 template='Tank_ChinaVehicleDozer' before=0xE64AD9CF after=0xD1F9E0AE pos=1211.273315,3700.267822,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=21 id=346 owner=6 template='SupW_AmericaVehicleDozer' before=0xD1F9E0AE after=0xF1146DC1 pos=637.893677,5025.892090,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=22 id=344 owner=5 template='GLAInfantryWorker' before=0xF1146DC1 after=0xA939E867 pos=3170.858398,611.089661,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=23 id=342 owner=4 template='GLAInfantryWorker' before=0xA939E867 after=0x9D552B07 pos=2532.788574,1698.104736,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=24 id=340 owner=3 template='Chem_GLAInfantryWorker' before=0x9D552B07 after=0x8F705EB9 pos=1218.267456,1683.930054,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=25 id=338 owner=2 template='Slth_GLAInfantryWorker' before=0x8F705EB9 after=0x31C8733D pos=779.475281,551.217407,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=26 id=337 owner=2 template='Slth_GLACommandCenter' before=0x31C8733D after=0x8AB11A4E pos=622.629517,611.928101,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=27 id=336 owner=1 template='TechReinforcementPad' before=0x8AB11A4E after=0xB7CBECAA pos=1452.904907,841.049072,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=28 id=335 owner=1 template='TechReinforcementPad' before=0xB7CBECAA after=0x7DDC7AC1 pos=2581.658691,832.031616,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=29 id=334 owner=1 template='TechRepairbay' before=0x7DDC7AC1 after=0x897090F1 pos=2004.407471,3765.812744,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=30 id=333 owner=1 template='TechRepairbay' before=0x897090F1 after=0xE90E0B1B pos=2043.950073,1660.006592,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=31 id=332 owner=1 template='TechOilRefinery' before=0xE90E0B1B after=0x0C7D03F6 pos=2320.000000,510.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=32 id=331 owner=1 template='TechOilRefinery' before=0x0C7D03F6 after=0x727B8E2D pos=1740.000000,530.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=33 id=330 owner=0 template='TechOilDerrick' before=0x727B8E2D after=0x067F7926 pos=2360.000000,560.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=34 id=329 owner=0 template='TechOilDerrick' before=0x067F7926 after=0x957FF9AC pos=2370.000000,460.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=35 id=328 owner=0 template='TechOilDerrick' before=0x957FF9AC after=0x3E3E595D pos=2270.000000,560.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=36 id=327 owner=0 template='TechOilDerrick' before=0x3E3E595D after=0x99EF141B pos=2270.000000,460.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=37 id=326 owner=0 template='TechOilDerrick' before=0x99EF141B after=0x9C21C09E pos=1690.000000,580.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=38 id=325 owner=0 template='TechOilDerrick' before=0x9C21C09E after=0xD407B3B9 pos=1790.000000,580.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=39 id=324 owner=0 template='TechOilDerrick' before=0xD407B3B9 after=0x4E2CA160 pos=1690.000000,480.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=40 id=323 owner=0 template='TechOilDerrick' before=0x4E2CA160 after=0xE839C3CF pos=1790.000000,480.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=41 id=322 owner=1 template='TechHospital' before=0xE839C3CF after=0x428434C3 pos=2024.871094,2758.329102,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=42 id=321 owner=1 template='TechHospitalBib' before=0x428434C3 after=0xDDEA46FA pos=2044.871094,2738.329102,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=43 id=320 owner=1 template='TechArtilleryPlatform' before=0xDDEA46FA after=0xB5B66ECC pos=1686.937378,2384.341064,33.234055
+[ONLINE-CRC-OBJECT] frame=200 index=44 id=319 owner=1 template='TechArtilleryPlatform' before=0xB5B66ECC after=0xC2060A84 pos=2395.367188,2369.150146,31.882200
+[ONLINE-CRC-OBJECT] frame=200 index=45 id=318 owner=1 template='TechArtilleryPlatform' before=0xC2060A84 after=0x7FCE3099 pos=2399.017822,3070.982178,31.874990
+[ONLINE-CRC-OBJECT] frame=200 index=46 id=317 owner=1 template='TechArtilleryPlatform' before=0x7FCE3099 after=0xE215B483 pos=1702.526733,3066.460205,32.254150
+[ONLINE-CRC-OBJECT] frame=200 index=47 id=316 owner=1 template='SupplyDock' before=0xE215B483 after=0xE9F4ECC6 pos=3834.968750,166.913086,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=48 id=315 owner=1 template='SupplyDock' before=0xE9F4ECC6 after=0xB4E23895 pos=3095.044434,1397.368652,29.375000
+[ONLINE-CRC-OBJECT] frame=200 index=49 id=314 owner=1 template='SupplyDock' before=0xB4E23895 after=0x705909BC pos=2501.831299,199.099976,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=50 id=313 owner=1 template='SupplyDock' before=0x705909BC after=0xDBC10F06 pos=2129.681152,816.791748,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=51 id=312 owner=1 template='SupplyDock' before=0xDBC10F06 after=0xC7DC1ED4 pos=3850.078613,2653.410156,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=52 id=311 owner=1 template='SupplyDock' before=0xC7DC1ED4 after=0xE3FD3897 pos=180.000000,2800.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=53 id=310 owner=1 template='SupplyDock' before=0xE3FD3897 after=0x91B34474 pos=1486.263428,193.705200,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=54 id=309 owner=1 template='SupplyDock' before=0x91B34474 after=0x3FD58607 pos=1974.621338,815.524902,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=55 id=308 owner=1 template='SupplyDock' before=0x3FD58607 after=0x70AEFB64 pos=211.477783,194.827637,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=56 id=307 owner=1 template='SupplyDock' before=0x70AEFB64 after=0xCE39895C pos=950.000000,1340.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=57 id=306 owner=1 template='TechReinforcementPad' before=0xCE39895C after=0x48BA1D9E pos=1460.000000,4480.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=58 id=305 owner=1 template='TechReinforcementPad' before=0x48BA1D9E after=0x6DB79C37 pos=2590.000000,4510.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=59 id=304 owner=1 template='TechOilRefinery' before=0x6DB79C37 after=0x2EAA35D4 pos=2324.940430,4988.733398,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=60 id=303 owner=1 template='TechOilRefinery' before=0x2EAA35D4 after=0xCF7A29E3 pos=1744.940308,5008.733398,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=61 id=302 owner=0 template='TechOilDerrick' before=0xCF7A29E3 after=0x69A13D8D pos=2364.940430,5038.733398,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=62 id=301 owner=0 template='TechOilDerrick' before=0x69A13D8D after=0x6CCB0E2E pos=2374.940430,4938.733398,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=63 id=300 owner=0 template='TechOilDerrick' before=0x6CCB0E2E after=0xAE28423B pos=2274.940430,5038.733398,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=64 id=299 owner=0 template='TechOilDerrick' before=0xAE28423B after=0xB7BC760E pos=2274.940430,4938.733398,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=65 id=298 owner=0 template='TechOilDerrick' before=0xB7BC760E after=0xE39F95CF pos=1694.940308,5058.733398,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=66 id=297 owner=0 template='TechOilDerrick' before=0xE39F95CF after=0x2F9943D9 pos=1794.940308,5058.733398,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=67 id=296 owner=0 template='TechOilDerrick' before=0x2F9943D9 after=0x583FA369 pos=1690.000000,4960.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=68 id=295 owner=0 template='TechOilDerrick' before=0x583FA369 after=0x5910247A pos=1794.940308,4958.733398,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=69 id=294 owner=1 template='SupplyDock' before=0x5910247A after=0x36B38C77 pos=1320.000000,5330.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=70 id=293 owner=1 template='SupplyDock' before=0x36B38C77 after=0xAE46554E pos=1940.000000,4460.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=71 id=292 owner=1 template='SupplyDock' before=0xAE46554E after=0x6597FE84 pos=2585.896484,5331.094727,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=72 id=291 owner=1 template='SupplyDock' before=0x6597FE84 after=0x809242E5 pos=2090.000000,4460.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=73 id=290 owner=1 template='SupplyDock' before=0x809242E5 after=0xA77AB429 pos=3800.000000,5300.000000,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=74 id=289 owner=1 template='SupplyDock' before=0xA77AB429 after=0x0FD1729D pos=3092.894775,4169.324219,30.401840
+[ONLINE-CRC-OBJECT] frame=200 index=75 id=288 owner=1 template='SupplyDock' before=0x0FD1729D after=0x39B3F609 pos=174.374008,5329.840820,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=76 id=287 owner=1 template='SupplyDock' before=0x39B3F609 after=0x4FB6D8A3 pos=901.408447,4172.960449,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=77 id=286 owner=1 template='AirfieldHanger02' before=0x4FB6D8A3 after=0x47A4DE69 pos=3864.544189,2448.595947,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=78 id=285 owner=1 template='AmericanAirport02' before=0x47A4DE69 after=0x09FC31F3 pos=3840.000000,2850.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=79 id=284 owner=1 template='CBGerbl01' before=0x09FC31F3 after=0x5B7B9652 pos=2463.963623,2616.769043,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=80 id=283 owner=1 template='CBGerbl03' before=0x5B7B9652 after=0x434D7A26 pos=2718.457031,2598.552979,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=81 id=282 owner=1 template='CBGerbl04' before=0x434D7A26 after=0x289DECD0 pos=2724.067627,2730.040039,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=82 id=281 owner=1 template='CBGerbl05' before=0x289DECD0 after=0x40F062AF pos=1738.690430,2628.662109,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=83 id=280 owner=1 template='CBGerbl06' before=0x40F062AF after=0x5C28B3F9 pos=1773.570435,2764.085205,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=84 id=279 owner=1 template='CBGerbl05' before=0x5C28B3F9 after=0x9A0D8258 pos=1515.493408,2800.384521,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=85 id=278 owner=1 template='CBGerbl06' before=0x9A0D8258 after=0xCC3F5CFD pos=1510.368652,2638.375977,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=86 id=277 owner=1 template='CBNukeB' before=0xCC3F5CFD after=0xB72F6651 pos=57.056747,2792.527100,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=87 id=276 owner=1 template='CBNukeC' before=0xB72F6651 after=0x204CA76B pos=160.000000,2960.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=88 id=275 owner=1 template='CBNukeA' before=0x204CA76B after=0x90FEE0C6 pos=155.689011,2576.416504,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=89 id=274 owner=1 template='MogadishuTower05Bib' before=0x90FEE0C6 after=0x79C2323B pos=3505.612549,2294.426025,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=90 id=273 owner=1 template='MogadishuTower05' before=0x79C2323B after=0x00C14E80 pos=3505.612549,2294.426025,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=91 id=272 owner=1 template='MogadishuTower05' before=0x00C14E80 after=0x74C057ED pos=3740.000000,2290.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=92 id=271 owner=1 template='MogadishuTower05Bib' before=0x74C057ED after=0xBB77E7BD pos=3740.000000,2290.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=93 id=270 owner=1 template='MogadishuTower05Bib' before=0xBB77E7BD after=0x67C588C6 pos=310.000000,2430.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=94 id=269 owner=1 template='MogadishuTower05' before=0x67C588C6 after=0x28609D50 pos=310.000000,2430.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=95 id=268 owner=1 template='MogadishuTower05' before=0x28609D50 after=0x3188E586 pos=527.392395,2419.110107,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=96 id=267 owner=1 template='MogadishuTower05Bib' before=0x3188E586 after=0xC4C867E3 pos=527.392395,2419.110107,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=97 id=266 owner=1 template='StanWatchTowerTall' before=0xC4C867E3 after=0x9615DDA8 pos=547.626526,2999.104492,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=98 id=265 owner=1 template='StanWatchTowerTall' before=0x9615DDA8 after=0x3264DE75 pos=310.000000,3000.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=99 id=264 owner=1 template='StanWatchTowerTallBib' before=0x3264DE75 after=0x734C06D0 pos=547.626526,2999.104492,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=100 id=263 owner=1 template='StanWatchTowerTallBib' before=0x734C06D0 after=0x085271E8 pos=310.000000,3000.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=101 id=262 owner=1 template='StanWatchTowerTall' before=0x085271E8 after=0x4F52846F pos=3740.000000,2990.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=102 id=261 owner=1 template='StanWatchTowerTall' before=0x4F52846F after=0x3F9F39A7 pos=3503.034180,3001.128418,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=103 id=260 owner=1 template='StanWatchTowerTallBib' before=0x3F9F39A7 after=0xBFA5085C pos=3740.000000,2990.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=104 id=259 owner=1 template='StanWatchTowerTallBib' before=0xBFA5085C after=0x42567E6F pos=3503.034180,3001.128418,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=105 id=258 owner=1 template='CivilianBunker01' before=0x42567E6F after=0xEA28F257 pos=2075.624023,1413.306763,61.523495
+[ONLINE-CRC-OBJECT] frame=200 index=106 id=257 owner=1 template='CivilianBunker01' before=0xEA28F257 after=0x6C58A197 pos=1996.342407,1413.842529,61.406242
+[ONLINE-CRC-OBJECT] frame=200 index=107 id=256 owner=1 template='CivilianBunker01' before=0x6C58A197 after=0xF92C422D pos=2070.000000,3960.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=108 id=255 owner=1 template='CivilianBunker01' before=0xF92C422D after=0x65A848F1 pos=1980.000000,3960.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=109 id=254 owner=1 template='MogadishuTower04' before=0x65A848F1 after=0x697C7D7E pos=2450.507568,2352.356445,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=110 id=253 owner=1 template='MogadishuTower04' before=0x697C7D7E after=0x524FFA3C pos=2300.000000,2200.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=111 id=252 owner=1 template='MogadishuTower04Bib' before=0x524FFA3C after=0x2E6B9731 pos=2450.507568,2352.356445,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=112 id=251 owner=1 template='MogadishuTower04Bib' before=0x2E6B9731 after=0x9DBB986E pos=2300.000000,2200.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=113 id=250 owner=1 template='MogadishuTower04' before=0x9DBB986E after=0x30E84DBE pos=1760.000000,2200.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=114 id=249 owner=1 template='MogadishuTower04Bib' before=0x30E84DBE after=0x6571A0B9 pos=1760.000000,2200.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=115 id=248 owner=1 template='MogadishuTower04' before=0x6571A0B9 after=0x977E5CF7 pos=1604.220703,2375.185547,35.851688
+[ONLINE-CRC-OBJECT] frame=200 index=116 id=247 owner=1 template='MogadishuTower04Bib' before=0x977E5CF7 after=0xBB111DD3 pos=1604.220703,2375.185547,35.851688
+[ONLINE-CRC-OBJECT] frame=200 index=117 id=246 owner=1 template='MogadishuTower05' before=0xBB111DD3 after=0x6A176519 pos=2050.000000,2160.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=118 id=245 owner=1 template='MogadishuTower05Bib' before=0x6A176519 after=0x4E32E57D pos=2050.000000,2160.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=119 id=244 owner=1 template='MogadishuTower05' before=0x4E32E57D after=0x2CA066BE pos=2050.000000,520.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=120 id=243 owner=1 template='MogadishuTower05Bib' before=0x2CA066BE after=0x103E7DC6 pos=2050.000000,520.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=121 id=242 owner=1 template='MogadishuTower05' before=0x103E7DC6 after=0xC1E42640 pos=2090.000000,480.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=122 id=241 owner=1 template='MogadishuTower05Bib' before=0xC1E42640 after=0xC80F01DB pos=2090.000000,480.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=123 id=240 owner=1 template='MogadishuTower05' before=0xC80F01DB after=0xC2FC3308 pos=2010.000000,480.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=124 id=239 owner=1 template='MogadishuTower05Bib' before=0xC2FC3308 after=0x548C62DB pos=2010.000000,480.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=125 id=238 owner=1 template='MogadishuTower05' before=0x548C62DB after=0x3AC73A8E pos=2050.000000,430.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=126 id=237 owner=1 template='MogadishuTower05Bib' before=0x3AC73A8E after=0x9535BEBB pos=2050.000000,430.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=127 id=236 owner=1 template='StanWatchTowerTall' before=0x9535BEBB after=0x9C566923 pos=2040.000000,3240.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=128 id=235 owner=1 template='StanWatchTowerTallBib' before=0x9C566923 after=0x06271B9E pos=2040.000000,3240.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=129 id=234 owner=1 template='GuardTower' before=0x06271B9E after=0x5470ABAA pos=2453.796875,3043.881104,33.512695
+[ONLINE-CRC-OBJECT] frame=200 index=130 id=233 owner=1 template='GuardTower' before=0x5470ABAA after=0x97CA9D92 pos=2300.000000,3260.000000,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=131 id=232 owner=1 template='GuardTower' before=0x97CA9D92 after=0x3B956111 pos=1760.000000,3240.000000,30.625000
+[ONLINE-CRC-OBJECT] frame=200 index=132 id=231 owner=1 template='GuardTower' before=0x3B956111 after=0xABDB066A pos=1641.900879,3057.704590,37.524643
+[ONLINE-CRC-OBJECT] frame=200 index=133 id=230 owner=1 template='StanWatchTowerTall' before=0xABDB066A after=0x57389408 pos=2010.000000,5080.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=134 id=229 owner=1 template='StanWatchTowerTallBib' before=0x57389408 after=0x14C369F1 pos=2010.000000,5080.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=135 id=228 owner=1 template='StanWatchTowerTall' before=0x14C369F1 after=0xDFB1D2FE pos=2070.000000,5020.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=136 id=227 owner=1 template='StanWatchTowerTallBib' before=0xDFB1D2FE after=0x945E61D5 pos=2070.000000,5020.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=137 id=226 owner=1 template='StanWatchTowerTall' before=0x945E61D5 after=0xE5E276BE pos=1950.000000,5030.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=138 id=225 owner=1 template='StanWatchTowerTallBib' before=0xE5E276BE after=0xF8E7CE4F pos=1950.000000,5030.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=139 id=224 owner=1 template='StanWatchTowerTall' before=0xF8E7CE4F after=0x05FD1265 pos=2010.000000,4950.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=140 id=223 owner=1 template='StanWatchTowerTallBib' before=0x05FD1265 after=0xDA0D54B9 pos=2010.000000,4950.000000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=141 id=222 owner=1 template='CarCompact' before=0xDA0D54B9 after=0xC77FBF7D pos=220.500000,2530.500000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=142 id=221 owner=1 template='CarCamaro' before=0xC77FBF7D after=0x835E7CC4 pos=220.500000,2510.500000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=143 id=220 owner=1 template='CarSUV01' before=0x835E7CC4 after=0x381A0530 pos=250.500000,2980.500000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=144 id=219 owner=1 template='CarTaxiCab01' before=0x381A0530 after=0x76958EE8 pos=250.500000,2960.500000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=145 id=218 owner=1 template='CarLuxury04' before=0x76958EE8 after=0x9B012D71 pos=3800.500000,2310.500000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=146 id=217 owner=1 template='CarLuxury04' before=0x9B012D71 after=0x6B8345FB pos=3790.500000,2330.500000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=147 id=216 owner=1 template='CarLuxury02' before=0x6B8345FB after=0x3462989C pos=3800.500000,2960.500000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=148 id=215 owner=1 template='CarLuxury02' before=0x3462989C after=0xC60EC8B1 pos=3800.500000,2980.500000,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=149 id=214 owner=1 template='StatueLenin' before=0xC60EC8B1 after=0x67CAD021 pos=2364.951660,2844.503174,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=150 id=213 owner=1 template='TruckWork' before=0x67CAD021 after=0x30992364 pos=1625.000000,2765.000000,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=151 id=212 owner=1 template='TruckFarmer' before=0x30992364 after=0xA4735244 pos=1665.000000,2765.000000,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=152 id=211 owner=1 template='TruckWork2' before=0xA4735244 after=0xDE12AED5 pos=1870.500000,2710.500000,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=153 id=210 owner=1 template='RocksG02' before=0xDE12AED5 after=0x3AB9950F pos=2836.851562,2253.789551,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=154 id=209 owner=1 template='RocksG03' before=0x3AB9950F after=0xD4CF32B1 pos=777.770203,2324.880127,48.528107
+[ONLINE-CRC-OBJECT] frame=200 index=155 id=208 owner=1 template='RocksG04' before=0xD4CF32B1 after=0x026B7BC9 pos=35.862000,1538.616089,73.211487
+[ONLINE-CRC-OBJECT] frame=200 index=156 id=207 owner=1 template='RocksG04' before=0x026B7BC9 after=0x505E9692 pos=1222.002930,2285.894531,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=157 id=206 owner=1 template='RocksG04' before=0x505E9692 after=0xA57E73F8 pos=3046.425293,2152.815430,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=158 id=205 owner=1 template='RocksG05' before=0xA57E73F8 after=0x38A37D4E pos=3334.043701,2178.667480,52.466660
+[ONLINE-CRC-OBJECT] frame=200 index=159 id=204 owner=1 template='RocksG05' before=0x38A37D4E after=0x4E375E4B pos=3951.867920,1602.876465,65.053719
+[ONLINE-CRC-OBJECT] frame=200 index=160 id=203 owner=1 template='RocksG06' before=0x4E375E4B after=0x2A1CE235 pos=3374.390137,1022.954224,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=161 id=202 owner=1 template='RocksG07' before=0x2A1CE235 after=0xC0FD0B6C pos=2996.147949,937.903931,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=162 id=201 owner=1 template='RocksG08' before=0xC0FD0B6C after=0x4B9A9084 pos=2796.672607,1246.822021,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=163 id=200 owner=1 template='RocksG09' before=0x4B9A9084 after=0x949C1052 pos=1940.734009,75.400940,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=164 id=199 owner=1 template='RocksG10' before=0x949C1052 after=0x5187A3CE pos=1354.085571,118.255615,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=165 id=198 owner=1 template='RocksG12' before=0x5187A3CE after=0x59C432F2 pos=2808.652344,87.056519,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=166 id=197 owner=1 template='RocksG13' before=0x59C432F2 after=0x4C574FBF pos=3973.714600,944.633789,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=167 id=196 owner=1 template='RocksG14' before=0x4C574FBF after=0x55D46404 pos=97.611328,2028.651001,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=168 id=195 owner=1 template='RocksG14' before=0x55D46404 after=0x21DE8480 pos=64.777100,540.144836,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=169 id=194 owner=1 template='RocksG14' before=0x21DE8480 after=0x35E3910F pos=990.332642,938.972656,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=170 id=193 owner=1 template='RocksG15' before=0x35E3910F after=0x83531A01 pos=684.946655,1193.180176,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=171 id=192 owner=1 template='RocksG15' before=0x83531A01 after=0xD4BDBDD2 pos=1029.996216,58.935547,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=172 id=191 owner=1 template='RocksG16' before=0xD4BDBDD2 after=0xA1DB10A8 pos=1269.383423,1260.351196,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=173 id=190 owner=1 template='RocksG16' before=0xA1DB10A8 after=0xF06EB822 pos=3934.281738,519.078125,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=174 id=189 owner=1 template='RocksG17' before=0xF06EB822 after=0x37FB7C69 pos=3184.493896,39.320557,93.834930
+[ONLINE-CRC-OBJECT] frame=200 index=175 id=188 owner=1 template='RocksG17' before=0x37FB7C69 after=0x13788E71 pos=2497.194092,71.227600,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=176 id=187 owner=1 template='RocksG17' before=0x13788E71 after=0x335D4960 pos=664.997009,1744.968018,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=177 id=186 owner=1 template='RocksG18' before=0x335D4960 after=0xFE8513D3 pos=72.478958,1018.489075,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=178 id=185 owner=1 template='RocksG19' before=0xFE8513D3 after=0x71B59B8C pos=469.063171,57.801758,93.887390
+[ONLINE-CRC-OBJECT] frame=200 index=179 id=184 owner=1 template='RocksG10' before=0x71B59B8C after=0xD5368A34 pos=2027.878418,1751.801147,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=180 id=183 owner=1 template='RocksG10' before=0xD5368A34 after=0x1ED8B297 pos=64.321869,2377.691650,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=181 id=182 owner=1 template='RocksG09' before=0x1ED8B297 after=0xF63D6E3D pos=3897.229492,2253.904297,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=182 id=181 owner=1 template='SupplyDock' before=0xF63D6E3D after=0xF4DC152C pos=200.000000,4030.000000,71.250000
+[ONLINE-CRC-OBJECT] frame=200 index=183 id=180 owner=1 template='SupplyDock' before=0xF4DC152C after=0xC8C1D916 pos=3850.000000,4050.000000,74.375000
+[ONLINE-CRC-OBJECT] frame=200 index=184 id=179 owner=1 template='SupplyDock' before=0xC8C1D916 after=0x9DCFCABA pos=3840.000000,1140.000000,89.375000
+[ONLINE-CRC-OBJECT] frame=200 index=185 id=178 owner=1 template='SupplyDock' before=0x9DCFCABA after=0x6005D779 pos=160.000000,1480.000000,75.625000
+[ONLINE-CRC-OBJECT] frame=200 index=186 id=177 owner=1 template='Amb_DesertNatureWindNight' before=0x6005D779 after=0xEC911785 pos=3622.623291,2423.460938,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=187 id=176 owner=1 template='Amb_DesertNatureWindNight' before=0xEC911785 after=0xAD212744 pos=3638.196533,1853.718872,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=188 id=175 owner=1 template='Amb_DesertNatureWindNight' before=0xAD212744 after=0x254D0981 pos=3624.292480,1157.444824,89.534698
+[ONLINE-CRC-OBJECT] frame=200 index=189 id=174 owner=1 template='Amb_DesertNatureWindNight' before=0x254D0981 after=0xEBEB4E45 pos=3299.821777,655.767395,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=190 id=173 owner=1 template='Amb_DesertNatureWindNight' before=0xEBEB4E45 after=0xC9129F7E pos=3703.787354,403.012695,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=191 id=172 owner=1 template='Amb_DesertNatureWindNight' before=0xC9129F7E after=0xCC4206B0 pos=2948.432129,507.063477,93.125000
+[ONLINE-CRC-OBJECT] frame=200 index=192 id=171 owner=1 template='Amb_DesertNatureWindNight' before=0xCC4206B0 after=0x57517EE9 pos=2397.072510,505.066406,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=193 id=170 owner=1 template='Amb_DesertNatureWindNight' before=0x57517EE9 after=0x8BF82C3E pos=1815.174561,505.963501,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=194 id=169 owner=1 template='Amb_DesertNatureWindNight' before=0x8BF82C3E after=0xC04490E1 pos=1184.291992,498.909058,86.470383
+[ONLINE-CRC-OBJECT] frame=200 index=195 id=168 owner=1 template='Amb_DesertNatureWindNight' before=0xC04490E1 after=0xD24DB1E7 pos=577.811157,479.657471,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=196 id=167 owner=1 template='Amb_DesertNatureWindNight' before=0xD24DB1E7 after=0xC2C89086 pos=277.424286,1100.076904,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=197 id=166 owner=1 template='Amb_DesertNatureWindNight' before=0xC2C89086 after=0x4C296C36 pos=336.045410,1784.707764,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=198 id=165 owner=1 template='Amb_DesertNatureWindNight' before=0x4C296C36 after=0x87A86BA0 pos=585.276062,2361.467285,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=199 id=164 owner=1 template='Amb_DesertNatureWindNight' before=0x87A86BA0 after=0xC9FD1C17 pos=1344.966675,1823.888916,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=200 id=163 owner=1 template='Amb_DesertNatureWindNight' before=0xC9FD1C17 after=0x61324D25 pos=2300.457031,1823.889526,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=201 id=162 owner=1 template='Amb_DesertNatureWindNight' before=0x61324D25 after=0xC1598EC9 pos=3043.346680,1880.975708,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=202 id=161 owner=1 template='Amb_DesertNatureDayBirds2' before=0xC1598EC9 after=0x0F9AECC7 pos=749.083923,2736.116211,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=203 id=160 owner=1 template='Amb_DesertNatureDayBirds2' before=0x0F9AECC7 after=0x72C5CE14 pos=1620.244141,2776.228516,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=204 id=159 owner=1 template='Amb_DesertNatureDayBirds2' before=0x72C5CE14 after=0xE8C071F3 pos=2518.716797,2715.083008,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=205 id=158 owner=1 template='Amb_DesertNatureDayBirds2' before=0xE8C071F3 after=0xC5B6A609 pos=3179.984131,2702.036621,45.624008
+[ONLINE-CRC-OBJECT] frame=200 index=206 id=157 owner=1 template='Amb_DesertNatureDayBirds2' before=0xC5B6A609 after=0xE5F27C8D pos=3950.504395,2774.948730,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=207 id=156 owner=1 template='Amb_DesertNatureDayInsects3' before=0xE5F27C8D after=0x0E71784C pos=3495.639404,237.284546,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=208 id=155 owner=1 template='Amb_DesertNatureDayInsects3' before=0x0E71784C after=0xE314BBFE pos=3130.977051,982.761292,103.550377
+[ONLINE-CRC-OBJECT] frame=200 index=209 id=154 owner=1 template='Amb_DesertNatureDayInsects3' before=0xE314BBFE after=0xCCA08774 pos=2073.400146,504.559692,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=210 id=153 owner=1 template='Amb_DesertNatureDayInsects3' before=0xCCA08774 after=0xDC15A43C pos=2066.633301,1580.201782,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=211 id=152 owner=1 template='Amb_DesertNatureDayInsects3' before=0xDC15A43C after=0xC06E6878 pos=3087.287842,1684.345703,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=212 id=151 owner=1 template='Amb_DesertNatureDayInsects3' before=0xC06E6878 after=0xDCD3D005 pos=1459.476074,852.861633,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=213 id=150 owner=1 template='Amb_DesertNatureDayInsects3' before=0xDCD3D005 after=0x8C1442AF pos=1355.158813,150.761414,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=214 id=149 owner=1 template='Amb_DesertNatureDayInsects3' before=0x8C1442AF after=0x272F8CCB pos=904.014648,905.327148,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=215 id=148 owner=1 template='Amb_DesertNatureDayInsects3' before=0x272F8CCB after=0x8879C8C7 pos=73.531921,930.709106,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=216 id=147 owner=1 template='Amb_DesertNatureDayInsects3' before=0x8879C8C7 after=0x90B07853 pos=140.562164,2010.224609,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=217 id=146 owner=1 template='Amb_DesertNatureDayInsects3' before=0x90B07853 after=0x4917756F pos=1209.205200,2239.434814,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=218 id=145 owner=1 template='Amb_DesertNatureDayInsects3' before=0x4917756F after=0x239895A7 pos=2351.098389,2121.616211,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=219 id=144 owner=1 template='Amb_DesertNatureDayInsects3' before=0x239895A7 after=0xF2EAFC0E pos=3361.083740,2104.266113,56.027100
+[ONLINE-CRC-OBJECT] frame=200 index=220 id=143 owner=1 template='Amb_DesertNatureDayInsects2' before=0xF2EAFC0E after=0xDD19E086 pos=3913.401611,1687.845093,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=221 id=142 owner=1 template='Amb_DesertNatureDayInsects3' before=0xDD19E086 after=0xE98E8AD4 pos=3990.704346,1004.968079,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=222 id=141 owner=1 template='Amb_DesertNatureDayInsects2' before=0xE98E8AD4 after=0x3AF61867 pos=3722.904297,681.379272,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=223 id=140 owner=1 template='Amb_DesertNatureDayInsects2' before=0x3AF61867 after=0xCB1C2598 pos=3173.291992,251.718872,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=224 id=139 owner=1 template='Amb_DesertNatureDayInsects2' before=0xCB1C2598 after=0xB183483E pos=2236.157227,126.839966,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=225 id=138 owner=1 template='Amb_DesertNatureDayInsects2' before=0xB183483E after=0x08F79036 pos=1438.995361,549.915405,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=226 id=137 owner=1 template='Amb_DesertNatureDayInsects2' before=0x08F79036 after=0xAAFC7644 pos=2069.124023,1163.207886,55.510490
+[ONLINE-CRC-OBJECT] frame=200 index=227 id=136 owner=1 template='Amb_DesertNatureDayInsects2' before=0xAAFC7644 after=0x30375EFB pos=803.105225,401.614868,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=228 id=135 owner=1 template='Amb_DesertNatureDayInsects2' before=0x30375EFB after=0xB3D9AE60 pos=84.315674,559.004517,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=229 id=134 owner=1 template='Amb_DesertNatureDayInsects2' before=0xB3D9AE60 after=0xB8578335 pos=658.758972,1461.567017,98.510437
+[ONLINE-CRC-OBJECT] frame=200 index=230 id=133 owner=1 template='Amb_DesertNatureDayInsects2' before=0xB8578335 after=0x5876F681 pos=78.432640,2142.307617,63.614799
+[ONLINE-CRC-OBJECT] frame=200 index=231 id=132 owner=1 template='Amb_DesertNatureDayInsects2' before=0x5876F681 after=0xC5B80722 pos=915.125854,1950.701172,34.098454
+[ONLINE-CRC-OBJECT] frame=200 index=232 id=131 owner=1 template='Amb_DesertNatureDayInsects2' before=0xC5B80722 after=0xA140A8CC pos=1600.324585,1660.592163,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=233 id=130 owner=1 template='Amb_DesertNatureDayInsects2' before=0xA140A8CC after=0x51BE52CA pos=2687.642090,1614.550415,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=234 id=129 owner=1 template='Amb_DesertNatureDayInsects' before=0x51BE52CA after=0x8AE77740 pos=2990.781494,913.410522,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=235 id=128 owner=1 template='Amb_DesertNatureDayInsects' before=0x8AE77740 after=0x09DBF73B pos=1022.637207,36.822266,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=236 id=127 owner=1 template='Amb_DesertNatureDayInsects' before=0x09DBF73B after=0x7FFA582D pos=119.154419,2434.045410,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=237 id=126 owner=1 template='Amb_DesertNatureDayInsects' before=0x7FFA582D after=0xCAEA5E89 pos=3244.289551,2193.394043,48.178909
+[ONLINE-CRC-OBJECT] frame=200 index=238 id=125 owner=1 template='Amb_DesertNatureDayInsects2' before=0xCAEA5E89 after=0xB56C7319 pos=2032.665405,1703.930908,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=239 id=124 owner=1 template='Amb_DesertNatureWindThinLoop' before=0xB56C7319 after=0x9A906987 pos=3161.188721,2249.228027,121.469032
+[ONLINE-CRC-OBJECT] frame=200 index=240 id=123 owner=1 template='Amb_DesertNatureWindThinLoop' before=0x9A906987 after=0x84A6669D pos=1789.733398,2313.457764,27.283888
+[ONLINE-CRC-OBJECT] frame=200 index=241 id=122 owner=1 template='Amb_DesertNatureWindThinLoop' before=0x84A6669D after=0xDB95500F pos=904.451599,2331.128906,105.151184
+[ONLINE-CRC-OBJECT] frame=200 index=242 id=121 owner=1 template='Amb_DesertNatureWindThinLoop' before=0xDB95500F after=0x90B50984 pos=215.719330,2395.914551,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=243 id=120 owner=1 template='Amb_DesertNatureWindThinLoop' before=0x90B50984 after=0x1398F2F4 pos=788.760620,1593.675537,100.860054
+[ONLINE-CRC-OBJECT] frame=200 index=244 id=119 owner=1 template='Amb_DesertNatureWindThinLoop' before=0x1398F2F4 after=0x340AD290 pos=2859.484619,1049.502686,109.600510
+[ONLINE-CRC-OBJECT] frame=200 index=245 id=118 owner=1 template='Amb_DesertNatureWindThinLoop' before=0x340AD290 after=0x9511901B pos=3314.026611,1604.053467,120.141739
+[ONLINE-CRC-OBJECT] frame=200 index=246 id=117 owner=1 template='Amb_DesertNatureWindThinLoop' before=0x9511901B after=0xB16BF69D pos=3302.906738,1200.288086,119.123398
+[ONLINE-CRC-OBJECT] frame=200 index=247 id=116 owner=1 template='Amb_DesertNatureWindThinLoop' before=0xB16BF69D after=0xD0C6CB4A pos=3826.034424,2254.309082,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=248 id=115 owner=1 template='Amb_DesertNatureWindThinLoop' before=0xD0C6CB4A after=0xE777A0E0 pos=1259.401733,991.733887,123.675224
+[ONLINE-CRC-OBJECT] frame=200 index=249 id=114 owner=1 template='Amb_DesertNatureWindThinLoop' before=0xE777A0E0 after=0x2701938D pos=871.722412,1107.301270,106.467064
+[ONLINE-CRC-OBJECT] frame=200 index=250 id=113 owner=1 template='Amb_DesertNatureWindThinLoop' before=0x2701938D after=0x1D762521 pos=1256.112305,-11.627197,115.120995
+[ONLINE-CRC-OBJECT] frame=200 index=251 id=112 owner=1 template='Amb_DesertNatureWindThinLoop' before=0x1D762521 after=0x2696DC2A pos=1889.999634,-82.461670,115.807808
+[ONLINE-CRC-OBJECT] frame=200 index=252 id=111 owner=1 template='Amb_DesertNatureWindThinLoop' before=0x2696DC2A after=0xC416203D pos=2705.183105,60.439240,123.750000
+[ONLINE-CRC-OBJECT] frame=200 index=253 id=110 owner=1 template='Amb_WinterNatureWind' before=0xC416203D after=0x1FE5A1C2 pos=403.227386,3175.020996,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=254 id=109 owner=1 template='Amb_WinterNatureWind' before=0x1FE5A1C2 after=0x68F59D23 pos=376.016937,3712.905273,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=255 id=108 owner=1 template='Amb_WinterNatureWind' before=0x68F59D23 after=0xAB4CEEA3 pos=366.066101,4297.155762,90.269470
+[ONLINE-CRC-OBJECT] frame=200 index=256 id=107 owner=1 template='Amb_WinterNatureWind' before=0xAB4CEEA3 after=0x2213B83B pos=419.517944,4816.506836,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=257 id=106 owner=1 template='Amb_WinterNatureWind' before=0x2213B83B after=0x5325B052 pos=948.099731,4863.097168,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=258 id=105 owner=1 template='Amb_WinterNatureWind' before=0x5325B052 after=0x8804DC55 pos=1476.757080,4965.379883,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=259 id=104 owner=1 template='Amb_WinterNatureWind' before=0x8804DC55 after=0x1A8C9CB8 pos=2029.561401,4889.550293,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=260 id=103 owner=1 template='Amb_WinterNatureWind' before=0x1A8C9CB8 after=0x80CF19B7 pos=2533.534180,4770.738770,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=261 id=102 owner=1 template='Amb_WinterNatureWind' before=0x80CF19B7 after=0x08962485 pos=3045.333252,4802.636719,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=262 id=101 owner=1 template='Amb_WinterNatureWind' before=0x08962485 after=0x361C9CD4 pos=3487.201416,4883.956543,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=263 id=100 owner=1 template='Amb_WinterNatureWind' before=0x361C9CD4 after=0x713B942F pos=3621.819092,4290.950684,88.809418
+[ONLINE-CRC-OBJECT] frame=200 index=264 id=99 owner=1 template='Amb_WinterNatureWind' before=0x713B942F after=0xACE69630 pos=3630.340332,3803.065430,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=265 id=98 owner=1 template='Amb_WinterNatureWind' before=0xACE69630 after=0xE878AB47 pos=3629.644775,3046.816406,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=266 id=97 owner=1 template='Amb_WinterNatureWind' before=0xE878AB47 after=0x3D2493B7 pos=3182.226318,3480.164551,32.778282
+[ONLINE-CRC-OBJECT] frame=200 index=267 id=95 owner=1 template='Amb_WinterNatureWind' before=0x3D2493B7 after=0xD0DC4A12 pos=2161.901123,3614.532471,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=268 id=94 owner=1 template='Amb_WinterNatureWind' before=0xD0DC4A12 after=0xE3650B95 pos=1846.532593,4380.916016,57.671776
+[ONLINE-CRC-OBJECT] frame=200 index=269 id=92 owner=1 template='Amb_WinterNatureWind' before=0xE3650B95 after=0x69FE2572 pos=778.804443,3422.462402,44.599159
+[ONLINE-CRC-OBJECT] frame=200 index=270 id=91 owner=1 template='Amb_WinterNatureWind' before=0x69FE2572 after=0xCB46637A pos=1958.621216,3094.530273,21.336174
+[ONLINE-CRC-OBJECT] frame=200 index=271 id=90 owner=1 template='Amb_WinterNatureWindCold' before=0xCB46637A after=0x25CDCA62 pos=3106.205078,2932.534668,124.620880
+[ONLINE-CRC-OBJECT] frame=200 index=272 id=89 owner=1 template='Amb_WinterNatureWindCold' before=0x25CDCA62 after=0x127AFCD7 pos=879.300110,2974.542725,123.706268
+[ONLINE-CRC-OBJECT] frame=200 index=273 id=88 owner=1 template='Amb_WinterNatureWindLoop' before=0x127AFCD7 after=0x04EE9578 pos=745.518372,3842.082031,104.071350
+[ONLINE-CRC-OBJECT] frame=200 index=274 id=87 owner=1 template='Amb_WinterNatureWindLoop' before=0x04EE9578 after=0x598F2BA1 pos=784.981384,4243.581055,117.120575
+[ONLINE-CRC-OBJECT] frame=200 index=275 id=86 owner=1 template='Amb_WinterNatureWindLoop' before=0x598F2BA1 after=0x585B7632 pos=1243.958618,4353.040039,96.702042
+[ONLINE-CRC-OBJECT] frame=200 index=276 id=85 owner=1 template='Amb_WinterNatureWindLoop' before=0x585B7632 after=0x39A0BE49 pos=2762.640625,4321.069824,97.961235
+[ONLINE-CRC-OBJECT] frame=200 index=277 id=84 owner=1 template='Amb_WinterNatureWindLoop' before=0x39A0BE49 after=0x333832DD pos=3172.522217,4308.994629,112.577271
+[ONLINE-CRC-OBJECT] frame=200 index=278 id=83 owner=1 template='Amb_WinterNatureWindLoop' before=0x333832DD after=0x3BDEED40 pos=3270.021484,3804.521973,124.986458
+[ONLINE-CRC-OBJECT] frame=200 index=279 id=82 owner=1 template='Amb_WinterNatureWindLoop' before=0x3BDEED40 after=0x39F2B426 pos=1079.584473,2983.497070,123.602257
+[ONLINE-CRC-OBJECT] frame=200 index=280 id=81 owner=1 template='Amb_WinterNatureWindLoop' before=0x39F2B426 after=0x0CE28F48 pos=2985.494141,2926.887451,155.553986
+[ONLINE-CRC-OBJECT] frame=200 index=281 id=80 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0x0CE28F48 after=0x1D7E6FBB pos=214.403641,4267.666504,87.354164
+[ONLINE-CRC-OBJECT] frame=200 index=282 id=79 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0x1D7E6FBB after=0x8046DD2E pos=219.453491,4978.555664,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=283 id=78 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0x8046DD2E after=0x851C4B49 pos=843.294312,5041.383789,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=284 id=77 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0x851C4B49 after=0x641D0C6B pos=1695.805420,3953.628418,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=285 id=76 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0x641D0C6B after=0x0BBD30E3 pos=2323.161133,4016.568359,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=286 id=75 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0x0BBD30E3 after=0xD162809B pos=3776.650391,4956.302734,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=287 id=74 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0xD162809B after=0x054E2944 pos=3478.115723,3583.844238,61.608028
+[ONLINE-CRC-OBJECT] frame=200 index=288 id=73 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0x054E2944 after=0xD1512201 pos=1123.861938,2736.333984,27.017260
+[ONLINE-CRC-OBJECT] frame=200 index=289 id=72 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0xD1512201 after=0xF46368F9 pos=163.250061,3645.289307,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=290 id=71 owner=1 template='Amb_DesertNatureWindTreesLoop' before=0xF46368F9 after=0xD72B3DB7 pos=2341.961670,2838.183105,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=291 id=70 owner=1 template='Amb_TemperateTownDayAmbientLoop' before=0xD72B3DB7 after=0xD64E604D pos=2089.834473,2727.110352,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=292 id=69 owner=1 template='Amb_WinterNatureWindCold' before=0xD64E604D after=0x38046ABE pos=13.161987,3814.295898,105.315620
+[ONLINE-CRC-OBJECT] frame=200 index=293 id=68 owner=1 template='Amb_WinterNatureWindCold' before=0x38046ABE after=0x6F5595A2 pos=33.675442,4734.875000,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=294 id=67 owner=1 template='Amb_WinterNatureWindCold' before=0x6F5595A2 after=0x3F1A58FA pos=607.965759,5417.397949,95.634995
+[ONLINE-CRC-OBJECT] frame=200 index=295 id=66 owner=1 template='Amb_WinterNatureWindCold' before=0x3F1A58FA after=0x8C5CE9A5 pos=1138.161987,5297.633301,117.945877
+[ONLINE-CRC-OBJECT] frame=200 index=296 id=65 owner=1 template='Amb_WinterNatureWindCold' before=0x8C5CE9A5 after=0x47FF0070 pos=1869.448242,5420.454590,70.322838
+[ONLINE-CRC-OBJECT] frame=200 index=297 id=64 owner=1 template='Amb_WinterNatureWindCold' before=0x47FF0070 after=0x907F9FE5 pos=2781.514404,5250.178223,123.901688
+[ONLINE-CRC-OBJECT] frame=200 index=298 id=63 owner=1 template='Amb_WinterNatureWindCold' before=0x907F9FE5 after=0x278D6B3B pos=3603.230957,5402.114258,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=299 id=62 owner=1 template='Amb_WinterNatureWindCold' before=0x278D6B3B after=0xB2CFE62B pos=3966.689209,5012.436523,102.930717
+[ONLINE-CRC-OBJECT] frame=200 index=300 id=61 owner=1 template='Amb_WinterNatureWindCold' before=0xB2CFE62B after=0x084B44E4 pos=3983.896484,3743.745361,105.095596
+[ONLINE-CRC-OBJECT] frame=200 index=301 id=60 owner=1 template='Amb_WinterNatureWindCold' before=0x084B44E4 after=0x5155FF73 pos=3951.973633,3260.664551,123.519821
+[ONLINE-CRC-OBJECT] frame=200 index=302 id=59 owner=1 template='Amb_TemperateForestBirdsLoop' before=0x5155FF73 after=0x294A0F80 pos=1713.379761,3865.741211,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=303 id=58 owner=1 template='Amb_TemperateForestBirdsLoop' before=0x294A0F80 after=0x9C34A8CE pos=554.465332,3511.947754,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=304 id=57 owner=1 template='Amb_TemperateForestBirds' before=0x9C34A8CE after=0xA07E73F6 pos=156.739410,4642.351562,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=305 id=56 owner=1 template='Amb_TemperateForestBirds' before=0xA07E73F6 after=0x6C3DDD11 pos=743.649292,4703.548340,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=306 id=55 owner=1 template='Amb_TemperateForestBirds' before=0x6C3DDD11 after=0x9E241DDA pos=1778.864746,4684.219238,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=307 id=54 owner=1 template='Amb_TemperateForestBirds' before=0x9E241DDA after=0xA23F84E4 pos=2278.604736,4661.439941,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=308 id=53 owner=1 template='Amb_TemperateForestBirds' before=0xA23F84E4 after=0x8B98E968 pos=3565.716309,5215.455078,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=309 id=52 owner=1 template='Amb_TemperateForestBirds' before=0x8B98E968 after=0x062FD2F0 pos=3821.724121,4566.896484,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=310 id=51 owner=1 template='Amb_TemperateForestBirds' before=0x062FD2F0 after=0xDC64FA08 pos=3818.009277,3727.815918,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=311 id=50 owner=1 template='Amb_TemperateForestBirds' before=0xDC64FA08 after=0x24733F53 pos=2910.485840,3537.436523,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=312 id=49 owner=1 template='Amb_TemperateForestBirds' before=0x24733F53 after=0x3D812CDD pos=2492.077148,3618.761230,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=313 id=48 owner=1 template='Amb_TemperateForestBirds' before=0x3D812CDD after=0xD06E2FA6 pos=1881.745972,3051.812988,17.613316
+[ONLINE-CRC-OBJECT] frame=200 index=314 id=47 owner=1 template='Amb_TemperateForestBirds' before=0xD06E2FA6 after=0x7431B0FF pos=943.443726,2758.196289,45.819530
+[ONLINE-CRC-OBJECT] frame=200 index=315 id=46 owner=1 template='Amb_TemperateForestBirds' before=0x7431B0FF after=0x1F49717C pos=3382.644531,2690.633301,58.875713
+[ONLINE-CRC-OBJECT] frame=200 index=316 id=45 owner=1 template='Amb_TemperateForestBirds' before=0x1F49717C after=0xE24AE601 pos=259.656494,3431.982178,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=317 id=44 owner=1 template='Amb_DesertNatureDayBirds2' before=0xE24AE601 after=0x9406AA77 pos=521.341125,3981.614746,69.475922
+[ONLINE-CRC-OBJECT] frame=200 index=318 id=43 owner=1 template='Amb_DesertNatureDayBirds2' before=0x9406AA77 after=0x3BC8458D pos=415.041718,5299.610352,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=319 id=42 owner=1 template='Amb_DesertNatureDayBirds2' before=0x3BC8458D after=0x5DEED464 pos=1347.384888,4596.120117,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=320 id=41 owner=1 template='Amb_DesertNatureDayBirds2' before=0x5DEED464 after=0xB2B755CE pos=991.221436,4069.523926,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=321 id=40 owner=1 template='Amb_DesertNatureDayBirds2' before=0xB2B755CE after=0x19EF82F1 pos=1771.009888,3524.907471,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=322 id=39 owner=1 template='Amb_DesertNatureDayBirds2' before=0x19EF82F1 after=0xC41EDED6 pos=2712.922363,4073.897705,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=323 id=38 owner=1 template='Amb_DesertNatureDayBirds2' before=0xC41EDED6 after=0x1AA82716 pos=3802.029053,3650.909424,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=324 id=37 owner=1 template='Amb_DesertNatureDayBirds2' before=0x1AA82716 after=0x0EB0E9E1 pos=3052.700928,5269.929199,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=325 id=36 owner=1 template='Amb_DesertNatureDayBirds2' before=0x0EB0E9E1 after=0x1BEE2ECA pos=3280.845459,4485.750000,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=326 id=35 owner=1 template='Amb_DesertNatureDayBirds2' before=0x1BEE2ECA after=0x099CE4DF pos=237.736816,2824.410400,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=327 id=34 owner=1 template='Amb_DesertNatureDayBirds2' before=0x099CE4DF after=0xEAC2BFA0 pos=2165.344482,4737.636719,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=328 id=33 owner=1 template='Amb_DesertNatureDayBirds2' before=0xEAC2BFA0 after=0x0E156EE8 pos=2869.182617,3323.989990,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=329 id=32 owner=1 template='Amb_DesertNatureDayBirds2' before=0x0E156EE8 after=0xD31AC852 pos=1000.856140,3313.992188,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=330 id=31 owner=1 template='Amb_TemperateTownDayAmbientLoop' before=0xD31AC852 after=0x1984EEF7 pos=3708.234131,2673.652344,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=331 id=30 owner=1 template='Amb_TemperateTownDayAmbientLoop' before=0x1984EEF7 after=0x2C41DCBA pos=307.459900,2751.917969,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=332 id=29 owner=1 template='Amb_TemperateForestBirdsLoop' before=0x2C41DCBA after=0x40F99399 pos=2600.128174,3610.042969,31.250000
+[ONLINE-CRC-OBJECT] frame=200 index=333 id=28 owner=1 template='Amb_TemperateForestBirdsLoop' before=0x40F99399 after=0x066F6EC2 pos=3774.094727,3753.177246,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=334 id=27 owner=1 template='Amb_TemperateForestBirdsLoop' before=0x066F6EC2 after=0x79FD63E0 pos=3788.730469,4887.016113,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=335 id=26 owner=1 template='Amb_TemperateForestBirdsLoop' before=0x79FD63E0 after=0xEB3C0D34 pos=2264.844727,4759.179199,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=336 id=25 owner=1 template='Amb_TemperateForestBirdsLoop' before=0xEB3C0D34 after=0x5D02A96F pos=778.202515,4682.396973,93.750000
+[ONLINE-CRC-OBJECT] frame=200 index=337 id=24 owner=1 template='Amb_TemperateForestBirdsLoop' before=0x5D02A96F after=0xEAC27E7D pos=423.939026,2771.260986,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=338 id=23 owner=1 template='Amb_TemperateForestBirdsLoop' before=0xEAC27E7D after=0xB20BA83F pos=3896.268555,2756.549805,62.500000
+[ONLINE-CRC-OBJECT] frame=200 index=339 id=22 owner=1 template='Amb_TemperateForestBirdsLoop' before=0xB20BA83F after=0xF0896858 pos=3152.907227,2620.901855,43.306713
+[ONLINE-CRC-OBJECT] frame=200 index=340 id=21 owner=1 template='Hedge1' before=0xF0896858 after=0xFDFA411F pos=1675.916504,2805.306152,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=341 id=20 owner=1 template='Hedge1' before=0xFDFA411F after=0xC9C27749 pos=1659.370117,2805.199951,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=342 id=19 owner=1 template='Hedge1' before=0xC9C27749 after=0x8CFE945F pos=1642.930054,2805.241211,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=343 id=18 owner=1 template='Hedge1' before=0x8CFE945F after=0xBCF95CF8 pos=1626.193481,2805.241211,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=344 id=17 owner=1 template='Hedge1' before=0xBCF95CF8 after=0xC71B1309 pos=1613.100342,2805.565674,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=345 id=16 owner=1 template='Hedge1' before=0xC71B1309 after=0x3F5A2C6D pos=2054.558105,2636.392090,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=346 id=15 owner=1 template='Hedge1' before=0x3F5A2C6D after=0x4B318CA5 pos=2043.129150,2647.804688,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=347 id=14 owner=1 template='Hedge1' before=0x4B318CA5 after=0x98E992C2 pos=2032.400024,2658.818115,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=348 id=13 owner=1 template='Hedge1' before=0x98E992C2 after=0x6ACDB4DC pos=2021.996582,2669.113770,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=349 id=12 owner=1 template='Hedge1' before=0x6ACDB4DC after=0x141A5438 pos=2008.621460,2683.694580,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=350 id=11 owner=1 template='Hedge1' before=0x141A5438 after=0xE31AE515 pos=1647.635010,2631.559570,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=351 id=10 owner=1 template='Hedge1' before=0xE31AE515 after=0xD0EEE3B9 pos=1631.059082,2632.574951,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=352 id=9 owner=1 template='Hedge1' before=0xD0EEE3B9 after=0xAB0CEF13 pos=1614.409058,2632.830078,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=353 id=8 owner=1 template='Hedge1' before=0xAB0CEF13 after=0xD0E9AA90 pos=1606.558105,2633.342041,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=354 id=7 owner=1 template='Chalet3' before=0xD0E9AA90 after=0x456B46DA pos=2238.610107,2781.473389,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=355 id=6 owner=1 template='GermanTownHouse1' before=0x456B46DA after=0xC05B499D pos=2379.574463,2729.847412,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=356 id=5 owner=1 template='GermanTownHouse2' before=0xC05B499D after=0x6B4AFA59 pos=2326.778809,2734.885498,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=357 id=4 owner=1 template='GermanWindMill01' before=0x6B4AFA59 after=0x83A09441 pos=1377.309204,2803.168701,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=358 id=3 owner=1 template='GermanCotage01' before=0x83A09441 after=0x42495DFC pos=1386.236938,2662.694824,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=359 id=2 owner=1 template='CBGerbl06' before=0x42495DFC after=0x977481FD pos=2441.539062,2742.258789,10.000000
+[ONLINE-CRC-OBJECT] frame=200 index=360 id=1 owner=1 template='GermanTownHouse1' before=0x977481FD after=0x44EC539A pos=2462.135986,2802.197021,10.000000
+[ONLINE-CRC-TRACE] frame=200 stage=objects crc=0x44EC539A objectCount=361
+[ONLINE-CRC-TRACE] frame=200 stage=rng crc=0x50AA4315 rngCRC=0xC7D19BE0
+[ONLINE-CRC-TRACE] frame=200 stage=partition crc=0x9BD8761C
+[ONLINE-CRC-TRACE] frame=200 stage=players crc=0x012B1711
+[ONLINE-CRC-TRACE] frame=200 stage=ai crc=0x5AB17B12
+[ONLINE-CRC-REVISION-PROBE] frame=200 without=0x5AB17B12 with=0x9B8D5950 revision=0x474F0001 selected=without-change\n[ONLINE-CRC-TRACE] frame=200 stage=final crc=0x5AB17B12
