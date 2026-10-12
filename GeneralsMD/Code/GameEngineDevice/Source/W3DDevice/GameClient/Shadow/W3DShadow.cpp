@@ -141,7 +141,7 @@ Bool W3DShadowManager::init()
 		if (!initialized || !acquired)
 		{
 			fprintf(stderr, "[SHADOW-DIAG] volumetric initialization failed (init=%d resources=%d)\n", initialized, acquired);
-			}
+		}
 		else
 			result = TRUE;
 	}
