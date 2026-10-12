@@ -1,6 +1,6 @@
 --- a/GeneralsMD/Code/GameEngineDevice/Source/W3DDevice/GameClient/Shadow/W3DProjectedShadow.cpp
 +++ b/GeneralsMD/Code/GameEngineDevice/Source/W3DDevice/GameClient/Shadow/W3DProjectedShadow.cpp
-@@ -270,2 +270,15 @@
+@@ -270,2 +270,13 @@
  			m_dynamicRenderTarget=DX8Wrapper::Create_Render_Target (DEFAULT_RENDER_TARGET_WIDTH, DEFAULT_RENDER_TARGET_HEIGHT);
  	}
 +#if defined(__APPLE__)
