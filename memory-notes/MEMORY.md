@@ -52,3 +52,7 @@
 ### 2026-10-12: projected shadow copy bounds (5f21fa2)
 - In `GeneralsMD/.../Shadow/W3DProjectedShadow.cpp`, `W3DProjectedShadow::updateTexture` now queries source and destination surface dimensions and copies their minimum rectangle, instead of always requesting 512x512. This matches the Apple 256x256 render-target fallback that reportedly enabled infantry 2D shadows.
 - Only `fix/mods-visible-cross-platform-sync` changed. Not compiled or device-tested. Vehicle/building 3D shadow selection, wave-shader water reflections, and black terrain-edge corruption remain unresolved and must not be reported fixed.
+
+### 2026-10-12: vehicle/building shadow fallback (2943ec3)
+- In GeneralsMD W3DShadow.cpp `addShadow`, try original SHADOW_VOLUME first. On Apple only, if volume creation fails (stencil unavailable, disabled volumes, or geometry failure), attempt `SHADOW_DYNAMIC_PROJECTION` with a local copy of ShadowTypeInfo. Preserve original shadow settings and non-Apple behavior.
+- Not device-tested; projected manager may still be unavailable, and projection might not be valid for all models. This does not restore genuine stencil 3D shadows, and water reflection/terrain-edge bugs remain unresolved.
