@@ -1897,6 +1897,13 @@ void HeightMapRenderObjClass::Render(RenderInfoClass & rinfo)
 	W3DShaderManager::ShaderTypes st;
 	const Bool doCloud = useCloud();
 
+	if (doCloud)
+	{
+		// TheSuperHackers @tweak Updates the cloud movement before applying it to the world.
+		// Is now decoupled from logic step.
+		W3DShaderManager::updateCloud();
+	}
+
 	Matrix3D tm(Transform);
 #if 0 // There is some weirdness sometimes with the dx8 static buffers.
 			// This usually fixes terrain flashing.  jba.

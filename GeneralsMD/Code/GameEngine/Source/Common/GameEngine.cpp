@@ -642,6 +642,7 @@ void GameEngine::init()
 				"  MaxCameraHeight = 350.0\n"
 				"  ; Slightly lower than vanilla (120) so casual zoom-in feels useful.\n"
 				"  MinCameraHeight = 100.0\n"
+					"  ; The launcher defaults to 350 height / 35 degree pitch / 70 minimum.\n"
 					"  ; Still soft-disabled so the user can push past max without a hard clamp.\n"
 					"  EnforceMaxCameraHeight = No\n"
 					"  ; Keyboard scroll - vanilla 0.5 is sluggish, double it.\n"
@@ -855,6 +856,14 @@ void GameEngine::init()
 #endif
 
 		initSubsystem(TheUpgradeCenter,"TheUpgradeCenter", MSGNEW("GameEngineSubsystem") UpgradeCenter, &xferCRC, "Data\\INI\\Default\\Upgrade", "Data\\INI\\Upgrade");
+		{
+			const UpgradeTemplate *gxRods = TheUpgradeCenter->findUpgrade("Upgrade_AmericaAdvancedControlRods");
+			fprintf(stderr, "[ONLINE-NAMEKEY-CHECK] Upgrade_AmericaAdvancedControlRods=%d expected=2265\n",
+				gxRods ? (int)gxRods->getUpgradeNameKey() : -1);
+			fflush(stderr);
+		}
+		// Match GeneralsOnline PC name-key ordering before the game client loads any windows.
+		TheFunctionLexicon->gxKeyPortOnlyEntries();
 		initSubsystem(TheGameClient,"TheGameClient", createGameClient(), nullptr);
 
 
@@ -1113,6 +1122,26 @@ Bool GameEngine::canUpdateGameLogic()
 
 	TheFramePacer->setTimeFrozen(isTimeFrozen());
 	TheFramePacer->setGameHalted(isGameHalted());
+
+	// The animated main-menu Shell Map is a local simulation, not a multiplayer
+	// match. Keep its units at the original 30 logic steps per second even when
+	// the renderer runs at 60/120 FPS or the regular logic time scale is off.
+	// This does not change rendering cadence or gameplay/network timing.
+	static UnsignedInt lastShellLogicTime = 0;
+	if (TheGameLogic->isInShellGame())
+	{
+		const UnsignedInt now = timeGetTime();
+		if (lastShellLogicTime == 0)
+		{
+			lastShellLogicTime = now;
+			return true;
+		}
+		if (now - lastShellLogicTime < 33)
+			return false;
+		lastShellLogicTime = now;
+		return true;
+	}
+	lastShellLogicTime = 0;
 
 	if (TheNetwork != nullptr)
 	{

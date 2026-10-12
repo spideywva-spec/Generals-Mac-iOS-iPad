@@ -59,11 +59,8 @@
 #include "GameLogic/ScriptEngine.h"
 #include "GameLogic/Weapon.h"
 
-#if __cplusplus >= 201611L && !defined(__APPLE__)
-#define USE_STD_FROM_CHARS_PARSING 1
-#else
+// GeneralsOnline PC parses simulation INI numbers with sscanf; keep that parser on every target.
 #define USE_STD_FROM_CHARS_PARSING 0
-#endif
 
 #if USE_STD_FROM_CHARS_PARSING
 #include <charconv>

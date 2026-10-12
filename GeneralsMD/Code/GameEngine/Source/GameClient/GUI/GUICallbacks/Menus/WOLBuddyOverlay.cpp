@@ -173,6 +173,13 @@ void InitBuddyControls(Int type)
 		buddyControls.listboxChatID = TheNameKeyGenerator->nameToKey( "WOLBuddyOverlay.wnd:ListboxBuddyChat" );
 		buddyControls.listboxBuddies = TheWindowManager->winGetWindowFromId( nullptr,  buddyControls.listboxBuddiesID );
 		buddyControls.listboxChat = TheWindowManager->winGetWindowFromId( nullptr,  buddyControls.listboxChatID);
+		// An absent communicator widget must not be dereferenced on iOS.
+		// Keep the buddy controls inactive until the complete layout exists.
+		if (!buddyControls.textEntryEdit || !buddyControls.listboxBuddies || !buddyControls.listboxChat)
+		{
+			buddyControls.isInit = FALSE;
+			break;
+		}
 		GadgetTextEntrySetText(buddyControls.textEntryEdit, UnicodeString::TheEmptyString);
 		buddyControls.isInit = TRUE;
 		break;
@@ -183,6 +190,13 @@ void InitBuddyControls(Int type)
 		buddyControls.listboxChatID = TheNameKeyGenerator->nameToKey( "Diplomacy.wnd:ListboxBuddyChat" );
 		buddyControls.listboxBuddies = TheWindowManager->winGetWindowFromId( nullptr,  buddyControls.listboxBuddiesID );
 		buddyControls.listboxChat = TheWindowManager->winGetWindowFromId( nullptr,  buddyControls.listboxChatID);
+		// An absent communicator widget must not be dereferenced on iOS.
+		// Keep the buddy controls inactive until the complete layout exists.
+		if (!buddyControls.textEntryEdit || !buddyControls.listboxBuddies || !buddyControls.listboxChat)
+		{
+			buddyControls.isInit = FALSE;
+			break;
+		}
 		GadgetTextEntrySetText(buddyControls.textEntryEdit, UnicodeString::TheEmptyString);
 		buddyControls.isInit = TRUE;
 		break;

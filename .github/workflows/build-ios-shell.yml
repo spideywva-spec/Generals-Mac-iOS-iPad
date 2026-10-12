@@ -8,6 +8,7 @@ on:
       - main
       - a13-ios-build
       - generealss-spideywv
+      - fix/mods-visible-cross-platform-sync
     paths:
       - 'GeneralsMD/**'
       - 'launcher_web/**'
@@ -25,6 +26,7 @@ on:
       - 'vcpkg_ports/gamenetworkingsockets/**'
       - 'vcpkg-lock.json'
       - 'Patches/dxvk-ios.patch'
+      - 'Patches/apple/**'
       - 'ios/**'
       - '!ios/version.env'
       - 'scripts/build/ios/package-shell.sh'
@@ -56,6 +58,24 @@ jobs:
         with:
           fetch-depth: 0
           submodules: false
+
+      - name: Apply all 12 Apple graphics patches
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          patches=(Patches/apple/*.patch)
+          if [[ ${#patches[@]} -ne 12 ]]; then
+            echo "ERROR: Expected 12 Apple graphics patches, found ${#patches[@]}"
+            exit 1
+          fi
+          for patch_file in "${patches[@]}"; do
+            echo "Checking ${patch_file}"
+            git apply --check --whitespace=nowarn "${patch_file}"
+            echo "Applying ${patch_file}"
+            git apply --whitespace=nowarn "${patch_file}"
+          done
+          echo "All 12 Apple graphics patches applied to the CI workspace."
 
       - name: Checkout DXVK fork
         run: git submodule update --init --recursive --depth 1 references/fbraz3-dxvk
@@ -189,7 +209,7 @@ jobs:
           CXX: clang++
         run: |
           mkdir -p logs
-          cmake --preset ios-vulkan-online -DSAGE_USE_DETERMINISTIC_MATH=ON -DCMAKE_CXX_FLAGS=-ferror-limit=0 2>&1 | tee logs/configure_ios_hub_online.log
+          cmake --preset ios-vulkan-online -DCMAKE_CXX_FLAGS=-ferror-limit=0 2>&1 | tee logs/configure_ios_hub_online.log
           test ${PIPESTATUS[0]} -eq 0
 
       - name: Save vcpkg binaries

@@ -4496,9 +4496,36 @@ UnsignedInt GameLogic::getCRC( Int mode, AsciiString deepCRCFileName )
 		TheGameState->friend_xferSaveDataForCRC(xferCRC, SNAPSHOT_DEEPCRC_LOGICONLY);
 	}
 
+#if defined(GENERALS_ONLINE)
+	// Diagnostic only: compare the current checksum with the GeneralsOnline PC
+	// revision-tag variant on the exact same simulation frame. Do not change the
+	// checksum returned to the game until the server/API CRC contract is confirmed.
+	UnsignedInt onlineCRCWithoutRevision = 0;
+	Bool onlineCRCRevisionProbeValid = FALSE;
+	if (isInGameLogicUpdate() && (m_frame == 100 || m_frame == 200)
+		&& xferCRC->getXferMode() == XFER_CRC && deepCRCFileName.isEmpty())
+	{
+		onlineCRCWithoutRevision = xferCRC->getCRC();
+		marker = "MARKER:OfficialLogicCRCRevision";
+		xferCRC->xferAsciiString(&marker);
+		UnsignedInt revision = 0x474F0001u;
+		xferCRC->xferUnsignedInt(&revision);
+		const UnsignedInt onlineCRCWithRevision = xferCRC->getCRC();
+		fprintf(stderr,
+		        "[ONLINE-CRC-REVISION-PROBE] frame=%d without=0x%08X with=0x%08X revision=0x%08X selected=without-change\\n",
+		        m_frame, onlineCRCWithoutRevision, onlineCRCWithRevision, revision);
+		fflush(stderr);
+		onlineCRCRevisionProbeValid = TRUE;
+	}
+#endif
+
 	xferCRC->close();
 
 	UnsignedInt theCRC = xferCRC->getCRC();
+#if defined(GENERALS_ONLINE)
+	if (onlineCRCRevisionProbeValid)
+		theCRC = onlineCRCWithoutRevision;
+#endif
 #if defined(GENERALS_ONLINE)
 	if (onlineCRCTrace)
 		fprintf(stderr, "[ONLINE-CRC-TRACE] frame=%d stage=final crc=0x%08X\n", m_frame, theCRC);

@@ -1,0 +1,14 @@
+--- a/GeneralsMD/Code/GameEngineDevice/Source/W3DDevice/GameClient/W3DShroud.cpp
++++ b/GeneralsMD/Code/GameEngineDevice/Source/W3DDevice/GameClient/W3DShroud.cpp
+@@ -268,5 +268,10 @@
+ 		return 0;
+ 
+-	if (x < m_numCellsX && y < m_numCellsY)
++	if (x < m_numCellsX && y < m_numCellsY)
++#if defined(__APPLE__)
++	// Guard shroud reads when the backing surface was lost on iOS.
++		if (!m_srcTextureData || m_srcTexturePitch < (x + 1) * 2)
++			return 0;
++#endif
+ 	{
+ 		UnsignedShort pixel=*(UnsignedShort *)((Byte *)m_srcTextureData + x*2 + y*m_srcTexturePitch);

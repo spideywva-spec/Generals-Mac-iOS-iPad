@@ -916,18 +916,6 @@ WWINLINE void DX8Wrapper::Set_DX8_Render_State(D3DRENDERSTATETYPE state, unsigne
 	// Can't monitor state changes because setShader call to GERD may change the states!
 	if (RenderStates[state]==value) return;
 
-#if !defined(_WIN32)
-	// DXVK's D3D8 path does not implement legacy N-patch tessellation and emits a
-	// warning for every D3DRS_PATCHSEGMENTS update. Generals does not use N-patches,
-	// so cache the value without forwarding the unsupported state. This removes tens
-	// of thousands of warnings per match without changing rendered output.
-	if (state == D3DRS_PATCHSEGMENTS)
-	{
-		RenderStates[state] = value;
-		return;
-	}
-#endif
-
 #ifdef MESH_RENDER_SNAPSHOT_ENABLED
 	if (WW3D::Is_Snapshot_Activated()) {
 		StringClass value_name(0,true);

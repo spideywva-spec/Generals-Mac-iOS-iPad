@@ -190,17 +190,9 @@ void BitmapHandlerClass::Copy_Image(
 				unsigned pixel10;
 				unsigned pixel1M;
 
-				// Clamp horizontal neighbours at the image edges. The original code
-				// unconditionally sampled one pixel before/after the current row,
-				// which reads out of bounds for x == 0 and x == width - 1. On
-				// macOS/ARM64 this intermittently manifests as SIGBUS while loading
-				// legacy bump textures such as tswaterbump.tga.
-				unsigned char* src_ptr_left = (x == 0) ? src_ptr_mid : src_ptr_mid - src_bpp;
-				unsigned char* src_ptr_right = (x + 1 >= src_surface_width) ? src_ptr_mid : src_ptr_mid + src_bpp;
-
 				Read_B8G8R8A8(pixel00,src_ptr_mid,src_surface_format,nullptr,0);
-				Read_B8G8R8A8(pixel01,src_ptr_right,src_surface_format,nullptr,0);
-				Read_B8G8R8A8(pixelM1,src_ptr_left,src_surface_format,nullptr,0);
+				Read_B8G8R8A8(pixel01,src_ptr_mid+src_bpp,src_surface_format,nullptr,0);
+				Read_B8G8R8A8(pixelM1,src_ptr_mid-src_bpp,src_surface_format,nullptr,0);
 				Read_B8G8R8A8(pixel10,src_ptr_prev_line,src_surface_format,nullptr,0);
 				Read_B8G8R8A8(pixel1M,src_ptr_next_line,src_surface_format,nullptr,0);
 

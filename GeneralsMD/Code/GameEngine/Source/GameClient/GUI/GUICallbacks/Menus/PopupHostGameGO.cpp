@@ -52,6 +52,10 @@
 //-----------------------------------------------------------------------------
 #include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
+
 #include "Common/GlobalData.h"
 #include "Common/NameKeyGenerator.h"
 #include "Common/version.h"
@@ -678,6 +682,14 @@ void createGame()
 	}
 
 	UnicodeString gameName = GadgetTextEntryGetText(textEntryGameName);
+
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+	// Keep the platform label in the server-side lobby name so every client,
+	// including PC and Android, sees [iOS] in the lobby browser.
+	UnicodeString platformGameName(L"[iOS] ");
+	platformGameName.concat(gameName);
+	gameName = platformGameName;
+#endif
 
 	AsciiString passwd;
 	passwd.translate(GadgetTextEntryGetText(textEntryGamePassword));

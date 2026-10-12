@@ -1,0 +1,14 @@
+--- a/Generals/Code/GameEngineDevice/Source/W3DDevice/GameClient/W3DParticleSys.cpp
++++ b/Generals/Code/GameEngineDevice/Source/W3DDevice/GameClient/W3DParticleSys.cpp
+@@ -208,5 +208,10 @@
+ 			continue;	//this system has no particles to render
+ 
+-		TextureClass *texture = W3DDisplay::m_assetManager->Get_Texture( sys->getParticleTypeName().str() );
++		TextureClass *texture = W3DDisplay::m_assetManager->Get_Texture( sys->getParticleTypeName().str() );
++#if defined(__APPLE__)
++		// Preserve explosion shader settings, but skip missing particle assets.
++		if (!texture)
++			continue;
++#endif
+ 
+ 		if ( m_streakLine && sys->isUsingStreak() && (count >= 2) )

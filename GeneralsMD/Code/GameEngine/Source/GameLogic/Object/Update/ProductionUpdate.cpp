@@ -277,6 +277,11 @@ Bool ProductionUpdate::queueUpgrade( const UpgradeTemplate *upgrade )
 	if( isUpgradeInQueue( upgrade ) == TRUE )
 		return FALSE;
 
+	// Match the current GeneralsOnline PC replay: scripts/AI cannot research an upgrade
+	// on a building that is still under construction. This affects upgrade masks in lockstep CRC.
+	if( getObject()->getStatusBits().test( OBJECT_STATUS_UNDER_CONSTRUCTION ) )
+		return FALSE;
+
 	// STOP cheaters by making sure they can actually build this
 	if( !getObject()->canProduceUpgrade(upgrade) )
 		return FALSE;

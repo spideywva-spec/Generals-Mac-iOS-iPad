@@ -1,0 +1,15 @@
+--- a/GeneralsMD/Code/GameEngineDevice/Source/W3DDevice/GameClient/Shadow/W3DVolumetricShadow.cpp
++++ b/GeneralsMD/Code/GameEngineDevice/Source/W3DDevice/GameClient/Shadow/W3DVolumetricShadow.cpp
+@@ -3394,6 +3394,10 @@
+ 	// Only write where stencil val >= 1 (count indicates # of shadows that
+ 	// overlap that pixel)
+-    m_pDev->SetRenderState( D3DRS_STENCILENABLE, TRUE );
+-    m_pDev->SetRenderState( D3DRS_STENCILFUNC, D3DCMP_LESSEQUAL );	//reference value is less or equal to stencil
++    m_pDev->SetRenderState( D3DRS_STENCILENABLE, TRUE );
++#if defined(__APPLE__)
++	// Initialize stencil reference explicitly for Apple stencil comparisons.
++	m_pDev->SetRenderState(D3DRS_STENCILREF, 1);
++#endif
++    m_pDev->SetRenderState( D3DRS_STENCILFUNC, D3DCMP_LESSEQUAL );	//reference value is less or equal to stencil
+     m_pDev->SetRenderState( D3DRS_STENCILPASS, D3DSTENCILOP_KEEP );
+ 	//Upper bits of stencil could be used for storing occluded models which are player colored.  So we mask out those

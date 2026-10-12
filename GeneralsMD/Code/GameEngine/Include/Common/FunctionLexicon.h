@@ -77,6 +77,9 @@ public:
 	virtual void reset() override;
 	virtual void update() override;
 
+	// Delay port-only GUI function name keys until after the PC-compatible upgrade/science stores.
+	void gxKeyPortOnlyEntries();
+
 	/// validate the tables and make sure all entries are unique
 	Bool validate();
 
@@ -118,6 +121,9 @@ protected:
 #ifdef NOT_IN_USE
 	const char *funcToName( void *func, TableEntry *table );  ///< internal searching
 #endif
+	// Port-only GUI names are keyed after upgrades to preserve GeneralsOnline PC name-key numbering.
+	Bool m_gxPortOnlyKeyed;
+
 	void *keyToFunc( NameKeyType key, TableEntry *table );  ///< internal searching
 
 	TableEntry *m_tables[ MAX_FUNCTION_TABLES ];  ///< the lookup tables

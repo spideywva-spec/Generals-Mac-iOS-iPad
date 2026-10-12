@@ -41,8 +41,6 @@
 #include "dx8polygonrenderer.h"
 #include "dx8renderer.h"
 
-static unsigned _DX8PolygonRendererCount = 0;
-
 
 // ----------------------------------------------------------------------------
 
@@ -67,7 +65,6 @@ DX8PolygonRendererClass::DX8PolygonRendererClass(
 {
 	WWASSERT(index_count);
 	mmc->PolygonRendererList.Add_Tail(this);
-	++_DX8PolygonRendererCount;
 }
 
 DX8PolygonRendererClass::DX8PolygonRendererClass(const DX8PolygonRendererClass& src,MeshModelClass* mmc_)
@@ -83,19 +80,11 @@ DX8PolygonRendererClass::DX8PolygonRendererClass(const DX8PolygonRendererClass& 
 	pass(src.pass)
 {
 	mmc->PolygonRendererList.Add_Tail(this);
-	++_DX8PolygonRendererCount;
 }
 
 DX8PolygonRendererClass::~DX8PolygonRendererClass()
 {
 	if (texture_category) texture_category->Remove_Polygon_Renderer(this);
-	if (_DX8PolygonRendererCount > 0)
-		--_DX8PolygonRendererCount;
-}
-
-unsigned DX8PolygonRendererClass::Get_Total_Renderer_Count()
-{
-	return _DX8PolygonRendererCount;
 }
 
 // ----------------------------------------------------------------------------

@@ -84,7 +84,8 @@
                 "CMAKE_MSVC_DEBUG_INFORMATION_FORMAT": "$<$<CONFIG:Release,Debug,RelWithDebInfo>:Embedded>",
                 "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL",
                 "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-                "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/triplets"
+                "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/triplets",
+                "SAGE_USE_DETERMINISTIC_MATH": "OFF"
             }
         },
         {
@@ -304,7 +305,7 @@
             "binaryDir": "${sourceDir}/build/ios-vulkan-online",
             "cacheVariables": {
                 "SAGE_USE_GENERALS_ONLINE": "ON",
-                "SAGE_USE_DETERMINISTIC_MATH": "ON",
+                "SAGE_USE_DETERMINISTIC_MATH": "OFF",
                 "CMAKE_OSX_DEPLOYMENT_TARGET": "16.3",
                 "VCPKG_MANIFEST_FEATURES": "generals-online"
             }
@@ -316,7 +317,7 @@
             "binaryDir": "${sourceDir}/build/macos-vulkan-online",
             "cacheVariables": {
                 "SAGE_USE_GENERALS_ONLINE": "ON",
-                "SAGE_USE_DETERMINISTIC_MATH": "ON",
+                "SAGE_USE_DETERMINISTIC_MATH": "OFF",
                 "VCPKG_MANIFEST_FEATURES": "generals-online"
             }
         }

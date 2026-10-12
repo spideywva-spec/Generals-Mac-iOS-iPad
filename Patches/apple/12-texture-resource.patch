@@ -1,0 +1,16 @@
+--- a/Core/Libraries/Source/WWVegas/WW3D2/texture.cpp
++++ b/Core/Libraries/Source/WWVegas/WW3D2/texture.cpp
+@@ -1001,6 +1001,11 @@
+ 
+ 	IDirect3DSurface8 *d3d_surface = nullptr;
+-	DX8_ErrorCode(Peek_D3D_Texture()->GetSurfaceLevel(level, &d3d_surface));
+-	SurfaceClass *surface = new SurfaceClass(d3d_surface);
++	DX8_ErrorCode(Peek_D3D_Texture()->GetSurfaceLevel(level, &d3d_surface));
++#if defined(__APPLE__)
++	// Some MoltenVK texture formats may fail to expose a mip surface.
++	if (!d3d_surface)
++		return nullptr;
++#endif
++	SurfaceClass *surface = new SurfaceClass(d3d_surface);
+ 	d3d_surface->Release();
+ 

@@ -7905,13 +7905,14 @@ void ScriptEngine::setSequentialTimer(Team *team, Int frameCount)
 void ScriptEngine::evaluateAndProgressAllSequentialScripts()
 {
 	VecSequentialScriptPtrIt it;
-	size_t currIndex = 0;
-	size_t prevIndex = ~0u;
+	// Match GeneralsOnline PC: a replaced script pointer is not a spin merely
+	// because it occupies the same vector index as the previous script.
+	SequentialScript *lastScript = nullptr;
 	Bool itAdvanced = false;
 
 	Int spinCount = 0;
 	for (it = m_sequentialScripts.begin(); it != m_sequentialScripts.end(); /* empty */) {
-		if (currIndex == prevIndex) {
+		if ((*it) == lastScript) {
 			++spinCount;
 		} else {
 			spinCount = 0;
@@ -7924,11 +7925,10 @@ void ScriptEngine::evaluateAndProgressAllSequentialScripts()
 					seqScript->m_scriptToExecuteSequentially->getName().str()));
 			}
 			++it;
-			++currIndex;
 			continue;
 		}
 
-		prevIndex = currIndex;
+		lastScript = (*it);
 		itAdvanced = false;
 
 		SequentialScript *seqScript = (*it);
@@ -8036,7 +8036,6 @@ void ScriptEngine::evaluateAndProgressAllSequentialScripts()
 					// Check to see if executing our action told us to wait. If so, skip to the next Sequential script
 					if (seqScript->m_dontAdvanceInstruction) {
 						++it;
-						++currIndex;
 						itAdvanced = true;
 						continue;
 					}
@@ -8090,7 +8089,6 @@ void ScriptEngine::evaluateAndProgressAllSequentialScripts()
 
 		if (!itAdvanced) {
 			++it;
-			++currIndex;
 		}
 	}
 	m_currentPlayer = nullptr;

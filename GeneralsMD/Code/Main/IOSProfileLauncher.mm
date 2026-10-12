@@ -302,6 +302,39 @@ NSString *EngineOptionsPath()
     return [dir stringByAppendingPathComponent:@"Options.ini"];
 }
 
+// Matches the repository's DefaultOptions.ini for Online/vanilla graphics.
+// Existing Options.ini values always take precedence over these defaults.
+NSMutableDictionary<NSString *, NSString *> *ReadKeyValueFile(NSString *path);
+
+NSDictionary<NSString *, NSString *> *OnlineGraphicsDefaults()
+{
+    return @{
+        @"IdealStaticGameLOD": @"High",
+        @"StaticGameLOD": @"High",
+        @"TextureReduction": @"0",
+        @"HeatEffects": @"Yes",
+        @"DynamicLOD": @"No"
+    };
+}
+
+NSString *OnlineDefaultOptionsPath()
+{
+    return [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/Mods/online/profile/DefaultOptions.ini"];
+}
+
+NSMutableDictionary<NSString *, NSString *> *ReadOnlineGraphicsOptions()
+{
+    // The Online profile is authoritative; keep Options.ini as a compatibility fallback.
+    NSMutableDictionary<NSString *, NSString *> *values = ReadKeyValueFile(EngineOptionsPath());
+    [values addEntriesFromDictionary:ReadKeyValueFile(OnlineDefaultOptionsPath())];
+    [OnlineGraphicsDefaults() enumerateKeysAndObjectsUsingBlock:
+        ^(NSString *key, NSString *value, BOOL *stop) {
+            if (values[key] == nil)
+                values[key] = value;
+        }];
+    return values;
+}
+
 NSMutableDictionary<NSString *, NSString *> *ReadKeyValueFile(NSString *path)
 {
     NSMutableDictionary<NSString *, NSString *> *values = [NSMutableDictionary dictionary];
@@ -358,6 +391,58 @@ BOOL WriteKeyValueFile(NSString *path, NSDictionary<NSString *, NSString *> *val
     return [output writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:error];
 }
 
+// Write both the Online mod defaults and the engine compatibility file.
+// Do not create a partial Online profile before its mod package is installed.
+BOOL WriteOnlineGraphicsOptions(NSDictionary<NSString *, NSString *> *values, NSError **error)
+{
+    NSString *profile = [OnlineDefaultOptionsPath() stringByDeletingLastPathComponent];
+    BOOL isDirectory = NO;
+    if ([[NSFileManager defaultManager] fileExistsAtPath:profile isDirectory:&isDirectory] && isDirectory)
+    {
+        if (!WriteKeyValueFile(OnlineDefaultOptionsPath(), values, error))
+            return NO;
+    }
+    return WriteKeyValueFile(EngineOptionsPath(), values, error);
+}
+
+/*
+ * iOS/MoltenVK compatibility: the stencil-based volumetric shadow pass can
+ * leave a rectangular dark overlay on Apple GPUs. Keep texture/decal shadows
+ * enabled, but migrate existing Options.ini files away from volumetric shadows
+ * once so the user can still explicitly change the setting later.
+ */
+void EnsureIOSShadowVolumeCompatibility()
+{
+    NSString *optionsPath = EngineOptionsPath();
+    NSFileManager *fm = [NSFileManager defaultManager];
+    if (![fm fileExistsAtPath:optionsPath])
+        return;
+
+    NSString *markerPath = [[optionsPath stringByDeletingLastPathComponent]
+        stringByAppendingPathComponent:@"IOSShadowVolumeCompatV1"];
+    // Always re-check: launcher settings may have been saved after the initial migration.
+    // A one-time marker cannot protect against subsequent writes.
+
+    NSMutableDictionary<NSString *, NSString *> *options = ReadKeyValueFile(optionsPath);
+    if (SettingBoolValue(options, @"UseShadowVolumes", NO))
+    {
+        options[@"UseShadowVolumes"] = @"No";
+        NSError *writeError = nil;
+        if (!WriteKeyValueFile(optionsPath, options, &writeError))
+        {
+            fprintf(stderr, "[IOS-GRAPHICS] Failed to migrate volumetric shadows: %s\n",
+                    writeError != nil ? writeError.localizedDescription.UTF8String : "unknown");
+            return;
+        }
+        fprintf(stderr, "[IOS-GRAPHICS] Disabled incompatible volumetric shadows; texture shadows remain enabled\n");
+    }
+
+    NSError *markerError = nil;
+    if (![ @"" writeToFile:markerPath atomically:YES encoding:NSUTF8StringEncoding error:&markerError ])
+        fprintf(stderr, "[IOS-GRAPHICS] Could not write shadow compatibility marker: %s\n",
+                markerError != nil ? markerError.localizedDescription.UTF8String : "unknown");
+}
+
 NSDictionary<NSString *, NSString *> *DefaultContraSettings()
 {
     return @{
@@ -373,7 +458,7 @@ NSDictionary<NSString *, NSString *> *DefaultContraSettings()
         @"ExtraBuildingProps": @"Yes",
         @"UseShadowVolumes": @"No",
         @"UseShadowDecals": @"Yes",
-        @"UseCloudMap": @"No",
+        @"UseCloudMap": @"Yes",
         @"UseLightMap": @"Yes",
         @"ShowSoftWaterEdge": @"Yes",
         @"BuildingOcclusion": @"Yes",
@@ -514,9 +599,9 @@ NSString *DefaultIPadOverrides()
 {
     // GeneralsX @feature dvorovrus 26/09/2026 Default shared iPad tuning.
     return @"GameData\n"
-            @"  MaxCameraHeight = 550.0\n"
+            @"  MaxCameraHeight = 350.0\n"
             @"  MinCameraHeight = 70.0\n"
-            @"  CameraPitch = 37.0\n"
+            @"  CameraPitch = 35.0\n"
             @"  EnforceMaxCameraHeight = No\n"
             @"  KeyboardScrollSpeedFactor = 1.0\n"
             @"  TerrainDrawDistanceScale = 1.20\n"
@@ -677,6 +762,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
                                                object:nil];
 
     self.view.backgroundColor = UIColor.blackColor;
+    EnsureIOSShadowVolumeCompatibility();
     EnsureDefaultIPadOverrides();
 
     NSString *bundledProfile = BundledAutoLaunchProfile();
@@ -1299,7 +1385,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
         }
         else
         {
-            NSDictionary *options = ReadKeyValueFile(EngineOptionsPath());
+            NSDictionary *options = ReadOnlineGraphicsOptions();
             NSString *camera = [NSString stringWithContentsOfFile:IPadOverridesPath() encoding:NSUTF8StringEncoding error:nil] ?: DefaultIPadOverrides();
             values[@"shadow3D"] = @(SettingBoolValue(options, @"UseShadowVolumes", NO));
             values[@"shadow2D"] = @(SettingBoolValue(options, @"UseShadowDecals", YES));
@@ -1309,8 +1395,10 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
             values[@"buildingOcclusion"] = @(SettingBoolValue(options, @"BuildingOcclusion", YES));
             values[@"showProps"] = @(SettingBoolValue(options, @"ShowTrees", YES));
             values[@"extraAnimations"] = @(SettingBoolValue(options, @"ExtraAnimations", YES));
+            values[@"idealStaticGameLOD"] = SettingValue(options, @"IdealStaticGameLOD", @"High");
+            values[@"staticGameLOD"] = SettingValue(options, @"StaticGameLOD", @"High");
             values[@"dynamicLOD"] = @(SettingBoolValue(options, @"DynamicLOD", NO));
-            values[@"heatEffects"] = @(SettingBoolValue(options, @"HeatEffects", NO));
+            values[@"heatEffects"] = @(SettingBoolValue(options, @"HeatEffects", YES));
             NSInteger textureReduction = [SettingValue(options, @"TextureReduction", @"0") integerValue];
             values[@"textureQuality"] = textureReduction <= 0 ? @"High" : (textureReduction == 1 ? @"Medium" : @"Low");
             NSInteger particles = [SettingValue(options, @"MaxParticleCount", @"2500") integerValue];
@@ -1319,9 +1407,9 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
             values[@"anisotropy"] = [NSString stringWithFormat:@"%@x", SettingValue(options, @"AnisotropyLevel", @"8")];
             NSString *aa = SettingValue(options, @"AntiAliasing", @"0");
             values[@"msaa"] = [aa isEqualToString:@"0"] ? @"Off" : [aa stringByAppendingString:@"x"];
-            values[@"maxCamera"] = @([self floatSetting:@"MaxCameraHeight" contents:camera fallback:550.0f]);
+            values[@"maxCamera"] = @([self floatSetting:@"MaxCameraHeight" contents:camera fallback:350.0f]);
             values[@"minCamera"] = @([self floatSetting:@"MinCameraHeight" contents:camera fallback:70.0f]);
-            values[@"cameraPitch"] = @([self floatSetting:@"CameraPitch" contents:camera fallback:37.0f]);
+            values[@"cameraPitch"] = @([self floatSetting:@"CameraPitch" contents:camera fallback:35.0f]);
             values[@"enforceMax"] = @([self boolSetting:@"EnforceMaxCameraHeight" contents:camera fallback:NO]);
             values[@"scrollSpeed"] = @([self floatSetting:@"KeyboardScrollSpeedFactor" contents:camera fallback:1.0f]);
             values[@"drawDistance"] = @([self floatSetting:@"TerrainDrawDistanceScale" contents:camera fallback:1.20f]);
@@ -1389,19 +1477,24 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
                  "  UseFPSLimit = %@\n"
                  "  FramesPerSecondLimit = %.0f\n"
                  "End\n",
-                numberValue(@"maxCamera", 550.0),
+                numberValue(@"maxCamera", 350.0),
                 numberValue(@"minCamera", 70.0),
-                numberValue(@"cameraPitch", 37.0),
+                numberValue(@"cameraPitch", 35.0),
                 boolValue(@"enforceMax", NO) ? @"Yes" : @"No",
                 numberValue(@"scrollSpeed", 1.0),
                 numberValue(@"drawDistance", 1.20),
                 boolValue(@"fpsLimit", YES) ? @"Yes" : @"No",
                 numberValue(@"fps", 60.0)];
             ok = [camera writeToFile:IPadOverridesPath() atomically:YES encoding:NSUTF8StringEncoding error:&saveError];
-            NSMutableDictionary *options = ReadKeyValueFile(EngineOptionsPath());
-            options[@"IdealStaticGameLOD"] = @"High";
-            options[@"StaticGameLOD"] = @"Custom";
-            options[@"UseShadowVolumes"] = boolValue(@"shadow3D", NO) ? @"Yes" : @"No";
+            NSMutableDictionary *options = ReadOnlineGraphicsOptions();
+            NSArray<NSString *> *lodChoices = @[@"Low", @"Medium", @"High"];
+            NSString *idealLOD = stringValue(@"idealStaticGameLOD", SettingValue(options, @"IdealStaticGameLOD", @"High"));
+            NSString *staticLOD = stringValue(@"staticGameLOD", SettingValue(options, @"StaticGameLOD", @"High"));
+            options[@"IdealStaticGameLOD"] = [lodChoices containsObject:idealLOD] ? idealLOD : @"High";
+            options[@"StaticGameLOD"] = [lodChoices containsObject:staticLOD] ? staticLOD : @"High";
+            // Volumetric shadows cause a dark rectangular overlay on iOS/MoltenVK.
+            // Never re-enable them when saving unrelated settings.
+            options[@"UseShadowVolumes"] = @"No";
             options[@"UseShadowDecals"] = boolValue(@"shadow2D", YES) ? @"Yes" : @"No";
             options[@"UseCloudMap"] = boolValue(@"cloudShadows", NO) ? @"Yes" : @"No";
             options[@"UseLightMap"] = boolValue(@"groundLighting", YES) ? @"Yes" : @"No";
@@ -1410,7 +1503,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
             options[@"ShowTrees"] = boolValue(@"showProps", YES) ? @"Yes" : @"No";
             options[@"ExtraAnimations"] = boolValue(@"extraAnimations", YES) ? @"Yes" : @"No";
             options[@"DynamicLOD"] = boolValue(@"dynamicLOD", NO) ? @"Yes" : @"No";
-            options[@"HeatEffects"] = boolValue(@"heatEffects", NO) ? @"Yes" : @"No";
+            options[@"HeatEffects"] = boolValue(@"heatEffects", YES) ? @"Yes" : @"No";
             NSString *quality = stringValue(@"textureQuality", @"High");
             options[@"TextureReduction"] = [quality isEqualToString:@"High"] ? @"0" : ([quality isEqualToString:@"Medium"] ? @"1" : @"2");
             NSString *particles = stringValue(@"particles", @"Medium");
@@ -1419,7 +1512,7 @@ void GeneralsXSetIOSDiagnosticClearCallback(GeneralsXIOSDiagnosticClearCallback 
             options[@"AnisotropyLevel"] = [stringValue(@"anisotropy", @"8x") stringByReplacingOccurrencesOfString:@"x" withString:@""];
             NSString *msaa = stringValue(@"msaa", @"Off");
             options[@"AntiAliasing"] = [msaa isEqualToString:@"Off"] ? @"0" : [msaa stringByReplacingOccurrencesOfString:@"x" withString:@""];
-            if (ok) ok = WriteKeyValueFile(EngineOptionsPath(), options, &saveError);
+            if (ok) ok = WriteOnlineGraphicsOptions(options, &saveError);
         }
         if (!ok)
         {
@@ -2403,37 +2496,6 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         ]];
     }
 
-    if (showCommonSettings)
-    {
-        [controlViews addObjectsFromArray:@[
-            [self sectionLabel:@"ГРАФИКА"],
-            [self switchRow:@"3D-тени" control:self.shadow3DSwitch],
-            [self switchRow:@"2D-тени" control:self.shadow2DSwitch],
-            [self switchRow:@"Тени облаков" control:self.cloudShadowsSwitch],
-            [self switchRow:@"Освещение поверхности" control:self.groundLightingSwitch],
-            [self switchRow:@"Плавные границы воды" control:self.softWaterSwitch],
-            [self switchRow:@"Юниты за зданиями" control:self.buildingOcclusionSwitch],
-            [self switchRow:@"Мелкие объекты / деревья" control:self.showPropsSwitch],
-            [self switchRow:@"Дополнительные анимации" control:self.extraAnimationsSwitch],
-            [self switchRow:@"Динамический LOD" control:self.dynamicLODSwitch],
-            [self switchRow:@"Эффекты нагрева" control:self.heatEffectsSwitch],
-            [self segmentedRow:@"Качество текстур движка" control:self.textureQualitySegment],
-            [self segmentedRow:@"Частицы" control:self.particleQualitySegment],
-            [self segmentedRow:@"Фильтрация текстур" control:self.textureFilterSegment],
-            [self segmentedRow:@"Анизотропия" control:self.anisotropySegment],
-            [self segmentedRow:@"MSAA" control:self.msaaSegment],
-
-            [self sectionLabel:@"КАМЕРА / ПРОИЗВОДИТЕЛЬНОСТЬ"],
-            [self sliderRow:@"Максимальная высота камеры" slider:self.maxCameraSlider value:self.maxCameraValue],
-            [self sliderRow:@"Минимальная высота камеры" slider:self.minCameraSlider value:self.minCameraValue],
-            [self sliderRow:@"Наклон камеры" slider:self.cameraPitchSlider value:self.cameraPitchValue],
-            [self switchRow:@"Ограничивать максимальную высоту камеры" control:self.enforceMaxSwitch],
-            [self sliderRow:@"Скорость прокрутки клавишами / у края" slider:self.scrollSpeedSlider value:self.scrollSpeedValue],
-            [self sliderRow:@"Дальность прорисовки ландшафта" slider:self.drawDistanceSlider value:self.drawDistanceValue],
-            [self switchRow:@"Лимит FPS" control:self.fpsLimitSwitch],
-            [self sliderRow:@"Кадров в секунду" slider:self.fpsSlider value:self.fpsValue],
-        ]];
-    }
 
     UIStackView *controls = [[UIStackView alloc] initWithArrangedSubviews:controlViews];
     controls.translatesAutoresizingMaskIntoConstraints = NO;
@@ -2980,7 +3042,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     self.contraWaterSwitch.on = SettingBoolValue(defaults, @"WaterEffects", YES);
     self.contraExtraBuildingPropsSwitch.on = SettingBoolValue(defaults, @"ExtraBuildingProps", YES);
 
-    self.shadow3DSwitch.on = SettingBoolValue(defaults, @"UseShadowVolumes", NO);
+    self.shadow3DSwitch.on = NO; // iOS/MoltenVK does not support safe volume shadows
     self.shadow2DSwitch.on = SettingBoolValue(defaults, @"UseShadowDecals", YES);
     self.cloudShadowsSwitch.on = SettingBoolValue(defaults, @"UseCloudMap", NO);
     self.groundLightingSwitch.on = SettingBoolValue(defaults, @"UseLightMap", YES);
@@ -3053,9 +3115,9 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     [self resetEnhancedSettingsControls];
     [self loadGraphicsSettingsFromValues:DefaultContraSettings()];
 
-    self.maxCameraSlider.value = 550.0f;
+    self.maxCameraSlider.value = 350.0f;
     self.minCameraSlider.value = 70.0f;
-    self.cameraPitchSlider.value = 37.0f;
+    self.cameraPitchSlider.value = 35.0f;
     self.enforceMaxSwitch.on = NO;
     self.scrollSpeedSlider.value = 1.0f;
     self.drawDistanceSlider.value = 1.20f;
@@ -3086,7 +3148,7 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     else if ([bundledProfile isEqualToString:@"contra-x"])
         [self loadContraSettingsControls];
 
-    [self loadGraphicsSettingsFromValues:ReadKeyValueFile(EngineOptionsPath())];
+    [self loadGraphicsSettingsFromValues:ReadOnlineGraphicsOptions()];
 
     NSError *error = nil;
     NSString *contents = [NSString stringWithContentsOfFile:IPadOverridesPath()
@@ -3094,9 +3156,9 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
                                                       error:&error];
     if (contents == nil)
     {
-        self.maxCameraSlider.value = 550.0f;
+        self.maxCameraSlider.value = 350.0f;
         self.minCameraSlider.value = 70.0f;
-        self.cameraPitchSlider.value = 37.0f;
+        self.cameraPitchSlider.value = 35.0f;
         self.enforceMaxSwitch.on = NO;
         self.scrollSpeedSlider.value = 1.0f;
         self.drawDistanceSlider.value = 1.20f;
@@ -3111,9 +3173,9 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
     }
     else
     {
-        self.maxCameraSlider.value = [self floatSetting:@"MaxCameraHeight" contents:contents fallback:550.0f];
+        self.maxCameraSlider.value = [self floatSetting:@"MaxCameraHeight" contents:contents fallback:350.0f];
         self.minCameraSlider.value = [self floatSetting:@"MinCameraHeight" contents:contents fallback:70.0f];
-        self.cameraPitchSlider.value = [self floatSetting:@"CameraPitch" contents:contents fallback:37.0f];
+        self.cameraPitchSlider.value = [self floatSetting:@"CameraPitch" contents:contents fallback:35.0f];
         self.enforceMaxSwitch.on = [self boolSetting:@"EnforceMaxCameraHeight" contents:contents fallback:NO];
         self.scrollSpeedSlider.value = [self floatSetting:@"KeyboardScrollSpeedFactor" contents:contents fallback:1.0f];
         self.drawDistanceSlider.value = [self floatSetting:@"TerrainDrawDistanceScale" contents:contents fallback:1.20f];
@@ -3205,34 +3267,10 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
 
 - (BOOL)saveGraphicsOptions:(NSError **)error
 {
-    NSInteger particleIndex = self.particleQualitySegment.selectedSegmentIndex;
-    NSInteger particleCount = particleIndex == 0 ? 1000 : (particleIndex == 2 ? 5000 : 2500);
-    NSArray<NSString *> *filters = @[@"Bilinear", @"Trilinear", @"Anisotropic"];
-    NSString *filter = filters[MAX(0, MIN(2, self.textureFilterSegment.selectedSegmentIndex))];
-    NSArray<NSString *> *anisotropyLevels = @[@"2", @"4", @"8", @"16"];
-    NSString *anisotropy = anisotropyLevels[MAX(0, MIN(3, self.anisotropySegment.selectedSegmentIndex))];
-    NSArray<NSString *> *msaaLevels = @[@"0", @"2", @"4", @"8"];
-    NSString *antiAliasing = msaaLevels[MAX(0, MIN(3, self.msaaSegment.selectedSegmentIndex))];
-
-    NSMutableDictionary<NSString *, NSString *> *options = ReadKeyValueFile(EngineOptionsPath());
-    options[@"IdealStaticGameLOD"] = @"High";
-    options[@"StaticGameLOD"] = @"Custom";
-    options[@"UseShadowVolumes"] = self.shadow3DSwitch.on ? @"Yes" : @"No";
-    options[@"UseShadowDecals"] = self.shadow2DSwitch.on ? @"Yes" : @"No";
-    options[@"UseCloudMap"] = self.cloudShadowsSwitch.on ? @"Yes" : @"No";
-    options[@"UseLightMap"] = self.groundLightingSwitch.on ? @"Yes" : @"No";
-    options[@"ShowSoftWaterEdge"] = self.softWaterSwitch.on ? @"Yes" : @"No";
-    options[@"BuildingOcclusion"] = self.buildingOcclusionSwitch.on ? @"Yes" : @"No";
-    options[@"ShowTrees"] = self.showPropsSwitch.on ? @"Yes" : @"No";
-    options[@"ExtraAnimations"] = self.extraAnimationsSwitch.on ? @"Yes" : @"No";
-    options[@"DynamicLOD"] = self.dynamicLODSwitch.on ? @"Yes" : @"No";
-    options[@"HeatEffects"] = self.heatEffectsSwitch.on ? @"Yes" : @"No";
-    options[@"TextureReduction"] = [NSString stringWithFormat:@"%ld", (long)self.textureQualitySegment.selectedSegmentIndex];
-    options[@"MaxParticleCount"] = [NSString stringWithFormat:@"%ld", (long)particleCount];
-    options[@"TextureFilter"] = filter;
-    options[@"AnisotropyLevel"] = anisotropy;
-    options[@"AntiAliasing"] = antiAliasing;
-    return WriteKeyValueFile(EngineOptionsPath(), options, error);
+    // The simplified native settings screen edits camera/draw distance/FPS only.
+    // Do not rewrite hidden graphics options when saving those controls.
+    (void)error;
+    return YES;
 }
 
 - (BOOL)saveEnhancedSettingsAndOptions:(NSError **)error
@@ -3281,29 +3319,14 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
 - (void)saveSettings
 {
     NSError *error = nil;
-    if ([self.settingsProfileId isEqualToString:@"enhanced"] ||
-        [self.settingsProfileId isEqualToString:@"contra-x"])
+
+    // Always persist the shared graphics and camera settings, even when the
+    // selected profile also has its own Enhanced/Contra settings file.
+    NSString *profileToSave = self.settingsProfileId;
+    if (![profileToSave isEqualToString:@"enhanced"] &&
+        ![profileToSave isEqualToString:@"contra-x"])
     {
-        BOOL ok = [self.settingsProfileId isEqualToString:@"enhanced"]
-            ? [self saveEnhancedSettingsAndOptions:&error]
-            : [self saveContraSettingsAndOptions:&error];
-        if (ok)
-        {
-            self.settingsStatus.text = @"Настройки мода сохранены. Изменения применятся при следующем запуске.";
-            self.settingsStatus.textColor = [UIColor systemGreenColor];
-            fprintf(stderr,
-                    "[HUB-SETTINGS] saved profile='%s' path='%s'\n",
-                    self.settingsProfileId.UTF8String,
-                    ([self.settingsProfileId isEqualToString:@"enhanced"]
-                        ? EnhancedSettingsPath()
-                        : ContraSettingsPath()).fileSystemRepresentation);
-        }
-        else
-        {
-            self.settingsStatus.text = @"Не удалось сохранить. Подробности в generals-stderr.log.";
-            self.settingsStatus.textColor = [UIColor systemRedColor];
-        }
-        return;
+        profileToSave = BundledAutoLaunchProfile();
     }
 
     NSString *contents = [NSString stringWithFormat:
@@ -3331,10 +3354,10 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
                                  encoding:NSUTF8StringEncoding
                                     error:&error];
     BOOL profileOK = cameraOK && [self saveGraphicsOptions:&error];
-    NSString *bundledProfile = BundledAutoLaunchProfile();
-    if (profileOK && [bundledProfile isEqualToString:@"enhanced"])
+
+    if (profileOK && [profileToSave isEqualToString:@"enhanced"])
         profileOK = [self saveEnhancedSettingsAndOptions:&error];
-    else if (profileOK && [bundledProfile isEqualToString:@"contra-x"])
+    else if (profileOK && [profileToSave isEqualToString:@"contra-x"])
         profileOK = [self saveContraSettingsAndOptions:&error];
 
     if (cameraOK && profileOK)
@@ -3342,7 +3365,8 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
         self.settingsStatus.text = @"Сохранено. Изменения применятся при следующем запуске игры.";
         self.settingsStatus.textColor = [UIColor systemGreenColor];
         fprintf(stderr,
-                "[HUB-SETTINGS] saved shared options=%s camera=%s\n",
+                "[HUB-SETTINGS] saved profile='%s' shared options=%s camera=%s\n",
+                profileToSave.UTF8String,
                 EngineOptionsPath().fileSystemRepresentation,
                 IPadOverridesPath().fileSystemRepresentation);
     }
@@ -3354,7 +3378,6 @@ decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
                 error != nil ? [[error description] UTF8String] : "unknown");
     }
 }
-
 - (void)resetSettings
 {
     [self resetSettingsControls];
