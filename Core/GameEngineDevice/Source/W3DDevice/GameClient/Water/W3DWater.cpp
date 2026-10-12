@@ -906,30 +906,35 @@ void WaterRenderObjClass::ReAcquireResources()
 			(D3DVSD_END())
 		};
 
+		// Both shader stages must be valid before allocating the expensive
+		// reflection render target. A missing stage uses normal translucent water.
 		hr = W3DShaderManager::LoadAndCreateD3DShader("shaders\\wave.pso", &Declaration[0], 0, false, &m_dwWavePixelShader);
-		if (FAILED(hr)) {
-			fprintf(stderr, "[WATER_SHADER] wave.pso unavailable; using translucent water\n");
-			m_waterType = WATER_TYPE_0_TRANSLUCENT;
-			// Keep initializing shared water resources and fixed-function effects.
-			// A missing optional shader must not abort all water setup.
-		}
+		if (SUCCEEDED(hr))
+			hr = W3DShaderManager::LoadAndCreateD3DShader("shaders\\wave.vso", &Declaration[0], 0, true, &m_dwWaveVertexShader);
 
-		hr = W3DShaderManager::LoadAndCreateD3DShader("shaders\\wave.vso", &Declaration[0], 0, true, &m_dwWaveVertexShader);
-		if (FAILED(hr)) {
-			fprintf(stderr, "[WATER_SHADER] wave.vso unavailable; using translucent water\n");
+		if (FAILED(hr) || !m_dwWavePixelShader || !m_dwWaveVertexShader)
+		{
+			fprintf(stderr, "[WATER_SHADER] wave shader unavailable; using translucent water\\n");
+			if (m_dwWavePixelShader)
+				m_pDev->DeletePixelShader(m_dwWavePixelShader);
+			if (m_dwWaveVertexShader)
+				m_pDev->DeleteVertexShader(m_dwWaveVertexShader);
+			m_dwWavePixelShader = 0;
+			m_dwWaveVertexShader = 0;
 			m_waterType = WATER_TYPE_0_TRANSLUCENT;
-			// Keep initializing shared water resources and fixed-function effects.
-			// A missing optional shader must not abort all water setup.
 		}
-
-		// Create reflection texture. The reflection shader path must never run
-		// with a missing render target (possible on constrained iOS GPUs).
-		m_pReflectionTexture = DX8Wrapper::Create_Render_Target (SEA_REFLECTION_SIZE, SEA_REFLECTION_SIZE);
-		if (!m_pReflectionTexture) {
-			fprintf(stderr, "[WATER_SHADER] reflection render target allocation failed; disabling shader water\n");
-			m_waterType = WATER_TYPE_0_TRANSLUCENT;
-			// Keep initializing shared water resources and fixed-function effects.
-			// A missing optional shader must not abort all water setup.
+		else
+		{
+			m_pReflectionTexture = DX8Wrapper::Create_Render_Target(SEA_REFLECTION_SIZE, SEA_REFLECTION_SIZE);
+			if (!m_pReflectionTexture)
+			{
+				fprintf(stderr, "[WATER_SHADER] reflection target unavailable; using translucent water\\n");
+				m_pDev->DeletePixelShader(m_dwWavePixelShader);
+				m_pDev->DeleteVertexShader(m_dwWaveVertexShader);
+				m_dwWavePixelShader = 0;
+				m_dwWaveVertexShader = 0;
+				m_waterType = WATER_TYPE_0_TRANSLUCENT;
+			}
 		}
 	}
 
