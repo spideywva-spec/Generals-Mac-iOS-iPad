@@ -19,3 +19,8 @@
 - 0d10d86: removed speculative non-Windows .pso water shader VFS lookups (riverwater/water/trapezoidwater) because Windows generates these shader programs at runtime and the referenced assets were missing in the iOS log.
 - e774486: fixed escaped newline sequences in volumetric/projected shadow diagnostic output.
 - Branch fix/mods-visible-cross-platform-sync only; A13 workflow and a13-ios-build unchanged. Changes need CI and device verification; real-time D3D8 shader assembly and full water/shadow rendering are not implemented by these commits.
+
+## 2026-10-12 water renderer follow-up
+- 05cfda4: optional wave shader/target failure no longer returns early from ReAcquireResources, allowing remaining shared water resources to initialize; added null-safe reflection texture binding. The water object still selects translucent fallback on failure.
+- 2ca6bf7: reflection prepass now delegates mode and target eligibility to WaterRenderObjClass instead of relying on possibly stale global water type; guards primaryW3DView.
+- Only fix/mods-visible-cross-platform-sync changed. No device/CI verification performed. These commits do not create missing wave shader assets or prove that water reflections, shadows, and shoreline textures now render correctly.
