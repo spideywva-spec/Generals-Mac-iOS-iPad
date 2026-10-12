@@ -26,7 +26,7 @@ on:
       - 'Patches/apple/**'
       - 'ios/**'
       - '!ios/version.env'
-      - 'scripts/build/ios/package-shell.sh'
+      - '.github/workflows/build-ios.yml'
       - 'scripts/build/ios/fetch-moltenvk.sh'
       - 'scripts/build/ios/stage-fonts.sh'
       - '.github/workflows/build-ios-shell.yml'
@@ -250,8 +250,7 @@ jobs:
           echo "- Engine: GeneralsXZH arm64 + Generals Online" >> "${GITHUB_STEP_SUMMARY}"
           echo "- Deterministic math: enabled" >> "${GITHUB_STEP_SUMMARY}"
           echo "- Launcher: native iOS launcher" >> "${GITHUB_STEP_SUMMARY}"
-          echo "- samplerMirrorClampToEdge: VK_FALSE in D3D9/D3D11 feature requests
+          echo "- samplerMirrorClampToEdge: VK_FALSE in D3D9/D3D11 feature requests" >> "${GITHUB_STEP_SUMMARY}"
           echo "- Vulkan 1.2/1.3: kept enabled" >> "${GITHUB_STEP_SUMMARY}"
           echo "- Retail GameData: not included" >> "${GITHUB_STEP_SUMMARY}"
           echo "- Mod profiles: not included" >> "${GITHUB_STEP_SUMMARY}"
-          echo "- Artifact size: ${IPA_SIZE}" >> "${GITHUB_STEP_SUMMARY}"
