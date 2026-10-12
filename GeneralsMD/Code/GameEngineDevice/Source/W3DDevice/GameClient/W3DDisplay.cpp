@@ -2036,7 +2036,14 @@ void W3DDisplay::calculateTerrainLOD()
 		if (frameTime < maxTimeLimit) break;
 	} while (count<10);
 
+	// On iOS, preserve the highest terrain detail and water rendering.
+	// The automatic benchmark can otherwise select NO_WATER and permanently
+	// suppress reflective water even on devices capable of rendering it.
+#if defined(__APPLE__) && defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+	TheWritableGlobalData->m_terrainLOD = TERRAIN_LOD_MAX;
+#else
 	TheWritableGlobalData->m_terrainLOD = goodLOD;
+#endif
 	m_3DScene->drawTerrainOnly(false);
 	TheTerrainRenderObject->adjustTerrainLOD(0);
 #ifdef RTS_DEBUG
