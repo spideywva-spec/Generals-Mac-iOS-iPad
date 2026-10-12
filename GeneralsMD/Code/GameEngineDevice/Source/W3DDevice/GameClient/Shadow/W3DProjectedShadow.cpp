@@ -270,6 +270,21 @@ Bool W3DProjectedShadowManager::ReAcquireResources()
 			m_dynamicRenderTarget=DX8Wrapper::Create_Render_Target (DEFAULT_RENDER_TARGET_WIDTH, DEFAULT_RENDER_TARGET_HEIGHT);
 	}
 
+	// Mobile Vulkan backends may reject the legacy 512x512 render-target format.
+	// Retain projected shadows using a smaller alpha-capable target when possible.
+#if defined(__APPLE__)
+	if (!m_dynamicRenderTarget)
+	{
+		m_renderTargetHasAlpha = TRUE;
+		m_dynamicRenderTarget = DX8Wrapper::Create_Render_Target(256, 256, WW3D_FORMAT_A8R8G8B8);
+	}
+	if (!m_dynamicRenderTarget)
+	{
+		m_renderTargetHasAlpha = FALSE;
+		m_dynamicRenderTarget = DX8Wrapper::Create_Render_Target(256, 256);
+	}
+#endif
+
 	// A valid render target is mandatory for projected shadows.
 	// Do not continue with null and later dereference it in the update pass.
 	if (!m_dynamicRenderTarget)
