@@ -1496,6 +1496,7 @@ public:
 	virtual Int init() override;			///<perform any one time initialization and validation
 	virtual void reset() override;		///<do any custom resetting necessary to bring W3D in sync.
 
+	void updateCloud();
 	void updateNoise1 (D3DXMATRIX *destMatrix,D3DXMATRIX *curViewInverse, Bool doUpdate=true);	///<generate the uv coordinates for Noise1 (i.e clouds)
 	void updateNoise2 (D3DXMATRIX *destMatrix,D3DXMATRIX *curViewInverse, Bool doUpdate=true);	///<generate the uv coordinates for Noise2 (i.e lightmap)
 } terrainShader2Stage;
@@ -1603,6 +1604,17 @@ void TerrainShader2Stage::reset()
 	DX8Wrapper::Set_DX8_Texture_Stage_State( 1, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_PASSTHRU|1);
 }
 
+
+void TerrainShader2Stage::updateCloud()
+{
+	const float frame_time = WW3D::Get_Logic_Frame_Time_Seconds();
+	m_xOffset += m_xSlidePerSecond * frame_time;
+	m_yOffset += m_ySlidePerSecond * frame_time;
+
+	// This moves offsets towards zero when smaller -1.0 or larger 1.0
+	m_xOffset -= (Int)m_xOffset;
+	m_yOffset -= (Int)m_yOffset;
+}
 
 void TerrainShader2Stage::updateNoise1(D3DXMATRIX *destMatrix,D3DXMATRIX *curViewInverse, Bool doUpdate)
 {
@@ -2839,6 +2851,11 @@ void W3DShaderManager::shutdown()
 	effect.
  */
 //=============================================================================
+void W3DShaderManager::updateCloud()
+{
+	terrainShader2Stage.updateCloud();
+}
+
 Int W3DShaderManager::getShaderPasses(ShaderTypes shader)
 {
 	return W3DShadersPassCount[shader];

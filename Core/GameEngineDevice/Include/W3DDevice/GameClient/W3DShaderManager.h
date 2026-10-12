@@ -77,7 +77,8 @@ public:
 
 	W3DShaderManager();	///<constructor
 	static void init();	///<determine optimal shaders for current device.
-	static void shutdown();	///<release resources used by shaders
+	static void shutdown();
+	static void updateCloud();	///<release resources used by shaders
 	static ChipsetType getChipset();	///<return current device chipset.
 	static GraphicsVenderID getCurrentVendor() {return m_currentVendor;}	///<return current card vendor.
 	// GeneralsX @bugfix BenderAI 13/02/2026 Use Int64 instead of __int64 for cross-platform builds

@@ -107,3 +107,8 @@
 - In both Generals and GeneralsMD GameLOD.cpp, shoreline-detail refresh now compares effective iOS preset settings rather than only raw INI flags; fixes preset transitions where soft water edge changes but INI flags match.
 - TerrainTex.cpp updateFlat rejects both incorrect atlas width and incorrect height before writing.
 - No Vulkan/A13 workflows or launcher changed. These changes require iOS build and visual testing; they are not proof that 3D stencil shadows, reflections, or MSAA work.
+
+## 2026-10-12 — graphics code comparison with ammaarreshi
+- Compared the source `ammaarreshi/Generals-Mac-iOS-iPad` main tree with `fix/mods-visible-cross-platform-sync`: 35 different shared graphics-related source/header files (out of 1000 graphics-matching files). Blind wholesale replacement would erase iOS A13-specific rendering, terrain pitch, shadow and water fallbacks.
+- Ported the upstream coordinated per-render-frame cloud animation update into both Core FlatHeightMap.cpp and HeightMap.cpp, and added the upstream W3DShaderManager::updateCloud/TerrainShader2Stage::updateCloud declarations and implementation, retaining existing mod-related clock animation logic in updateNoise1. This changes the cloud offset update to frame-based rather than relying solely on shader pass calls.
+- Did not overwrite iOS rendering backends, build workflows, water/shadow fallback or mod files. Requires actual iOS build and rendering verification.

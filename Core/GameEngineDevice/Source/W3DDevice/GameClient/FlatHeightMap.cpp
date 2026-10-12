@@ -462,6 +462,13 @@ void FlatHeightMapRenderObjClass::Render(RenderInfoClass & rinfo)
 	W3DShaderManager::ShaderTypes st;
 	const Bool doCloud = useCloud();
 
+	if (doCloud)
+	{
+		// TheSuperHackers @tweak Updates the cloud movement before applying it to the world.
+		// Is now decoupled from logic step.
+		W3DShaderManager::updateCloud();
+	}
+
 	Matrix3D tm(Transform);
 	// If there are trees, tell them to draw at the transparent time to draw.
 	if (m_treeBuffer) {
