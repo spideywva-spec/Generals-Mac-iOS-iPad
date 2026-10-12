@@ -1,0 +1,10 @@
+--- a/Core/GameEngineDevice/Source/W3DDevice/GameClient/W3DTerrainTracks.cpp
++++ b/Core/GameEngineDevice/Source/W3DDevice/GameClient/W3DTerrainTracks.cpp
+@@ -903,1 +903,6 @@
+-				DX8Wrapper::Set_Texture(0,mod->m_stageZeroTexture);
++				DX8Wrapper::Set_Texture(0,mod->m_stageZeroTexture);
++#if defined(__APPLE__)
++				// Explicit clamp prevents edge sampling beyond projected track decals.
++				DX8Wrapper::Set_DX8_Texture_Stage_State(0,D3DTSS_ADDRESSU,D3DTADDRESS_CLAMP);
++				DX8Wrapper::Set_DX8_Texture_Stage_State(0,D3DTSS_ADDRESSV,D3DTADDRESS_CLAMP);
++#endif
