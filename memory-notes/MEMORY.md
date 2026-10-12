@@ -116,3 +116,11 @@
 ## 2026-10-12 Direct graphics copy from ammaarreshi
 - User explicitly requested direct upstream replacement, excluding SDL3GameEngine. Copied 20 graphics files in commits c5bd940, f1fc2df and cb496250 on fix/mods-visible-cross-platform-sync: W3D terrain, water, shadow, display, shader, view, particle, shroud, graphics LOD/options, DX8 renderer/wrapper/bitmap/polygon renderer. No SDL3GameEngine or workflows changed.
 - These exact overwrites intentionally discard previous A13-specific graphics fixes in overwritten files. Build and runtime compatibility not yet verified. Remaining WW3D2 texture/surface/asset files have NOT been copied.
+
+## 2026-10-12 — fresh graphics rebuild branch
+- Created branch `graphics-rebuild-2026-10-12` from `fix/mods-visible-cross-platform-sync`; `a13-ios-build` was not modified.
+- Rebuilt `Patches/apple/01-projected-shadows.patch` to include the previously working `5f21fa2` reduced-render-target copy-bounds logic: copy width/height are bounded by the actual source and destination surfaces, instead of always copying 512x512. This is required when the Apple projected-shadow target falls back to 256x256.
+- Patch update commit: `330a1dab16c94fbfb2253efba60d62526f6e1ff0`.
+- Added `graphics-rebuild-2026-10-12` to the iOS shell workflow push triggers so this branch can run CI; workflow change commit: `b9b6bf5ab8d79911e9e9c37ca3c6b8e10cf36925`. The 12-patch count and build steps were not otherwise changed.
+- This is the first concrete rebuild step, not a claim that all graphics are fixed. The new branch still needs a full audit of all 12 patches, patch-application validation in Actions, a successful iOS build, and visual testing on-device. Water reflections, stencil/volumetric shadows, terrain seams, fog, MSAA/anisotropy and other effects remain unverified.
+
