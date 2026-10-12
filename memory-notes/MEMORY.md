@@ -45,3 +45,6 @@
 
 ### 2026-10-12: render target caps bypass for non-Windows (d9d5782)
 - `Core/Libraries/Source/WWVegas/WW3D2/dx8wrapper.cpp`: in the single-texture `DX8Wrapper::Create_Render_Target`, non-Windows no longer rejects a requested format solely on legacy D3D8 caps; tries actual texture allocation and retains the existing null-result check. Windows unchanged. Intended to address projected shadow render-target failure and possibly reflection render targets. Does not supply missing wave shader files. Not built or device-tested. Black terrain texture issue still unresolved.
+
+### 2026-10-12: Apple projected shadow render target fallback
+- Commit `b9e99887f0cbdedf084127dd6ad0121b111e17d2`: W3DProjectedShadowManager::ReAcquireResources tries 256x256 alpha then default render targets on Apple if both original 512x512 formats fail. Existing Windows logic unchanged. Device testing pending; shadow render passes may assume 512x512 and require adjustment. Water reflection and black terrain edge problems remain open.
