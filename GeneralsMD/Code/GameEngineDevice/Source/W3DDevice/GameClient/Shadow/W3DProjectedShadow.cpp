@@ -283,6 +283,18 @@ Bool W3DProjectedShadowManager::ReAcquireResources()
 		m_renderTargetHasAlpha = FALSE;
 		m_dynamicRenderTarget = DX8Wrapper::Create_Render_Target(256, 256);
 	}
+	// Last-resort targets keep projected unit shadows available on devices
+	// whose render-target memory or format limits reject larger surfaces.
+	for (unsigned int size = 128; !m_dynamicRenderTarget && size >= 64; size /= 2)
+	{
+		m_renderTargetHasAlpha = TRUE;
+		m_dynamicRenderTarget = DX8Wrapper::Create_Render_Target(size, size, WW3D_FORMAT_A8R8G8B8);
+		if (!m_dynamicRenderTarget)
+		{
+			m_renderTargetHasAlpha = FALSE;
+			m_dynamicRenderTarget = DX8Wrapper::Create_Render_Target(size, size);
+		}
+	}
 #endif
 
 	// A valid render target is mandatory for projected shadows.
