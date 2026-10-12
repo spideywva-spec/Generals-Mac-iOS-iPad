@@ -2235,7 +2235,9 @@ AGAIN:
                                            //-LORENZEN
 
 
-			if (TheWaterRenderObj && TheGlobalData->m_waterType == 2)
+			// The water object itself checks its active shader mode and target.
+			// Global settings can differ after a shader-resource fallback.
+			if (TheWaterRenderObj && primaryW3DView)
 				TheWaterRenderObj->updateRenderTargetTextures(primaryW3DView->get3DCamera());	//do a render into each texture
 
 			//Can't render into textures while rendering to screen so these textures need to be updated
