@@ -33,3 +33,9 @@
 ## 2026-10-12 projected shadows
 - 2ea548d: W3DProjectedShadowManager::ReAcquireResources checks both render-target format attempts and returns FALSE with diagnostic if neither is available, rather than continuing with null render target. This is a safety/diagnostic fix; it does not solve missing shadows or broken terrain textures without actual runtime evidence.
 - Branch fix/mods-visible-cross-platform-sync only; no A13 or Vulkan workflow modifications.
+
+### 2026-10-12: iOS SIGSEGV in projected tree shadows
+- Runtime `logs/generals-stderr.log` ends with signal 11 in `W3DProjectedShadowManager::queueDecal` called from `W3DTreeBuffer::drawTrees` during first menu frames.
+- Earlier log reports projected-shadow render target allocation failed; manager initialization failed. Tree decals were nevertheless submitted with missing resources.
+- Commit `253ed89e98d6dd713ec9a860d6e0afedb4e29680` adds an early guard in `queueDecal` for null shadow, missing index/vertex buffers, absent terrain renderer or heightmap. Prevents this particular invalid-resource path; runtime validation pending.
+- Active branch `fix/mods-visible-cross-platform-sync`; A13 build branch and Vulkan workflows untouched.
