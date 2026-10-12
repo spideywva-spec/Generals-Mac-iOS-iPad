@@ -811,6 +811,12 @@ is an optimized system that only uses the render objects bounding box to determi
 */
 void W3DProjectedShadowManager::queueDecal(W3DProjectedShadow *shadow)
 {
+	// A13/DXVK can reject the projected-shadow render target during startup.
+	// Tree decals are still submitted from drawTrees; never dereference
+	// unallocated decal buffers or an absent terrain height map.
+	if (!shadow || !shadowDecalIndexBufferD3D || !shadowDecalVertexBufferD3D ||
+		!TheTerrainRenderObject || !TheTerrainRenderObject->getMap())
+		return;
 	int i,j,k;
 	Vector3 hmapVertex,objPos;
 	AABoxClass box;
