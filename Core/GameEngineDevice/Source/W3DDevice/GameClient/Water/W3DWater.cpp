@@ -907,15 +907,27 @@ void WaterRenderObjClass::ReAcquireResources()
 		};
 
 		hr = W3DShaderManager::LoadAndCreateD3DShader("shaders\\wave.pso", &Declaration[0], 0, false, &m_dwWavePixelShader);
-		if (FAILED(hr))
+		if (FAILED(hr)) {
+			fprintf(stderr, "[WATER_SHADER] wave.pso unavailable; using translucent water\n");
+			m_waterType = WATER_TYPE_0_TRANSLUCENT;
 			return;
+		}
 
 		hr = W3DShaderManager::LoadAndCreateD3DShader("shaders\\wave.vso", &Declaration[0], 0, true, &m_dwWaveVertexShader);
-		if (FAILED(hr))
+		if (FAILED(hr)) {
+			fprintf(stderr, "[WATER_SHADER] wave.vso unavailable; using translucent water\n");
+			m_waterType = WATER_TYPE_0_TRANSLUCENT;
 			return;
+		}
 
-		// Create reflection texture
+		// Create reflection texture. The reflection shader path must never run
+		// with a missing render target (possible on constrained iOS GPUs).
 		m_pReflectionTexture = DX8Wrapper::Create_Render_Target (SEA_REFLECTION_SIZE, SEA_REFLECTION_SIZE);
+		if (!m_pReflectionTexture) {
+			fprintf(stderr, "[WATER_SHADER] reflection render target allocation failed; disabling shader water\n");
+			m_waterType = WATER_TYPE_0_TRANSLUCENT;
+			return;
+		}
 	}
 
 	if (m_waterTrackSystem)
@@ -1451,7 +1463,8 @@ void WaterRenderObjClass::loadSetting( Setting *setting, TimeOfDay timeOfDay )
 //-------------------------------------------------------------------------------------------------
 void WaterRenderObjClass::updateRenderTargetTextures(CameraClass *cam)
 {
-	if (m_waterType == WATER_TYPE_2_PVSHADER && getClippedWaterPlane(cam, nullptr) &&
+	if (m_waterType == WATER_TYPE_2_PVSHADER && m_pReflectionTexture &&
+		m_dwWavePixelShader && m_dwWaveVertexShader && getClippedWaterPlane(cam, nullptr) &&
 		TheTerrainRenderObject && TheTerrainRenderObject->getMap())
 		renderMirror(cam);	//generate texture containing reflected scene
 }
