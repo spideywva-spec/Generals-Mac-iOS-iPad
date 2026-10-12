@@ -13,3 +13,9 @@
 - Commit 8d9ee32: guard reflective-water render target and shader handles in drawSea, and require a camera and parent scene for mirror updates. Fall back to regular water drawing if reflection resources are absent.
 - Neither change is verified in an iOS runtime test. Full shadows and reflections remain open; shader asset availability and actual render mode must be checked.
 - a13-ios-build and build-ios-shell.yml were not changed.
+
+## 2026-10-12 graphics source fixes (second pass)
+- fac30f2: non-Windows RTS_DEBUG builds no longer force TERRAIN_LOD_NO_WATER during automatic terrain LOD calculation; legacy Windows debug shortcut remains.
+- 0d10d86: removed speculative non-Windows .pso water shader VFS lookups (riverwater/water/trapezoidwater) because Windows generates these shader programs at runtime and the referenced assets were missing in the iOS log.
+- e774486: fixed escaped newline sequences in volumetric/projected shadow diagnostic output.
+- Branch fix/mods-visible-cross-platform-sync only; A13 workflow and a13-ios-build unchanged. Changes need CI and device verification; real-time D3D8 shader assembly and full water/shadow rendering are not implemented by these commits.
