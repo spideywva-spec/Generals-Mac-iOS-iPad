@@ -93,3 +93,8 @@
 - Branch fix/mods-visible-cross-platform-sync. TerrainTex.cpp: fixed remaining active atlas vertical border copies, flat terrain texture writes and edge atlas diagnostic writes to use locked_rect.Pitch rather than width-based row stride. Prevents corruption with padded GPU rows.
 - GameLOD.cpp: Apple-only in-game quality presets now control cloud shadows, ground lighting, soft shorelines, alongside earlier texture reduction and shadow settings; Custom keeps individual toggles.
 - CI diagnostic: workflow 38249666944 failed in vcpkg setup due to HTTP 504, before C++ compilation. Latest runs 38250407602 / 38250407457 were in progress when inspected. Runtime on A13 not yet verified. Outstanding: full water reflection and wave shader functionality, fog/MSAA/FXAA/anisotropy UI, Very Low preset, stencil support and cross-platform networking; do not call these finished.
+
+## 2026-10-12 — скриншот iOS: чёрные полосы на берегу, нет 3D-теней и отражений
+- Скриншот показывает чёрные/полосатые артефакты вдоль стыка воды и суши. НЕ считать исправленными 3D-тени, отражения, волны или весь берег без теста на устройстве.
+- TerrainTex.cpp: в update() блок вертикального копирования краёв атласа использовал surface_desc.Width*pixelBytes как stride вместо locked_rect.Pitch; исправлено на Pitch, чтобы не читать неверные строки при padded GPU texture rows.
+- Проверка на iOS и подтверждение причины всех полос пока отсутствуют. Требуется изучить runtime log, shoreline mesh/UV, stencil capability и water reflection path; не трогать a13-ios-build/Vulkan/workflows.

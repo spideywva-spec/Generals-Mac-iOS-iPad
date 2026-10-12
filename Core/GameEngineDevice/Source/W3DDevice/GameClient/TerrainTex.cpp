@@ -328,7 +328,8 @@ int TerrainTextureClass::update(WorldHeightMap *htMap)
 			}
 		}
  		for (cellY = 0; cellY < numRows; cellY++) {
-			Int rowBytes = surface_desc.Width*pixelBytes;
+			// Locked texture rows can be padded on Metal/DXVK; use the actual row stride.
+			Int rowBytes = locked_rect.Pitch;
 			Int row = cellY*tilePixelExtent;
 			row += TILE_OFFSET/2;
 			row += TILE_OFFSET*(cellY/2);
