@@ -39,3 +39,6 @@
 - Earlier log reports projected-shadow render target allocation failed; manager initialization failed. Tree decals were nevertheless submitted with missing resources.
 - Commit `253ed89e98d6dd713ec9a860d6e0afedb4e29680` adds an early guard in `queueDecal` for null shadow, missing index/vertex buffers, absent terrain renderer or heightmap. Prevents this particular invalid-resource path; runtime validation pending.
 - Active branch `fix/mods-visible-cross-platform-sync`; A13 build branch and Vulkan workflows untouched.
+
+### 2026-10-12: independent shadow initialization
+- Commits 2b82ba6 and follow-up formatting: projected render-target failure no longer forces the entire W3DShadowManager init to fail when volumetric shadows initialized successfully. The projected render-target failure itself remains unresolved, and there is no device verification. No changes to water, terrain, Vulkan, or A13 build workflows.
