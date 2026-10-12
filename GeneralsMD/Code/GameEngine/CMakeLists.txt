@@ -1111,6 +1111,45 @@ set(GAMEENGINE_SRC
 #    Source/GameNetwork/GameSpy/Thread/ThreadUtils.cpp
 #    Source/GameNetwork/GameSpyOverlay.cpp
     Source/GameNetwork/GUIUtil.cpp
+
+    # GeneralsOnline port from MYSOREZ/GeneralsZH-Android-Port.
+    Include/GameNetwork/GeneralsOnline/GeneralsOnline_Settings.h
+    Include/GameNetwork/GeneralsOnline/HTTP/HTTPManager.h
+    Include/GameNetwork/GeneralsOnline/HTTP/HTTPRequest.h
+    Include/GameNetwork/GeneralsOnline/NGMPGame.h
+    Include/GameNetwork/GeneralsOnline/NGMP_include.h
+    Include/GameNetwork/GeneralsOnline/NGMP_interfaces.h
+    Include/GameNetwork/GeneralsOnline/NGMP_types.h
+    Include/GameNetwork/GeneralsOnline/NetworkBitstream.h
+    Include/GameNetwork/GeneralsOnline/NetworkMesh.h
+    Include/GameNetwork/GeneralsOnline/NetworkPacket.h
+    Include/GameNetwork/GeneralsOnline/NextGenMP_defines.h
+    Include/GameNetwork/GeneralsOnline/NextGenTransport.h
+    Include/GameNetwork/GeneralsOnline/OnlineServices_Auth.h
+    Include/GameNetwork/GeneralsOnline/OnlineServices_Init.h
+    Include/GameNetwork/GeneralsOnline/OnlineServices_LobbyInterface.h
+    Include/GameNetwork/GeneralsOnline/OnlineServices_MatchmakingInterface.h
+    Include/GameNetwork/GeneralsOnline/OnlineServices_RoomsInterface.h
+    Include/GameNetwork/GeneralsOnline/OnlineServices_SocialInterface.h
+    Include/GameNetwork/GeneralsOnline/OnlineServices_StatsInterface.h
+    Include/GameNetwork/GeneralsOnline/PluginInterfaces.h
+    Include/GameNetwork/GeneralsOnline/json.hpp
+    Include/GameNetwork/GeneralsOnline/Vendor/stb_image/stb_image_resize.h
+    Include/GameNetwork/GeneralsOnline/Vendor/stb_image/stb_image_write.h
+    Source/GameNetwork/GeneralsOnline/GeneralsOnline_Settings.cpp
+    Source/GameNetwork/GeneralsOnline/HTTP/HTTPManager.cpp
+    Source/GameNetwork/GeneralsOnline/HTTP/HTTPRequest.cpp
+    Source/GameNetwork/GeneralsOnline/NGMPGame.cpp
+    Source/GameNetwork/GeneralsOnline/NGMP_Helpers.cpp
+    Source/GameNetwork/GeneralsOnline/NetworkBitstream.cpp
+    Source/GameNetwork/GeneralsOnline/OnlineServices_Auth.cpp
+    Source/GameNetwork/GeneralsOnline/OnlineServices_Init.cpp
+    Source/GameNetwork/GeneralsOnline/OnlineServices_LobbyInterface.cpp
+    Source/GameNetwork/GeneralsOnline/OnlineServices_MatchmakingInterface.cpp
+    Source/GameNetwork/GeneralsOnline/OnlineServices_RoomsInterface.cpp
+    Source/GameNetwork/GeneralsOnline/OnlineServices_SocialInterface.cpp
+    Source/GameNetwork/GeneralsOnline/OnlineServices_StatsInterface.cpp
+    Source/GameNetwork/GeneralsOnline/PluginInterfaces.cpp
 #    Source/GameNetwork/IPEnumeration.cpp
 #    Source/GameNetwork/LANAPI.cpp
 #    Source/GameNetwork/LANAPICallbacks.cpp
@@ -1149,6 +1188,15 @@ else()
 endif()
 
 
+
+# GameNetworkingSockets-backed P2P match transport (iOS + Android).
+if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    list(APPEND GAMEENGINE_SRC
+        Source/GameNetwork/GeneralsOnline/NetworkMesh.cpp
+        Source/GameNetwork/GeneralsOnline/NextGenTransport.cpp
+    )
+endif()
+
 add_library(z_gameengine STATIC)
 
 target_sources(z_gameengine PRIVATE ${GAMEENGINE_SRC})
@@ -1165,6 +1213,24 @@ if(NOT SAGE_USE_DX8 AND dxvk_SOURCE_DIR)
         ${dxvk_SOURCE_DIR}/usr/include/dxvk
     )
 endif()
+
+
+# GeneralsOnline REST/WebSocket service client.
+find_package(CURL CONFIG REQUIRED)
+target_link_libraries(z_gameengine PUBLIC CURL::libcurl)
+
+# P2P transport is enabled only where the GameNetworkingSockets dependency is
+# available; keep the existing iOS renderer and SDL3GameEngine untouched.
+if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    find_package(GameNetworkingSockets CONFIG REQUIRED)
+    if(TARGET GameNetworkingSockets::GameNetworkingSockets_s)
+        target_link_libraries(z_gameengine PUBLIC GameNetworkingSockets::GameNetworkingSockets_s)
+    else()
+        target_link_libraries(z_gameengine PUBLIC GameNetworkingSockets::GameNetworkingSockets)
+    endif()
+    add_compile_definitions(GENERALS_ONLINE_ENABLE_P2P_TRANSPORT)
+endif()
+add_compile_definitions(GENERALS_ONLINE)
 
 target_include_directories(z_gameengine PRIVATE
     Include/Precompiled
