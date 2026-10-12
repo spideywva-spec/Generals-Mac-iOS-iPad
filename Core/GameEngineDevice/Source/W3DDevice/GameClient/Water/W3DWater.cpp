@@ -1463,7 +1463,7 @@ void WaterRenderObjClass::loadSetting( Setting *setting, TimeOfDay timeOfDay )
 //-------------------------------------------------------------------------------------------------
 void WaterRenderObjClass::updateRenderTargetTextures(CameraClass *cam)
 {
-	if (m_waterType == WATER_TYPE_2_PVSHADER && m_pReflectionTexture &&
+	if (cam && m_parentScene && m_waterType == WATER_TYPE_2_PVSHADER && m_pReflectionTexture &&
 		m_dwWavePixelShader && m_dwWaveVertexShader && getClippedWaterPlane(cam, nullptr) &&
 		TheTerrainRenderObject && TheTerrainRenderObject->getMap())
 		renderMirror(cam);	//generate texture containing reflected scene
@@ -1829,6 +1829,12 @@ Bool WaterRenderObjClass::getClippedWaterPlane(CameraClass *cam, AABoxClass *box
 //-------------------------------------------------------------------------------------------------
 void WaterRenderObjClass::drawSea(RenderInfoClass & rinfo)
 {
+	// A device reset can invalidate the reflection target or shader handles.
+	// Avoid dereferencing a missing texture and retain visible water instead.
+	if (!m_pReflectionTexture || !m_dwWavePixelShader || !m_dwWaveVertexShader) {
+		renderWater();
+		return;
+	}
 	AABoxClass	seaBox;
 
 	if (!getClippedWaterPlane(&rinfo.Camera,&seaBox))
