@@ -1,6 +1,8 @@
 --- a/Core/GameEngineDevice/Source/W3DDevice/GameClient/TerrainTex.cpp
 +++ b/Core/GameEngineDevice/Source/W3DDevice/GameClient/TerrainTex.cpp
-@@ -441,2 +441,7 @@
+@@ -439,6 +439,11 @@
+ {
+ 	// Do the base apply.
 -	TextureClass::Apply(stage);
 -#if 0 // obsolete [4/1/2003]
 +	TextureClass::Apply(stage);
@@ -10,3 +12,5 @@
 +	DX8Wrapper::Set_DX8_Texture_Stage_State(stage, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP);
 +#endif
 +#if 0 // obsolete [4/1/2003]
+ 	if (TheGlobalData && (TheGlobalData->m_bilinearTerrainTex || TheGlobalData->m_trilinearTerrainTex)) {
+ 		DX8Wrapper::Set_DX8_Texture_Stage_State(stage, D3DTSS_MINFILTER, D3DTEXF_LINEAR);
