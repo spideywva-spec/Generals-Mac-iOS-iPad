@@ -56,3 +56,7 @@
 ### 2026-10-12: vehicle/building shadow fallback (2943ec3)
 - In GeneralsMD W3DShadow.cpp `addShadow`, try original SHADOW_VOLUME first. On Apple only, if volume creation fails (stencil unavailable, disabled volumes, or geometry failure), attempt `SHADOW_DYNAMIC_PROJECTION` with a local copy of ShadowTypeInfo. Preserve original shadow settings and non-Apple behavior.
 - Not device-tested; projected manager may still be unavailable, and projection might not be valid for all models. This does not restore genuine stencil 3D shadows, and water reflection/terrain-edge bugs remain unresolved.
+
+### 2026-10-12: water reflection target format fallback
+- On Apple only, W3DWater now retries reflection texture creation with explicit WW3D_FORMAT_A8R8G8B8 if the display-format target fails. Does not override shader availability; only one identified render-target failure path is addressed.
+- Branch `fix/mods-visible-cross-platform-sync`; A13 and Vulkan workflows untouched. Device validation pending; this is not a verified fix for the three visual regressions.
