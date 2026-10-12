@@ -3548,8 +3548,14 @@ DX8Wrapper::Create_Render_Target (int width, int height, WW3DFormat format)
 
 	// If render target format isn't supported return null
 	if (!Get_Current_Caps()->Support_Render_To_Texture_Format(format)) {
+#ifdef _WIN32
 		WWDEBUG_SAY(("DX8Wrapper - Render target format is not supported"));
 		return nullptr;
+#else
+		// Legacy D3D8 capability reports may under-report DXVK/MoltenVK render
+		// targets. Attempt the actual allocation and validate the result below.
+		fprintf(stderr, "[RTT] format %d rejected by legacy caps; attempting allocation on non-Windows\n", (int)format);
+#endif
 	}
 
 	//
