@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - port-from-chatgpt
+      - mysorez-online-port
     paths:
       - 'GeneralsMD/**'
       - 'launcher_web/**'
