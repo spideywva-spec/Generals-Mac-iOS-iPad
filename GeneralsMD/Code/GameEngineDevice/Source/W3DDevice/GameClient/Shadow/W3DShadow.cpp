@@ -130,10 +130,10 @@ W3DShadowManager::~W3DShadowManager()
 active for full duration of game*/
 Bool W3DShadowManager::init()
 {
-	Bool result=TRUE;
+	Bool result=FALSE;
 
-	// Do not report successful shadow initialization when a manager or its
-	// render-target resources failed to initialize. Keep trying both managers.
+	// Projected shadows are optional: their render target may be unsupported
+	// on some devices. Keep the volumetric/stencil shadow path alive.
 	if (TheW3DVolumetricShadowManager)
 	{
 		const Bool initialized = TheW3DVolumetricShadowManager->init();
@@ -141,8 +141,9 @@ Bool W3DShadowManager::init()
 		if (!initialized || !acquired)
 		{
 			fprintf(stderr, "[SHADOW-DIAG] volumetric initialization failed (init=%d resources=%d)\n", initialized, acquired);
-			result = FALSE;
-		}
+			}
+		else
+			result = TRUE;
 	}
 	if (TheW3DProjectedShadowManager)
 	{
@@ -150,9 +151,10 @@ Bool W3DShadowManager::init()
 		const Bool acquired = initialized ? TheW3DProjectedShadowManager->ReAcquireResources() : FALSE;
 		if (!initialized || !acquired)
 		{
-			fprintf(stderr, "[SHADOW-DIAG] projected initialization failed (init=%d resources=%d)\n", initialized, acquired);
-			result = FALSE;
+			fprintf(stderr, "[SHADOW-DIAG] projected initialization failed (init=%d resources=%d); preserving volumetric shadows\n", initialized, acquired);
 		}
+		else
+			result = TRUE;
 	}
 
 	return result;
