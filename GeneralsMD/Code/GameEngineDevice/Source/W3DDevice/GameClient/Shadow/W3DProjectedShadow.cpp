@@ -270,6 +270,14 @@ Bool W3DProjectedShadowManager::ReAcquireResources()
 			m_dynamicRenderTarget=DX8Wrapper::Create_Render_Target (DEFAULT_RENDER_TARGET_WIDTH, DEFAULT_RENDER_TARGET_HEIGHT);
 	}
 
+	// A valid render target is mandatory for projected shadows.
+	// Do not continue with null and later dereference it in the update pass.
+	if (!m_dynamicRenderTarget)
+	{
+		fprintf(stderr, "[SHADOW-DIAG] projected shadow render target allocation failed\n");
+		return FALSE;
+	}
+
 	LPDIRECT3DDEVICE8 m_pDev=DX8Wrapper::_Get_D3D_Device8();
 
 	DEBUG_ASSERTCRASH(m_pDev, ("Trying to ReAcquireResources on W3DProjectedShadowManager without device"));
