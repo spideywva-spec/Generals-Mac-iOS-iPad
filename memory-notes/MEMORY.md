@@ -88,3 +88,8 @@
 - Apple-only: when depth mode detection fails, retry validated D24S8 depth/stencil before falling back to non-stencil depth. Does not falsely report stencil support; stencil shadows still require DXVK/MoltenVK compatibility.
 - TerrainTextureClass::update: use actual D3D locked surface row pitch when writing tile pixels; avoids corruption and black seams on drivers with padded texture rows.
 - Scope: fix/mods-visible-cross-platform-sync only; A13 branch and iOS workflows untouched. Water shader/reflection and actual on-device output remain to be validated.
+
+## 2026-10-12 — terrain row pitch and in-game preset follow-up
+- Branch fix/mods-visible-cross-platform-sync. TerrainTex.cpp: fixed remaining active atlas vertical border copies, flat terrain texture writes and edge atlas diagnostic writes to use locked_rect.Pitch rather than width-based row stride. Prevents corruption with padded GPU rows.
+- GameLOD.cpp: Apple-only in-game quality presets now control cloud shadows, ground lighting, soft shorelines, alongside earlier texture reduction and shadow settings; Custom keeps individual toggles.
+- CI diagnostic: workflow 38249666944 failed in vcpkg setup due to HTTP 504, before C++ compilation. Latest runs 38250407602 / 38250407457 were in progress when inspected. Runtime on A13 not yet verified. Outstanding: full water reflection and wave shader functionality, fog/MSAA/FXAA/anisotropy UI, Very Low preset, stencil support and cross-platform networking; do not call these finished.

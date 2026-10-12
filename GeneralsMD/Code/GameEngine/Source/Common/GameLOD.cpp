@@ -636,9 +636,17 @@ void GameLODManager::applyStaticLODLevel(StaticGameLODLevel level)
 			}
 		}
 
+#if defined(__APPLE__)
+		// iOS quality is controlled by the in-game preset, including
+		// lighting and soft shorelines; Custom keeps the user's toggles.
+		TheWritableGlobalData->m_useCloudMap = (level == STATIC_GAME_LOD_CUSTOM) ? lodInfo->m_useCloudMap : (level >= STATIC_GAME_LOD_HIGH);
+		TheWritableGlobalData->m_useLightMap = (level == STATIC_GAME_LOD_CUSTOM) ? lodInfo->m_useLightMap : (level >= STATIC_GAME_LOD_MEDIUM);
+		TheWritableGlobalData->m_showSoftWaterEdge = (level == STATIC_GAME_LOD_CUSTOM) ? lodInfo->m_showSoftWaterEdge : (level >= STATIC_GAME_LOD_MEDIUM);
+#else
 		TheWritableGlobalData->m_useCloudMap=lodInfo->m_useCloudMap;
 		TheWritableGlobalData->m_useLightMap=lodInfo->m_useLightMap;
 		TheWritableGlobalData->m_showSoftWaterEdge=lodInfo->m_showSoftWaterEdge;
+#endif
 		//Check if shoreline blending mode has changed
 		if (m_currentStaticLOD == STATIC_GAME_LOD_UNKNOWN || lodInfo->m_showSoftWaterEdge != prevLodInfo->m_showSoftWaterEdge)
 		{
