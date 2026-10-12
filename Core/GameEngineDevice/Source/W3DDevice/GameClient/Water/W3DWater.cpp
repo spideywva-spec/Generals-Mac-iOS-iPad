@@ -914,7 +914,7 @@ void WaterRenderObjClass::ReAcquireResources()
 
 		if (FAILED(hr) || !m_dwWavePixelShader || !m_dwWaveVertexShader)
 		{
-			fprintf(stderr, "[WATER_SHADER] wave shader unavailable; using translucent water\\n");
+			fprintf(stderr, "[WATER_SHADER] wave shader unavailable; using translucent water\n");
 			if (m_dwWavePixelShader)
 				m_pDev->DeletePixelShader(m_dwWavePixelShader);
 			if (m_dwWaveVertexShader)
@@ -928,7 +928,7 @@ void WaterRenderObjClass::ReAcquireResources()
 			m_pReflectionTexture = DX8Wrapper::Create_Render_Target(SEA_REFLECTION_SIZE, SEA_REFLECTION_SIZE);
 			if (!m_pReflectionTexture)
 			{
-				fprintf(stderr, "[WATER_SHADER] reflection target unavailable; using translucent water\\n");
+				fprintf(stderr, "[WATER_SHADER] reflection target unavailable; using translucent water\n");
 				m_pDev->DeletePixelShader(m_dwWavePixelShader);
 				m_pDev->DeleteVertexShader(m_dwWaveVertexShader);
 				m_dwWavePixelShader = 0;
