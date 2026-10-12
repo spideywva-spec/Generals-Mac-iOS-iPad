@@ -910,14 +910,16 @@ void WaterRenderObjClass::ReAcquireResources()
 		if (FAILED(hr)) {
 			fprintf(stderr, "[WATER_SHADER] wave.pso unavailable; using translucent water\n");
 			m_waterType = WATER_TYPE_0_TRANSLUCENT;
-			return;
+			// Keep initializing shared water resources and fixed-function effects.
+			// A missing optional shader must not abort all water setup.
 		}
 
 		hr = W3DShaderManager::LoadAndCreateD3DShader("shaders\\wave.vso", &Declaration[0], 0, true, &m_dwWaveVertexShader);
 		if (FAILED(hr)) {
 			fprintf(stderr, "[WATER_SHADER] wave.vso unavailable; using translucent water\n");
 			m_waterType = WATER_TYPE_0_TRANSLUCENT;
-			return;
+			// Keep initializing shared water resources and fixed-function effects.
+			// A missing optional shader must not abort all water setup.
 		}
 
 		// Create reflection texture. The reflection shader path must never run
@@ -926,7 +928,8 @@ void WaterRenderObjClass::ReAcquireResources()
 		if (!m_pReflectionTexture) {
 			fprintf(stderr, "[WATER_SHADER] reflection render target allocation failed; disabling shader water\n");
 			m_waterType = WATER_TYPE_0_TRANSLUCENT;
-			return;
+			// Keep initializing shared water resources and fixed-function effects.
+			// A missing optional shader must not abort all water setup.
 		}
 	}
 
@@ -1935,7 +1938,7 @@ Matrix4x4 matProj, matView, matWW3D;
 	m_pDev->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA );
 
 	m_pDev->SetRenderState(D3DRS_ALPHABLENDENABLE , TRUE);
-	m_pDev->SetTexture( 1, m_pReflectionTexture->Peek_D3D_Texture());
+	m_pDev->SetTexture( 1, m_pReflectionTexture ? m_pReflectionTexture->Peek_D3D_Texture() : nullptr);
 
 //	m_pDev->SetRenderState(D3DRS_FILLMODE,D3DFILL_WIREFRAME);//LORENZEN
 
