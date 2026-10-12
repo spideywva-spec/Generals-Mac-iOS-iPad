@@ -906,51 +906,16 @@ void WaterRenderObjClass::ReAcquireResources()
 			(D3DVSD_END())
 		};
 
-		// Both shader stages must be valid before allocating the expensive
-		// reflection render target. A missing stage uses normal translucent water.
 		hr = W3DShaderManager::LoadAndCreateD3DShader("shaders\\wave.pso", &Declaration[0], 0, false, &m_dwWavePixelShader);
-		if (SUCCEEDED(hr))
-			hr = W3DShaderManager::LoadAndCreateD3DShader("shaders\\wave.vso", &Declaration[0], 0, true, &m_dwWaveVertexShader);
+		if (FAILED(hr))
+			return;
 
-		if (FAILED(hr) || !m_dwWavePixelShader || !m_dwWaveVertexShader)
-		{
-			fprintf(stderr, "[WATER_SHADER] wave shader unavailable; using translucent water\n");
-			if (m_dwWavePixelShader)
-				m_pDev->DeletePixelShader(m_dwWavePixelShader);
-			if (m_dwWaveVertexShader)
-				m_pDev->DeleteVertexShader(m_dwWaveVertexShader);
-			m_dwWavePixelShader = 0;
-			m_dwWaveVertexShader = 0;
-			m_waterType = WATER_TYPE_0_TRANSLUCENT;
-		}
-		else
-		{
-			m_pReflectionTexture = DX8Wrapper::Create_Render_Target(SEA_REFLECTION_SIZE, SEA_REFLECTION_SIZE);
-#if defined(__APPLE__)
-			// On MoltenVK the display-format target may be rejected even when an
-			// explicit 32-bit color render target is supported. Try that before
-			// disabling the reflection pass.
-			if (!m_pReflectionTexture)
-				m_pReflectionTexture = DX8Wrapper::Create_Render_Target(SEA_REFLECTION_SIZE, SEA_REFLECTION_SIZE, WW3D_FORMAT_A8R8G8B8);
-			// Use a smaller reflection surface when the full-size target is
-			// unsupported. Reflection quality degrades rather than disappearing.
-			for (unsigned int size = 256; !m_pReflectionTexture && size >= 128; size /= 2)
-			{
-				m_pReflectionTexture = DX8Wrapper::Create_Render_Target(size, size, WW3D_FORMAT_A8R8G8B8);
-				if (!m_pReflectionTexture)
-					m_pReflectionTexture = DX8Wrapper::Create_Render_Target(size, size);
-			}
-#endif
-			if (!m_pReflectionTexture)
-			{
-				fprintf(stderr, "[WATER_SHADER] reflection target unavailable; using translucent water\n");
-				m_pDev->DeletePixelShader(m_dwWavePixelShader);
-				m_pDev->DeleteVertexShader(m_dwWaveVertexShader);
-				m_dwWavePixelShader = 0;
-				m_dwWaveVertexShader = 0;
-				m_waterType = WATER_TYPE_0_TRANSLUCENT;
-			}
-		}
+		hr = W3DShaderManager::LoadAndCreateD3DShader("shaders\\wave.vso", &Declaration[0], 0, true, &m_dwWaveVertexShader);
+		if (FAILED(hr))
+			return;
+
+		// Create reflection texture
+		m_pReflectionTexture = DX8Wrapper::Create_Render_Target (SEA_REFLECTION_SIZE, SEA_REFLECTION_SIZE);
 	}
 
 	if (m_waterTrackSystem)
@@ -1006,11 +971,6 @@ void WaterRenderObjClass::ReAcquireResources()
 			hr = 	DX8Wrapper::_Get_D3D_Device8()->CreatePixelShader((DWORD*)compiledShader->GetBufferPointer(), &m_trapezoidWaterPixelShader);
 			compiledShader->Release();
 		}
-#else
-		// The original shaders are assembled at runtime on Windows.
-		// They are not shipped as riverwater/water/trapezoidwater .pso
-		// assets; avoid three guaranteed VFS misses on iOS/Linux.
-		// The fixed-function water path below handles absent shader handles.
 #endif // _WIN32 - Runtime shader compilation
 	}
 
@@ -1478,8 +1438,7 @@ void WaterRenderObjClass::loadSetting( Setting *setting, TimeOfDay timeOfDay )
 //-------------------------------------------------------------------------------------------------
 void WaterRenderObjClass::updateRenderTargetTextures(CameraClass *cam)
 {
-	if (cam && m_parentScene && m_waterType == WATER_TYPE_2_PVSHADER && m_pReflectionTexture &&
-		m_dwWavePixelShader && m_dwWaveVertexShader && getClippedWaterPlane(cam, nullptr) &&
+	if (m_waterType == WATER_TYPE_2_PVSHADER && getClippedWaterPlane(cam, nullptr) &&
 		TheTerrainRenderObject && TheTerrainRenderObject->getMap())
 		renderMirror(cam);	//generate texture containing reflected scene
 }
@@ -1844,12 +1803,6 @@ Bool WaterRenderObjClass::getClippedWaterPlane(CameraClass *cam, AABoxClass *box
 //-------------------------------------------------------------------------------------------------
 void WaterRenderObjClass::drawSea(RenderInfoClass & rinfo)
 {
-	// A device reset can invalidate the reflection target or shader handles.
-	// Avoid dereferencing a missing texture and retain visible water instead.
-	if (!m_pReflectionTexture || !m_dwWavePixelShader || !m_dwWaveVertexShader) {
-		renderWater();
-		return;
-	}
 	AABoxClass	seaBox;
 
 	if (!getClippedWaterPlane(&rinfo.Camera,&seaBox))
@@ -1958,7 +1911,7 @@ Matrix4x4 matProj, matView, matWW3D;
 	m_pDev->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA );
 
 	m_pDev->SetRenderState(D3DRS_ALPHABLENDENABLE , TRUE);
-	m_pDev->SetTexture( 1, m_pReflectionTexture ? m_pReflectionTexture->Peek_D3D_Texture() : nullptr);
+	m_pDev->SetTexture( 1, m_pReflectionTexture->Peek_D3D_Texture());
 
 //	m_pDev->SetRenderState(D3DRS_FILLMODE,D3DFILL_WIREFRAME);//LORENZEN
 
@@ -3328,15 +3281,7 @@ void WaterRenderObjClass::drawTrapezoidWater(Vector3 points[4])
 	setupFlatWaterShader();// lorenzen sez use the alpha shader
 
 	//If video card supports it and it's enabled, feather the water edge using destination alpha
-	if (DX8Wrapper::getBackBufferFormat() == WW3D_FORMAT_A8R8G8B8 && TheGlobalData->m_showSoftWaterEdge && TheWaterTransparency->m_transparentWaterDepth !=0
-#ifdef _WIN32
-		)
-#else
-		// On the DXVK/MoltenVK path, destination alpha is not reliably
-		// preserved across the terrain and water passes. Using it for
-		// shoreline blending can expose black/uninitialized pixels.
-		&& false)
-#endif
+	if (DX8Wrapper::getBackBufferFormat() == WW3D_FORMAT_A8R8G8B8 && TheGlobalData->m_showSoftWaterEdge && TheWaterTransparency->m_transparentWaterDepth !=0)
 	{		DX8Wrapper::Set_DX8_Render_State(D3DRS_SRCBLEND, D3DBLEND_DESTALPHA );
 			if (!TheWaterTransparency->m_additiveBlend)
 				DX8Wrapper::Set_DX8_Render_State(D3DRS_DESTBLEND, D3DBLEND_INVDESTALPHA );

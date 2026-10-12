@@ -46,15 +46,11 @@ static void drawFramerateBar();
 #endif
 #include <time.h>
 #include <vector>
-#if defined(__APPLE__)
-#include <malloc/malloc.h>
-#endif
 
 // USER INCLUDES //////////////////////////////////////////////////////////////
 #include "Common/FramePacer.h"
 #include "Common/ThingFactory.h"
 #include "Common/GlobalData.h"
-#include "Common/GameMemory.h"
 #include "Common/PerfTimer.h"
 #include "Common/FileSystem.h"
 #include "Common/LocalFileSystem.h"
@@ -100,12 +96,6 @@ static void drawFramerateBar();
 #include "WW3D2/part_emt.h"
 #include "WW3D2/part_ldr.h"
 #include "WW3D2/dx8caps.h"
-#include "WW3D2/dx8vertexbuffer.h"
-#include "WW3D2/dx8indexbuffer.h"
-#include "WW3D2/dx8renderer.h"
-#include "WW3D2/dx8polygonrenderer.h"
-#include "WW3D2/surfaceclass.h"
-#include "sharebuf.h"
 #include "WW3D2/ww3dformat.h"
 #include "WW3D2/agg_def.h"
 #include "WW3D2/render2dsentence.h"
@@ -118,42 +108,6 @@ static void drawFramerateBar();
 #include "WW3D2/meshmdl.h"
 #include "WW3D2/rddesc.h"
 #include "TARGA.h"
-
-#if defined(__APPLE__)
-static void Log_Render_Memory_Summary(const char *phase, UnsignedInt frame)
-{
-	const double mb = 1024.0 * 1024.0;
-	const ShareBufferDiagStats &share = Get_Share_Buffer_Diag_Stats();
-	fprintf(stderr,
-	        "[RENDER-MEM] phase=%s frame=%u vbCount=%u vbVertices=%u vbMB=%.2f ibCount=%u ibIndices=%u ibMB=%.2f surfaces=%u surfaceMB=%.2f meshModels=%u matDescs=%u shareGeomCount=%u shareGeomMB=%.2f shareMatCount=%u shareMatMB=%.2f shareOtherCount=%u shareOtherMB=%.2f polyRenderers=%u textureCats=%u fvfCats=%u registeredMeshes=%u pendingTextureCats=%u pendingFvfCats=%u tempVertices=%u tempNormals=%u\n",
-	        phase != nullptr ? phase : "unknown",
-	        (unsigned)frame,
-	        VertexBufferClass::Get_Total_Buffer_Count(),
-	        VertexBufferClass::Get_Total_Allocated_Vertices(),
-	        (double)VertexBufferClass::Get_Total_Allocated_Memory() / mb,
-	        IndexBufferClass::Get_Total_Buffer_Count(),
-	        IndexBufferClass::Get_Total_Allocated_Indices(),
-	        (double)IndexBufferClass::Get_Total_Allocated_Memory() / mb,
-	        SurfaceClass::Get_Total_Surface_Count(),
-	        (double)SurfaceClass::Get_Total_Allocated_Memory() / mb,
-	        MeshModelClass::Get_Total_Model_Count(),
-	        MeshMatDescClass::Get_Total_Desc_Count(),
-	        share.GeometryCount,
-	        (double)share.GeometryBytes / mb,
-	        share.MaterialCount,
-	        (double)share.MaterialBytes / mb,
-	        share.OtherCount,
-	        (double)share.OtherBytes / mb,
-	        DX8PolygonRendererClass::Get_Total_Renderer_Count(),
-	        DX8MeshRendererClass::Get_Texture_Category_Count(),
-	        DX8MeshRendererClass::Get_FVF_Category_Count(),
-	        DX8MeshRendererClass::Get_Registered_Mesh_Count(),
-	        DX8MeshRendererClass::Get_Pending_Texture_Category_Count(),
-	        DX8MeshRendererClass::Get_Pending_FVF_Category_Count(),
-	        DX8MeshRendererClass::Get_Temp_Vertex_Count(),
-	        DX8MeshRendererClass::Get_Temp_Normal_Count());
-}
-#endif
 
 #include "GameLogic/ScriptEngine.h"		// For TheScriptEngine - jkmcd
 #include "GameLogic/GameLogic.h"
@@ -1085,44 +1039,6 @@ void W3DDisplay::init()
 				TheWritableGlobalData->m_textureFilteringMode = WW3D::Get_Texture_Filter();
 				WW3D::Set_Anisotropy_Level(TheWritableGlobalData->m_textureAnisotropyLevel);
 				TheWritableGlobalData->m_textureAnisotropyLevel = WW3D::Get_Anisotropy_Level();
-
-				auto *caps = DX8Wrapper::Get_Current_Caps();
-				fprintf(stderr,
-				        "[GRAPHICS-DIAG] render-device width=%d height=%d bitDepth=%d windowed=%d backBufferFormat=%d viewportHeightScale=%.3f msaa=%u filter=%d anisotropy=%u\n",
-				        getWidth(),
-				        getHeight(),
-				        getBitDepth(),
-				        getWindowed() ? 1 : 0,
-				        (int)DX8Wrapper::getBackBufferFormat(),
-				        (double)TheGlobalData->m_viewportHeightScale,
-				        (unsigned)TheWritableGlobalData->m_antiAliasLevel,
-				        (int)TheWritableGlobalData->m_textureFilteringMode,
-				        (unsigned)TheWritableGlobalData->m_textureAnisotropyLevel);
-
-				if (caps != nullptr)
-				{
-					fprintf(stderr,
-					        "[GRAPHICS-DIAG] texture-formats A8R8G8B8=%d X8R8G8B8=%d A4R4G4B4=%d R5G6B5=%d DXT1=%d DXT3=%d DXT5=%d\n",
-					        caps->Support_Texture_Format(WW3D_FORMAT_A8R8G8B8) ? 1 : 0,
-					        caps->Support_Texture_Format(WW3D_FORMAT_X8R8G8B8) ? 1 : 0,
-					        caps->Support_Texture_Format(WW3D_FORMAT_A4R4G4B4) ? 1 : 0,
-					        caps->Support_Texture_Format(WW3D_FORMAT_R5G6B5) ? 1 : 0,
-					        caps->Support_Texture_Format(WW3D_FORMAT_DXT1) ? 1 : 0,
-					        caps->Support_Texture_Format(WW3D_FORMAT_DXT3) ? 1 : 0,
-					        caps->Support_Texture_Format(WW3D_FORMAT_DXT5) ? 1 : 0);
-
-					const D3DCAPS8 &d3dCaps = caps->Get_DX8_Caps();
-					fprintf(stderr,
-					        "[GRAPHICS-DIAG] caps raster=0x%08x dither=%d textureCaps=0x%08x textureOpCaps=0x%08x maxStages=%u maxTextures=%u pixelShader=0x%08x vertexShader=0x%08x\n",
-					        (unsigned)d3dCaps.RasterCaps,
-					        (d3dCaps.RasterCaps & D3DPRASTERCAPS_DITHER) ? 1 : 0,
-					        (unsigned)d3dCaps.TextureCaps,
-					        (unsigned)d3dCaps.TextureOpCaps,
-					        (unsigned)d3dCaps.MaxTextureBlendStages,
-					        (unsigned)d3dCaps.MaxSimultaneousTextures,
-					        (unsigned)d3dCaps.PixelShaderVersion,
-					        (unsigned)d3dCaps.VertexShaderVersion);
-				}
 			}
 
 			++attempt;
@@ -1206,11 +1122,6 @@ void W3DDisplay::init()
 //=============================================================================
 void W3DDisplay::reset()
 {
-	if (m_assetManager)
-		m_assetManager->Log_Resource_Summary("display-reset-before");
-#if defined(__APPLE__)
-	Log_Render_Memory_Summary("display-reset-before", TheGameLogic ? TheGameLogic->getFrame() : 0);
-#endif
 
 	Display::reset();
 
@@ -1235,10 +1146,6 @@ void W3DDisplay::reset()
 	// release any unused assets from W3D
 	/// @todo really need that "scene abstraction", having this stuff in the display is icky
 	m_assetManager->Release_Unused_Assets();
-	m_assetManager->Log_Resource_Summary("display-reset-after");
-#if defined(__APPLE__)
-	Log_Render_Memory_Summary("display-reset-after", TheGameLogic ? TheGameLogic->getFrame() : 0);
-#endif
 
 	if (TheWritableGlobalData)
 		TheWritableGlobalData->m_drawSkyBox =0;
@@ -1248,56 +1155,6 @@ const UnsignedInt START_CUMU_FRAME = LOGICFRAMES_PER_SECOND / 2;	// skip first h
 
 void W3DDisplay::updateAverageFPS()
 {
-#if defined(__APPLE__) && !defined(GENERALS_ONLINE)
-	// Pair periodic resource counts with the process footprint trail. Avoid
-	// per-frame hash scans, and restart sampling when a new map resets time.
-	static UnsignedInt nextResourceFrame = 0;
-	static UnsignedInt nextMemoryTrimFrame = 1800;
-	static UnsignedInt lastResourceFrame = 0;
-	if (TheGameLogic && m_assetManager)
-	{
-		const UnsignedInt frame = TheGameLogic->getFrame();
-		if (frame < lastResourceFrame)
-		{
-			nextResourceFrame = 0;
-			nextMemoryTrimFrame = 1800;
-		}
-		if (TheGameLogic->isInGame() && !TheGameLogic->isInShellGame() && frame >= nextResourceFrame)
-		{
-			fprintf(stderr, "[RESOURCE-DIAG] sampleFrame=%u\n", (unsigned)frame);
-			m_assetManager->Log_Resource_Summary("match-periodic");
-			Log_Render_Memory_Summary("match-periodic", frame);
-#if defined(GENERALS_ONLINE)
-			// Asset/resource summaries walk large render collections. Keep them for
-			// diagnostics, but do not scan every 300 logic frames during Online play.
-			nextResourceFrame = frame + 1800;
-#else
-			nextResourceFrame = frame + 300;
-#endif
-		}
-
-		if (TheGameLogic->isInGame() && !TheGameLogic->isInShellGame() && frame >= nextMemoryTrimFrame)
-		{
-			m_assetManager->Log_Resource_Summary("match-gc-before");
-			Log_Render_Memory_Summary("match-gc-before", frame);
-			m_assetManager->Release_Unused_Assets();
-			m_assetManager->Log_Resource_Summary("match-gc-after");
-			Log_Render_Memory_Summary("match-gc-after", frame);
-
-			Int poolBytes = 0;
-			if (TheMemoryPoolFactory != nullptr)
-				poolBytes = TheMemoryPoolFactory->releaseEmpties();
-			const size_t mallocBytes = malloc_zone_pressure_relief(nullptr, 0);
-			fprintf(stderr,
-			        "[MEMORY-GC] frame=%u poolReleasedMB=%.1f mallocReliefMB=%.1f\n",
-			        (unsigned)frame,
-			        (double)poolBytes / (1024.0 * 1024.0),
-			        (double)mallocBytes / (1024.0 * 1024.0));
-			nextMemoryTrimFrame = frame + 1800;
-		}
-		lastResourceFrame = frame;
-	}
-#endif
 	constexpr const Int FPS_HISTORY_SIZE = 30;
 
 	static Int64 lastUpdateTime64 = 0;
@@ -1978,9 +1835,8 @@ void W3DDisplay::calculateTerrainLOD()
 	TerrainLOD goodLOD = TERRAIN_LOD_MIN;
 	TerrainLOD curLOD = TERRAIN_LOD_AUTOMATIC;
 	Int count = 0;
-#if defined(RTS_DEBUG) && defined(_WIN32)
-	// The legacy Windows debug shortcut disables water mirrors. Do not
-	// apply it to iOS/Linux: debug builds must retain normal LOD selection.
+#ifdef RTS_DEBUG
+	// just go to TERRAIN_LOD_NO_WATER, mirror off.
 	TheWritableGlobalData->m_terrainLOD = TERRAIN_LOD_NO_WATER;
 	m_3DScene->drawTerrainOnly(false);
 	TheTerrainRenderObject->adjustTerrainLOD(0);
@@ -2036,14 +1892,7 @@ void W3DDisplay::calculateTerrainLOD()
 		if (frameTime < maxTimeLimit) break;
 	} while (count<10);
 
-	// On iOS, preserve the highest terrain detail and water rendering.
-	// The automatic benchmark can otherwise select NO_WATER and permanently
-	// suppress reflective water even on devices capable of rendering it.
-#if defined(__APPLE__) && defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
-	TheWritableGlobalData->m_terrainLOD = TERRAIN_LOD_MAX;
-#else
 	TheWritableGlobalData->m_terrainLOD = goodLOD;
-#endif
 	m_3DScene->drawTerrainOnly(false);
 	TheTerrainRenderObject->adjustTerrainLOD(0);
 #ifdef RTS_DEBUG
@@ -2242,9 +2091,7 @@ AGAIN:
                                            //-LORENZEN
 
 
-			// The water object itself checks its active shader mode and target.
-			// Global settings can differ after a shader-resource fallback.
-			if (TheWaterRenderObj && primaryW3DView)
+			if (TheWaterRenderObj && TheGlobalData->m_waterType == 2)
 				TheWaterRenderObj->updateRenderTargetTextures(primaryW3DView->get3DCamera());	//do a render into each texture
 
 			//Can't render into textures while rendering to screen so these textures need to be updated
@@ -3737,15 +3584,7 @@ void W3DDisplay::doSmartAssetPurgeAndPreload(const char* usageFileName)
 	}
 
 	// just free everything if there's no exclusion list file (send in an empty list)
-	m_assetManager->Log_Resource_Summary("asset-purge-before");
-#if defined(__APPLE__)
-	Log_Render_Memory_Summary("asset-purge-before", TheGameLogic ? TheGameLogic->getFrame() : 0);
-#endif
 	m_assetManager->Free_Assets_With_Exclusion_List(names);
-	m_assetManager->Log_Resource_Summary("asset-purge-after");
-#if defined(__APPLE__)
-	Log_Render_Memory_Summary("asset-purge-after", TheGameLogic ? TheGameLogic->getFrame() : 0);
-#endif
 }
 
 //-------------------------------------------------------------------------------------------------

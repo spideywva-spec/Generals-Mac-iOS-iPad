@@ -270,41 +270,6 @@ Bool W3DProjectedShadowManager::ReAcquireResources()
 			m_dynamicRenderTarget=DX8Wrapper::Create_Render_Target (DEFAULT_RENDER_TARGET_WIDTH, DEFAULT_RENDER_TARGET_HEIGHT);
 	}
 
-	// Mobile Vulkan backends may reject the legacy 512x512 render-target format.
-	// Retain projected shadows using a smaller alpha-capable target when possible.
-#if defined(__APPLE__)
-	if (!m_dynamicRenderTarget)
-	{
-		m_renderTargetHasAlpha = TRUE;
-		m_dynamicRenderTarget = DX8Wrapper::Create_Render_Target(256, 256, WW3D_FORMAT_A8R8G8B8);
-	}
-	if (!m_dynamicRenderTarget)
-	{
-		m_renderTargetHasAlpha = FALSE;
-		m_dynamicRenderTarget = DX8Wrapper::Create_Render_Target(256, 256);
-	}
-	// Last-resort targets keep projected unit shadows available on devices
-	// whose render-target memory or format limits reject larger surfaces.
-	for (unsigned int size = 128; !m_dynamicRenderTarget && size >= 64; size /= 2)
-	{
-		m_renderTargetHasAlpha = TRUE;
-		m_dynamicRenderTarget = DX8Wrapper::Create_Render_Target(size, size, WW3D_FORMAT_A8R8G8B8);
-		if (!m_dynamicRenderTarget)
-		{
-			m_renderTargetHasAlpha = FALSE;
-			m_dynamicRenderTarget = DX8Wrapper::Create_Render_Target(size, size);
-		}
-	}
-#endif
-
-	// A valid render target is mandatory for projected shadows.
-	// Do not continue with null and later dereference it in the update pass.
-	if (!m_dynamicRenderTarget)
-	{
-		fprintf(stderr, "[SHADOW-DIAG] projected shadow render target allocation failed\n");
-		return FALSE;
-	}
-
 	LPDIRECT3DDEVICE8 m_pDev=DX8Wrapper::_Get_D3D_Device8();
 
 	DEBUG_ASSERTCRASH(m_pDev, ("Trying to ReAcquireResources on W3DProjectedShadowManager without device"));
@@ -838,12 +803,6 @@ is an optimized system that only uses the render objects bounding box to determi
 */
 void W3DProjectedShadowManager::queueDecal(W3DProjectedShadow *shadow)
 {
-	// A13/DXVK can reject the projected-shadow render target during startup.
-	// Tree decals are still submitted from drawTrees; never dereference
-	// unallocated decal buffers or an absent terrain height map.
-	if (!shadow || !shadowDecalIndexBufferD3D || !shadowDecalVertexBufferD3D ||
-		!TheTerrainRenderObject || !TheTerrainRenderObject->getMap())
-		return;
 	int i,j,k;
 	Vector3 hmapVertex,objPos;
 	AABoxClass box;
@@ -2197,15 +2156,7 @@ void W3DProjectedShadow::updateTexture(Vector3 &lightPos)
 		SurfaceClass *newSurface=TheW3DProjectedShadowManager->getRenderTarget()->Get_Surface_Level();
 
 		//Copy shadow from temporary video-memory surface into a permanent texture
-		// The Apple fallback render target can be 256x256 rather than 512x512.
-		// Never copy outside either the generated surface or the cached texture.
-		SurfaceClass::SurfaceDescription sourceDesc, targetDesc;
-		newSurface->Get_Description(sourceDesc);
-		oldSurface->Get_Description(targetDesc);
-		const unsigned int copyWidth = sourceDesc.Width < targetDesc.Width ? sourceDesc.Width : targetDesc.Width;
-		const unsigned int copyHeight = sourceDesc.Height < targetDesc.Height ? sourceDesc.Height : targetDesc.Height;
-		if (copyWidth && copyHeight)
-			oldSurface->Copy(0,0,0,0,copyWidth,copyHeight,newSurface);
+		oldSurface->Copy(0,0,0,0,DEFAULT_RENDER_TARGET_WIDTH,DEFAULT_RENDER_TARGET_HEIGHT,newSurface);
 		REF_PTR_RELEASE(newSurface);
 		REF_PTR_RELEASE(oldSurface);
 		m_shadowTexture[0]->updateBounds(TheW3DShadowManager->getLightPosWorld(0),m_robj);	//update local shadow bounds

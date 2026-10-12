@@ -130,30 +130,16 @@ W3DShadowManager::~W3DShadowManager()
 active for full duration of game*/
 Bool W3DShadowManager::init()
 {
-	Bool result=FALSE;
+	Bool result=TRUE;
 
-	// Projected shadows are optional: their render target may be unsupported
-	// on some devices. Keep the volumetric/stencil shadow path alive.
-	if (TheW3DVolumetricShadowManager)
+	if	(TheW3DVolumetricShadowManager && TheW3DVolumetricShadowManager->init())
 	{
-		const Bool initialized = TheW3DVolumetricShadowManager->init();
-		const Bool acquired = initialized ? TheW3DVolumetricShadowManager->ReAcquireResources() : FALSE;
-		if (!initialized || !acquired)
-		{
-			fprintf(stderr, "[SHADOW-DIAG] volumetric initialization failed (init=%d resources=%d)\n", initialized, acquired);
-		}
-		else
+		if (TheW3DVolumetricShadowManager->ReAcquireResources())
 			result = TRUE;
 	}
-	if (TheW3DProjectedShadowManager)
+	if ( TheW3DProjectedShadowManager && TheW3DProjectedShadowManager->init())
 	{
-		const Bool initialized = TheW3DProjectedShadowManager->init();
-		const Bool acquired = initialized ? TheW3DProjectedShadowManager->ReAcquireResources() : FALSE;
-		if (!initialized || !acquired)
-		{
-			fprintf(stderr, "[SHADOW-DIAG] projected initialization failed (init=%d resources=%d); preserving volumetric shadows\n", initialized, acquired);
-		}
-		else
+		if (TheW3DProjectedShadowManager->ReAcquireResources())
 			result = TRUE;
 	}
 
@@ -202,24 +188,7 @@ Shadow *W3DShadowManager::addShadow( RenderObjClass *robj, Shadow::ShadowTypeInf
 	if (type & SHADOW_VOLUME)
 	{
 		if (TheW3DVolumetricShadowManager)
-		{
-			Shadow *volume = (Shadow *)TheW3DVolumetricShadowManager->addShadow(robj, shadowInfo, draw);
-			if (volume)
-				return volume;
-		}
-		// Stencil buffers / volume geometry may be unavailable on mobile.
-		// Fall back to the existing projected-shadow path rather than leaving
-		// vehicles and buildings without any shadow at all.
-#if defined(__APPLE__)
-		if (TheW3DProjectedShadowManager && shadowInfo)
-		{
-			Shadow::ShadowTypeInfo fallback = *shadowInfo;
-			fallback.m_type = SHADOW_DYNAMIC_PROJECTION;
-			Shadow *projected = (Shadow *)TheW3DProjectedShadowManager->addShadow(robj, &fallback, draw);
-			if (projected)
-				return projected;
-		}
-#endif
+			return (Shadow *)TheW3DVolumetricShadowManager->addShadow(robj, shadowInfo, draw);
 	}
 
 	if (type & (SHADOW_PROJECTION | SHADOW_DYNAMIC_PROJECTION | SHADOW_DECAL | SHADOW_ALPHA_DECAL | SHADOW_ADDITIVE_DECAL))

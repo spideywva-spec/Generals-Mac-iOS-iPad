@@ -141,7 +141,7 @@ int TerrainTextureClass::update(WorldHeightMap *htMap)
 				pBGR += (tilePixelExtent-1-j)*TILE_BYTES_PER_PIXEL*tilePixelExtent; // invert to match.
 				Int row = position.y+j;
 				UnsignedByte *pBGRX = ((UnsignedByte*)locked_rect.pBits) +
-							(row)*locked_rect.Pitch;
+							(row)*surface_desc.Width*pixelBytes;
 
 				Int column = position.x;
 				pBGRX += column*pixelBytes;
@@ -164,7 +164,7 @@ int TerrainTextureClass::update(WorldHeightMap *htMap)
 			for (j=0; j<width; j++) {
 				Int row = origin.y+j;
 				UnsignedByte *pBGRX = ((UnsignedByte*)locked_rect.pBits) +
-							(row)*locked_rect.Pitch;
+							(row)*surface_desc.Width*pixelBytes;
 
 				Int column = origin.x;
 				pBGRX += column*pixelBytes;
@@ -179,15 +179,15 @@ int TerrainTextureClass::update(WorldHeightMap *htMap)
 				// copy before.
 				Int row = origin.y-j-1;
 				UnsignedByte *pBGRX = ((UnsignedByte*)locked_rect.pBits) +
-							(row)*locked_rect.Pitch;
+							(row)*surface_desc.Width*pixelBytes;
 				UnsignedByte *target = pBGRX+(origin.x-4)*pixelBytes;
-				memcpy(target, target+(width+j)*locked_rect.Pitch, (width+8)*pixelBytes);
+				memcpy(target, target+width*surface_desc.Width*pixelBytes, (width+8)*pixelBytes);
 				// copy after.
 				row = origin.y+j;
 				pBGRX = ((UnsignedByte*)locked_rect.pBits) +
-							(row)*locked_rect.Pitch;
+							(row)*surface_desc.Width*pixelBytes;
 				target = pBGRX+(origin.x-4)*pixelBytes;
-				memcpy(target+width*locked_rect.Pitch, target, (width+8)*pixelBytes);
+				memcpy(target+width*surface_desc.Width*pixelBytes, target, (width+8)*pixelBytes);
 			}
 
 		}
@@ -275,7 +275,7 @@ int TerrainTextureClass::update(WorldHeightMap *htMap)
 						row += TILE_OFFSET/2;
 						row += TILE_OFFSET*(cellY/2);
 						UnsignedByte *pBGRX = ((UnsignedByte*)locked_rect.pBits) +
-									(row)*locked_rect.Pitch;
+									(row)*surface_desc.Width*pixelBytes;
 
 						Int column = cellX*tilePixelExtent;
 						column += TILE_OFFSET*(cellX/2);
@@ -303,7 +303,7 @@ int TerrainTextureClass::update(WorldHeightMap *htMap)
 					row += TILE_OFFSET/2;
 					row += TILE_OFFSET*(cellY/2);
 					UnsignedByte *pBGRX = ((UnsignedByte*)locked_rect.pBits) +
-								(row)*locked_rect.Pitch;
+								(row)*surface_desc.Width*pixelBytes;
 
 					Int column = cellX*tilePixelExtent;
 					column += TILE_OFFSET*(cellX/2);
@@ -328,8 +328,7 @@ int TerrainTextureClass::update(WorldHeightMap *htMap)
 			}
 		}
  		for (cellY = 0; cellY < numRows; cellY++) {
-			// Locked texture rows can be padded on Metal/DXVK; use the actual row stride.
-			Int rowBytes = locked_rect.Pitch;
+			Int rowBytes = surface_desc.Width*pixelBytes;
 			Int row = cellY*tilePixelExtent;
 			row += TILE_OFFSET/2;
 			row += TILE_OFFSET*(cellY/2);
@@ -385,7 +384,7 @@ Bool TerrainTextureClass::updateFlat(WorldHeightMap *htMap, Int xCell, Int yCell
 	DX8_ErrorCode(surface_level->GetDesc(&surface_desc));
 	DEBUG_ASSERTCRASH((Int)surface_desc.Width == cellWidth*pixelsPerCell, ("Bitmap too small."));
 	DEBUG_ASSERTCRASH((Int)surface_desc.Height == cellWidth*pixelsPerCell, ("Bitmap too small."));
-	if (surface_desc.Width != cellWidth*pixelsPerCell || surface_desc.Height != cellWidth*pixelsPerCell) {
+	if (surface_desc.Width != cellWidth*pixelsPerCell) {
 		return false;
 	}
 
@@ -412,7 +411,7 @@ Bool TerrainTextureClass::updateFlat(WorldHeightMap *htMap, Int xCell, Int yCell
 				if (pBGR == nullptr) continue; // past end of defined terrain. [3/24/2003]
 				Int k, l;
 				for (k=pixelsPerCell-1; k>=0; k--) {
-					UnsignedByte *pBGRX = pBGRX_data + (pixelsPerCell*(cellWidth-cellY-1)+k)*locked_rect.Pitch +
+					UnsignedByte *pBGRX = pBGRX_data + (pixelsPerCell*(cellWidth-cellY-1)+k)*surface_desc.Width*pixelBytes +
 						cellX*pixelsPerCell*pixelBytes;
 					for (l=0; l<pixelsPerCell; l++) {
 						*((Short*)pBGRX) = 0x8000 + ((pBGR[2]>>3)<<10) + ((pBGR[1]>>3)<<5) + (pBGR[0]>>3);
@@ -790,7 +789,7 @@ int AlphaEdgeTextureClass::update(WorldHeightMap *htMap)
 		Int cellX, cellY;
 		for (cellX = 0; (UnsignedInt)cellX < surface_desc.Width; cellX++) {
 			for (cellY = 0; cellY < surface_desc.Height; cellY++) {
-				UnsignedByte *pBGR = ((UnsignedByte *)locked_rect.pBits)+cellY*locked_rect.Pitch+cellX*4;
+				UnsignedByte *pBGR = ((UnsignedByte *)locked_rect.pBits)+(cellY*surface_desc.Width+cellX)*4;
 				pBGR[2] = 255-cellY/2;
 				pBGR[0] = cellX/2;
 				pBGR[3] = cellX/2;  // alpha.
@@ -813,7 +812,7 @@ int AlphaEdgeTextureClass::update(WorldHeightMap *htMap)
 				UnsignedByte *pBGR = htMap->getEdgeTile(tileNdx)->getRGBDataForWidth(tilePixelExtent);
 				pBGR += (tilePixelExtent-1-j)*TILE_BYTES_PER_PIXEL*tilePixelExtent; // invert to match.
 				UnsignedByte *pBGRX = ((UnsignedByte*)locked_rect.pBits) +
-							(row)*locked_rect.Pitch;
+							(row)*surface_desc.Width*pixelBytes;
 				pBGRX += column*pixelBytes;
 
 				for (i=0; i<tilePixelExtent; i++) {

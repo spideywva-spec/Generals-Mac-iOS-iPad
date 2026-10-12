@@ -588,12 +588,6 @@ void GameLODManager::applyStaticLODLevel(StaticGameLODLevel level)
 		if (textureLevel == STATIC_GAME_LOD_UNKNOWN)
 			textureLevel = level;
 		requestedTextureReduction = getLevelTextureReduction(textureLevel);
-#if defined(__APPLE__)
-		// On iOS the selected in-game preset, not a desktop benchmark,
-		// determines texture resolution. Custom retains its own slider.
-		requestedTextureReduction = (level == STATIC_GAME_LOD_LOW) ? 2 :
-			(level == STATIC_GAME_LOD_MEDIUM) ? 1 : 0;
-#endif
 
 		//only use trees if memory requirement passed.
 		requestedTrees = m_memPassed;
@@ -602,32 +596,15 @@ void GameLODManager::applyStaticLODLevel(StaticGameLODLevel level)
 	if (TheGlobalData)
 	{
 		TheWritableGlobalData->m_maxParticleCount=lodInfo->m_maxParticleCount;
-#if defined(__APPLE__)
-		// Match Zero Hour's in-game quality selection. Do not force 3D
-		// shadows on Medium; Custom always honors its individual toggles.
-		const Bool preset3DShadows = (level == STATIC_GAME_LOD_CUSTOM) ?
-			lodInfo->m_useShadowVolumes : (level >= STATIC_GAME_LOD_HIGH);
-		const Bool preset2DShadows = (level == STATIC_GAME_LOD_CUSTOM) ?
-			lodInfo->m_useShadowDecals : (level >= STATIC_GAME_LOD_MEDIUM);
-		TheWritableGlobalData->m_useShadowVolumes = preset3DShadows;
-		TheWritableGlobalData->m_useShadowDecals = preset2DShadows;
-#else
 		TheWritableGlobalData->m_useShadowVolumes=lodInfo->m_useShadowVolumes;
 		TheWritableGlobalData->m_useShadowDecals=lodInfo->m_useShadowDecals;
-#endif
 
 		TheWritableGlobalData->m_textureReductionFactor = requestedTextureReduction;
 
 		//Check if shadow state changed
-#if defined(__APPLE__)
-		if (m_currentStaticLOD == STATIC_GAME_LOD_UNKNOWN ||
-			preset3DShadows != ((m_currentStaticLOD == STATIC_GAME_LOD_CUSTOM) ? prevLodInfo->m_useShadowVolumes : (m_currentStaticLOD >= STATIC_GAME_LOD_HIGH)) ||
-			preset2DShadows != ((m_currentStaticLOD == STATIC_GAME_LOD_CUSTOM) ? prevLodInfo->m_useShadowDecals : (m_currentStaticLOD >= STATIC_GAME_LOD_MEDIUM)))
-#else
 		if (m_currentStaticLOD == STATIC_GAME_LOD_UNKNOWN	||
 			lodInfo->m_useShadowVolumes != prevLodInfo->m_useShadowVolumes ||
 			lodInfo->m_useShadowDecals != prevLodInfo->m_useShadowDecals)
-#endif
 		{
 			if (TheGameClient)
 			{
@@ -636,25 +613,11 @@ void GameLODManager::applyStaticLODLevel(StaticGameLODLevel level)
 			}
 		}
 
-#if defined(__APPLE__)
-		// iOS quality is controlled by the in-game preset, including
-		// lighting and soft shorelines; Custom keeps the user's toggles.
-		TheWritableGlobalData->m_useCloudMap = (level == STATIC_GAME_LOD_CUSTOM) ? lodInfo->m_useCloudMap : (level >= STATIC_GAME_LOD_HIGH);
-		TheWritableGlobalData->m_useLightMap = (level == STATIC_GAME_LOD_CUSTOM) ? lodInfo->m_useLightMap : (level >= STATIC_GAME_LOD_MEDIUM);
-		TheWritableGlobalData->m_showSoftWaterEdge = (level == STATIC_GAME_LOD_CUSTOM) ? lodInfo->m_showSoftWaterEdge : (level >= STATIC_GAME_LOD_MEDIUM);
-#else
 		TheWritableGlobalData->m_useCloudMap=lodInfo->m_useCloudMap;
 		TheWritableGlobalData->m_useLightMap=lodInfo->m_useLightMap;
 		TheWritableGlobalData->m_showSoftWaterEdge=lodInfo->m_showSoftWaterEdge;
-#endif
 		//Check if shoreline blending mode has changed
-		if (m_currentStaticLOD == STATIC_GAME_LOD_UNKNOWN ||
-#if defined(__APPLE__)
-			((level == STATIC_GAME_LOD_CUSTOM) ? lodInfo->m_showSoftWaterEdge : (level >= STATIC_GAME_LOD_MEDIUM)) !=
-			((m_currentStaticLOD == STATIC_GAME_LOD_CUSTOM) ? prevLodInfo->m_showSoftWaterEdge : (m_currentStaticLOD >= STATIC_GAME_LOD_MEDIUM)))
-#else
-			lodInfo->m_showSoftWaterEdge != prevLodInfo->m_showSoftWaterEdge)
-#endif
+		if (m_currentStaticLOD == STATIC_GAME_LOD_UNKNOWN || lodInfo->m_showSoftWaterEdge != prevLodInfo->m_showSoftWaterEdge)
 		{
 			if (TheTerrainVisual)
 				TheTerrainVisual->setShoreLineDetail();
@@ -667,9 +630,7 @@ void GameLODManager::applyStaticLODLevel(StaticGameLODLevel level)
 		TheWritableGlobalData->m_useDrawModuleLOD=!lodInfo->m_useBuildupScaffolds;
 		TheWritableGlobalData->m_useHeatEffects=lodInfo->m_useHeatEffects;
 		TheWritableGlobalData->m_enableDynamicLOD = lodInfo->m_enableDynamicLOD;
-#if !defined(__APPLE__)
 		TheWritableGlobalData->m_useFpsLimit = lodInfo->m_useFpsLimit;
-#endif
 		TheWritableGlobalData->m_useTrees = requestedTrees;
 
 		if (!m_memPassed || isReallyLowMHz()) {
