@@ -48,3 +48,7 @@
 
 ### 2026-10-12: Apple projected shadow render target fallback
 - Commit `b9e99887f0cbdedf084127dd6ad0121b111e17d2`: W3DProjectedShadowManager::ReAcquireResources tries 256x256 alpha then default render targets on Apple if both original 512x512 formats fail. Existing Windows logic unchanged. Device testing pending; shadow render passes may assume 512x512 and require adjustment. Water reflection and black terrain edge problems remain open.
+
+### 2026-10-12: projected shadow copy bounds (5f21fa2)
+- In `GeneralsMD/.../Shadow/W3DProjectedShadow.cpp`, `W3DProjectedShadow::updateTexture` now queries source and destination surface dimensions and copies their minimum rectangle, instead of always requesting 512x512. This matches the Apple 256x256 render-target fallback that reportedly enabled infantry 2D shadows.
+- Only `fix/mods-visible-cross-platform-sync` changed. Not compiled or device-tested. Vehicle/building 3D shadow selection, wave-shader water reflections, and black terrain-edge corruption remain unresolved and must not be reported fixed.
