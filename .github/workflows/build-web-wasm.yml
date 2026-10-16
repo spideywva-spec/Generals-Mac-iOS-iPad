@@ -28,7 +28,7 @@ jobs:
       - name: Configure browser engine
         working-directory: engine
         run: |
-          export EMSCRIPTEN_ROOT="$(dirname "$(dirname "$(command -v emcc)")")"
+          export EMSCRIPTEN_ROOT="$(dirname "$(command -v emcc)")"
           echo "EMSCRIPTEN_ROOT=$EMSCRIPTEN_ROOT"
           emcmake cmake --preset emscripten
       - name: Build browser engine
