@@ -1,0 +1,44 @@
+name: Build browser Zero Hour (experimental)
+on:
+  workflow_dispatch:
+  push:
+    branches: [web-port-wasm]
+    paths:
+      - '.github/workflows/build-web-wasm.yml'
+      - 'web-port/**'
+permissions:
+  contents: read
+jobs:
+  wasm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout web port upstream
+        uses: actions/checkout@v4
+        with:
+          repository: Lolendor/Generals-WebAssembly
+          path: engine
+          persist-credentials: false
+      - name: Install Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '4.0.15'
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y ninja-build cmake python3-brotli
+      - name: Configure browser engine
+        working-directory: engine
+        run: cmake --preset emscripten
+      - name: Build browser engine
+        working-directory: engine
+        run: cmake --build build/emscripten --target GeneralsXZH.js --parallel 2
+      - name: Stage browser shell (without copyrighted game data)
+        working-directory: engine
+        run: |
+          mkdir -p web/dist
+          bash scripts/web/make-dist.sh
+      - name: Upload web distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: generals-x-browser-experimental
+          path: engine/web/dist/
+          if-no-files-found: error
