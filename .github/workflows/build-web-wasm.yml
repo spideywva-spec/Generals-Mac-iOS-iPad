@@ -37,8 +37,9 @@ jobs:
       - name: Stage browser shell (without copyrighted game data)
         working-directory: engine
         run: |
-          mkdir -p web/dist
-          bash scripts/web/make-dist.sh
+          mkdir -p web/dist/assets
+          printf '[]\n' > web/dist/assets/builds.json
+          bash scripts/web/make-dist.sh --skip-assets
       - name: Upload web distribution
         uses: actions/upload-artifact@v4
         with:
