@@ -159,3 +159,10 @@
 - Added launcher_web/manifest.webmanifest and sw.js; updated index.html for iOS home-screen standalone mode, app icon, and offline shell caching on HTTPS.
 - The PWA is a launcher only: it does NOT run Zero Hour gameplay in Safari and has no proven online match integration. Render deployment is not yet verified.
 - Checked Actions run 38278551821: FAILURE at `Configure iOS Online Hub`; compilation was skipped. Do not claim an iOS build succeeded.
+
+## 2026-10-17 — Render PWA deployment created
+- User confirmed Render workspace `My Workspace` (`tea-db1r3pp7lnhs73e6edgg`).
+- Created NEW Render static site `generals-x-pwa` (`srv-db98vds9v7es739gnbo0`), without altering existing launcher sites.
+- URL: https://generals-x-pwa.onrender.com ; source branch `mysorez-online-port`, build command `mkdir -p dist && cp -R launcher_web/. dist/`, publish `dist`, auto-deploy enabled.
+- First deploy `dep-db98ve49v7es739gncn0` was `build_in_progress` when checked; do not claim success until confirmed.
+- This publishes only the PWA launcher, not the playable Zero Hour engine in Safari.
