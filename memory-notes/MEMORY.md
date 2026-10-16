@@ -166,3 +166,11 @@
 - URL: https://generals-x-pwa.onrender.com ; source branch `mysorez-online-port`, build command `mkdir -p dist && cp -R launcher_web/. dist/`, publish `dist`, auto-deploy enabled.
 - First deploy `dep-db98ve49v7es739gncn0` was `build_in_progress` when checked; do not claim success until confirmed.
 - This publishes only the PWA launcher, not the playable Zero Hour engine in Safari.
+
+
+## 2026-10-17 — WebAssembly browser-port groundwork
+- User explicitly requested actual browser gameplay (like Yandex Games), not an IPA launcher.
+- Created separate `web-port-wasm` from `mysorez-online-port`, leaving existing native code and `SDL3GameEngine` untouched.
+- Verified public upstream README for `Lolendor/Generals-WebAssembly`: Emscripten 4.x, `cmake --preset emscripten`, target `GeneralsXZH.js`, `scripts/web/make-dist.sh`, own legally obtained game assets required. Also inspected `Agusx1211/NewShoes` README as another browser-port reference.
+- Added `.github/workflows/build-web-wasm.yml` experimental Actions build and `web-port/README.md` with explicit caveats.
+- No claim of successful compile, Safari gameplay or Render deployment: these still need actual CI logs, artifact inspection and physical browser testing.
