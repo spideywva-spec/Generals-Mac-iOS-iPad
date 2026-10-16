@@ -154,3 +154,8 @@
 - This is an integration-in-progress, NOT a confirmed working online port. No iOS build or runtime test has run. Remaining work: resolve platform-specific Android glue, ensure GameNetworkingSockets builds/links for iOS, port the online menu/lobby entry points and all dependent engine changes, update/validate dependency lock data, run CI, and fix compile/runtime issues. Do not merge into `port-from-chatgpt` until verified.
 
 - Follow-up commits: `c4ef05d1d3f355c6c53f4332bc6fbda3cb5ca14b` recorded the import and remaining work in this file; `e1dec47b4d382d11cbc8bf20f1b486c8b678be4a` enabled the iOS workflow push trigger on this branch. CI run `38278551821` was confirmed queued; its result is not yet known.
+
+## 2026-10-17 — Safari / Render PWA groundwork
+- Added launcher_web/manifest.webmanifest and sw.js; updated index.html for iOS home-screen standalone mode, app icon, and offline shell caching on HTTPS.
+- The PWA is a launcher only: it does NOT run Zero Hour gameplay in Safari and has no proven online match integration. Render deployment is not yet verified.
+- Checked Actions run 38278551821: FAILURE at `Configure iOS Online Hub`; compilation was skipped. Do not claim an iOS build succeeded.
