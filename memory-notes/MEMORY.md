@@ -174,3 +174,10 @@
 - Verified public upstream README for `Lolendor/Generals-WebAssembly`: Emscripten 4.x, `cmake --preset emscripten`, target `GeneralsXZH.js`, `scripts/web/make-dist.sh`, own legally obtained game assets required. Also inspected `Agusx1211/NewShoes` README as another browser-port reference.
 - Added `.github/workflows/build-web-wasm.yml` experimental Actions build and `web-port/README.md` with explicit caveats.
 - No claim of successful compile, Safari gameplay or Render deployment: these still need actual CI logs, artifact inspection and physical browser testing.
+
+
+### 2026-10-17 — WebAssembly deployment to Render preview
+- GitHub Actions run 38968736298 succeeded; uploaded `generals-x-browser-experimental` (~27 MB ZIP) without copyrighted game assets.
+- Added workflow publish step (commit `3080ceaab3963841b47ba9be195fc1d4d12d3485`) to copy compiled `engine/web/dist/` into `web-dist/` on branch `web-wasm-dist`; GITHUB_TOKEN contents write, auto deploy on push. New run 38970177070 was in progress at setup time; success not yet confirmed.
+- Created Render static preview `generals-x-wasm-preview` (service `srv-db99gau7bikc73f6c100`, URL https://generals-x-wasm-preview.onrender.com) from branch `web-wasm-dist`, build `mkdir -p dist && cp -R web-dist/. dist/`. Initial Render deployment can fail until CI publishes files.
+- Existing production `generals-x-pwa` untouched; do not replace until browser startup and game-data import are verified. WASM compilation alone does not prove Safari gameplay. Game assets not included.
