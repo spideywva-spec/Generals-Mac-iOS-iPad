@@ -4,6 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#080b0d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Generals X">
+  <link rel="manifest" href="./manifest.webmanifest">
   <title>Generals X — Демо лаунчера</title>
   <link rel="icon" type="image/png" href="./assets/logo.png">
   <link rel="apple-touch-icon" href="./assets/logo.png">
@@ -226,5 +230,6 @@
   </div>
 
   <script src="./app.js"></script>
+  <script>if ("serviceWorker" in navigator && location.protocol === "https:") window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(console.warn));</script>
 </body>
 </html>
