@@ -7,7 +7,7 @@ on:
       - '.github/workflows/build-web-wasm.yml'
       - 'web-port/**'
 permissions:
-  contents: read
+  contents: write
 jobs:
   wasm:
     runs-on: ubuntu-latest
@@ -52,3 +52,25 @@ jobs:
           name: generals-x-browser-experimental
           path: engine/web/dist/
           if-no-files-found: error
+      - name: Checkout published web branch
+        uses: actions/checkout@v4
+        with:
+          ref: web-wasm-dist
+          path: published
+          persist-credentials: true
+      - name: Publish compiled browser bundle to web-wasm-dist
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p published/web-dist
+          rsync -a --delete engine/web/dist/ published/web-dist/
+          cd published
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web-dist
+          if git diff --cached --quiet; then
+            echo "No changes in browser bundle"
+          else
+            git commit -m "Publish compiled browser bundle [skip ci]"
+            git push origin HEAD:web-wasm-dist
+          fi
