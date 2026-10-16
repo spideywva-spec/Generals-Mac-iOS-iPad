@@ -1,0 +1,8 @@
+Run 38966786819 / job 117195113711
+Configure browser engine: SUCCESS
+Build browser engine: SUCCESS (1371 steps)
+Stage browser shell: FAILURE
+2026-10-16T21:14:12Z bash scripts/web/make-dist.sh
+2026-10-16T21:14:12Z ERROR: no builds found in engine/web/gamedata/
+Cause: packaging script requires game data absent in CI.
+Full log was 54,542,490 chars; connector rejected archival. Local ZIP download attempted but container DNS api.github.com unavailable.
