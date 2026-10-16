@@ -1,0 +1,19 @@
+{
+  "id": "./",
+  "name": "Generals X — Online Hub",
+  "short_name": "Generals X",
+  "description": "Generals X web launcher and multiplayer hub",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#080b0d",
+  "theme_color": "#080b0d",
+  "icons": [
+    {
+      "src": "./assets/logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
