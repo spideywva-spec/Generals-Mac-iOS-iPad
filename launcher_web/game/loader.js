@@ -104,7 +104,7 @@ function gxRunUnpackWorker(url, wasmUrl, storage, journalKey, resume, ver, watch
   // The workers are tiny — always fetch fresh so a redeploy is never served a
   // stale cached Worker script. brotli_bg.wasm (~1 MB) is versioned by buildId.
   const bust = ver + '.' + (Date.now() >>> 0);
-  const worker = new Worker('unpack-worker.js?v=' + bust);
+  const worker = new Worker('./game/unpack-worker.js?v=' + bust);
 
   return new Promise((resolve, reject) => {
     let watchdog = null;
@@ -254,7 +254,7 @@ async function gxWipeAllStorage() {
 
 async function gxLoadNetConfig() {
   try {
-    const r = await fetch('ice.json', { cache: 'no-cache' });
+    const r = await fetch('./game/ice.json', { cache: 'no-cache' });
     if (!r.ok) return;
     const cfg = await r.json();
     if (cfg && Array.isArray(cfg.iceServers) && cfg.iceServers.length)
