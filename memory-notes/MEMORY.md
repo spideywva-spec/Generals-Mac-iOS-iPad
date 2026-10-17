@@ -124,3 +124,10 @@
 - Added browser-only embedded game iframe overlay, no external redirect; commit 713973941cd546fbc1a031d9ccc2602824bd6a4e. Added PWA manifest and script in index.html; commit c97efe2e1f561e9bf1338ed8e275f1338d8ef8ac.
 - LIMITATION: launcher_web/game/assets/builds.json is empty ([]); no licensed Zero Hour GameData included. Browser engine is bundled, but actual gameplay cannot be claimed until legal user-owned assets are packaged/imported and iOS Safari is tested. Existing launcher Mod Hub native actions still require a browser storage adapter.
 - Render service cloude-generals-spideywv auto-deploys branch generals-x-browser. Verify deployment before claiming live.
+
+
+## 2026-10-17 — Browser engine integration (generals-x-browser)
+- Replaced browser-only demo Play toast with dynamic import of `launcher_web/browser-engine.js`.
+- Embedded the WASM game canvas/DOM in the existing launcher document (no iframe, redirect, or separate game page).
+- Adjusted `game/game.js` engine paths and `game/loader.js` build-data URL for the launcher root.
+- Caveat: `game/assets/builds.json` remains empty and actual game assets are absent; real gameplay cannot be claimed until legal assets are installed and tested on Safari. No native SDL3GameEngine modifications.
