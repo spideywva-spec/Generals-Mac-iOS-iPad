@@ -50,7 +50,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p site-dist/game
-          cp -R launcher-source/launcher_web/. site-dist/
+          cp -R launcher-source/launcher_web/. site-dist/\n          cp launcher-source/web-port/browser-adapter.js site-dist/browser-adapter.js\n          npm pack jszip@3.10.1 --pack-destination /tmp >/dev/null\n          tar -xOf /tmp/jszip-3.10.1.tgz package/dist/jszip.min.js > site-dist/jszip.min.js
           cp -R engine/web/dist/. site-dist/game/
           python3 launcher-source/web-port/embed-launcher-game.py site-dist
           test -f site-dist/index.html
