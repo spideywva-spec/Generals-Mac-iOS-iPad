@@ -825,7 +825,7 @@ cards.forEach(card => {
 playButton.addEventListener("click", async () => {
   const profileId = nativeProfileIdForCard();
   if (!hasNativeBridge) {
-    showToast("Демо: запрос запуска для " + activeCard.dataset.title);
+    await window.GeneralsXBrowser?.launch();
     return;
   }
 
