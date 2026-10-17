@@ -181,3 +181,7 @@
 - Added workflow publish step (commit `3080ceaab3963841b47ba9be195fc1d4d12d3485`) to copy compiled `engine/web/dist/` into `web-dist/` on branch `web-wasm-dist`; GITHUB_TOKEN contents write, auto deploy on push. New run 38970177070 was in progress at setup time; success not yet confirmed.
 - Created Render static preview `generals-x-wasm-preview` (service `srv-db99gau7bikc73f6c100`, URL https://generals-x-wasm-preview.onrender.com) from branch `web-wasm-dist`, build `mkdir -p dist && cp -R web-dist/. dist/`. Initial Render deployment can fail until CI publishes files.
 - Existing production `generals-x-pwa` untouched; do not replace until browser startup and game-data import are verified. WASM compilation alone does not prove Safari gameplay. Game assets not included.
+
+
+### Постоянное правило пользователя: диагностика ошибок GitHub Actions (2026-10-17)
+**ОБЯЗАТЕЛЬНО:** когда сборка GitHub Actions падает, НЕ анализировать лог непосредственно в интерфейсе GitHub и НЕ делать анализ через `fetch_workflow_job_logs` в GitHub connector. Пользователь неоднократно потребовал: **скачать ZIP-архив логов Actions на локальную машину/рабочее окружение, распаковать в локальную папку `errors/`, читать и анализировать только локально распакованные файлы**, затем исправлять причину, коммитить, запускать повторную сборку и фиксировать результат здесь. Если скачать ZIP технически невозможно, прямо сообщить об ограничении, не подменять этот порядок просмотром логов на GitHub. Это устойчивое требование для всех последующих задач с логами сборки.
