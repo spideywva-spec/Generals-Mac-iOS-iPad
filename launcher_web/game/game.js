@@ -18,12 +18,12 @@ window.gxEngine = { wasmBinary: null, buildId: 'dev' };
 async function gxPreloadEngine(onProgress) {
   let buildId = 'dev';
   try {
-    const r = await fetch('build.json', { cache: 'no-cache' });
+    const r = await fetch('./game/build.json', { cache: 'no-cache' });
     if (r.ok) buildId = (await r.json()).buildId || 'dev';
   } catch {}
   window.gxEngine.buildId = buildId;
 
-  const resp = await fetch('GeneralsXZH.wasm?v=' + buildId);
+  const resp = await fetch('./game/GeneralsXZH.wasm?v=' + buildId);
   // GeneralsX @feature Lolendor 22/07/2026 Localize launch-screen engine errors.
   if (!resp.ok) throw new Error(window.gxI18n.t('error.engineHttp', { status: resp.status }));
   const total = parseInt(resp.headers.get('Content-Length') || '0') || 0;
@@ -150,7 +150,7 @@ async function gxStartGame() {
     };
 
     const s = document.createElement('script');
-    s.src = 'GeneralsXZH.js?v=' + buildId;
+    s.src = './game/GeneralsXZH.js?v=' + buildId;
     s.onerror = () => reject(new Error('Не удалось загрузить GeneralsXZH.js'));
     document.body.appendChild(s);
   });
