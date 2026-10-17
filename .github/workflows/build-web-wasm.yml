@@ -62,6 +62,25 @@ jobs:
           p.write_text(text)
           PY
           test -f site-dist/index.html
+          # A newly claimed service worker does not retroactively isolate the page.
+          # Reload on controllerchange so COOP/COEP are applied to the next navigation.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('site-dist/game/coi-serviceworker.js')
+          source = p.read_text()
+          marker = '    navigator.serviceWorker.register(swUrl)'
+          assert source.count(marker) == 1, 'COI service worker registration not found'
+          source = source.replace(marker, '''    let gxReloadingForIsolation = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!window.crossOriginIsolated && !gxReloadingForIsolation) {
+        gxReloadingForIsolation = true;
+        window.location.reload();
+      }
+    });
+
+''' + marker)
+          p.write_text(source)
+          PY
           test -f site-dist/game/index.html
           test -f site-dist/game/GeneralsXZH.wasm
       - name: Upload web distribution
