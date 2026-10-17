@@ -131,3 +131,9 @@
 - Embedded the WASM game canvas/DOM in the existing launcher document (no iframe, redirect, or separate game page).
 - Adjusted `game/game.js` engine paths and `game/loader.js` build-data URL for the launcher root.
 - Caveat: `game/assets/builds.json` remains empty and actual game assets are absent; real gameplay cannot be claimed until legal assets are installed and tested on Safari. No native SDL3GameEngine modifications.
+
+## 2026-10-17 — Remove Lolendor UI from embedded browser flow
+- Branch `generals-x-browser` only. Commits `d0676d5`, `09a5482`, `db1e9ed`.
+- Replaced imported Lolendor HTML shell with Generals X-branded canvas, minimal progress/status controls, and engine-required DOM nodes. No iframe, separate HTML page or redirect. Original launcher CSS remains unchanged.
+- Original Play action now continues automatically through browser engine boot; fixed unpack-worker.js and ice.json paths under `game/`.
+- Browser assets are still absent (`assets/builds.json=[]`); runtime gameplay, Safari and complete install remain UNVERIFIED. Do not call this a working game. No native SDL3GameEngine or A13 changes.
