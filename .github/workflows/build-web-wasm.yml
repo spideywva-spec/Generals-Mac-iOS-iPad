@@ -19,6 +19,11 @@ jobs:
           repository: Lolendor/Generals-WebAssembly
           path: engine
           persist-credentials: false
+      - name: Checkout Generals X launcher
+        uses: actions/checkout@v4
+        with:
+          path: launcher-source
+          persist-credentials: false
       - name: Install Emscripten
         uses: mymindstorm/setup-emsdk@v14
         with:
@@ -40,11 +45,30 @@ jobs:
           mkdir -p web/dist/assets
           printf '[]\n' > web/dist/assets/builds.json
           bash scripts/web/make-dist.sh --skip-assets
+      - name: Integrate original Generals X launcher and game route
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p site-dist/game
+          cp -R launcher-source/launcher_web/. site-dist/
+          cp -R engine/web/dist/. site-dist/game/
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('site-dist/app.js')
+          text = p.read_text()
+          old = 'showToast("Демо: запрос запуска для " + activeCard.dataset.title);'
+          assert text.count(old) == 1, 'Browser launcher Play hook not found'
+          text = text.replace(old, 'window.location.assign("./game/");')
+          p.write_text(text)
+          PY
+          test -f site-dist/index.html
+          test -f site-dist/game/index.html
+          test -f site-dist/game/GeneralsXZH.wasm
       - name: Upload web distribution
         uses: actions/upload-artifact@v4
         with:
           name: generals-x-browser-experimental
-          path: engine/web/dist/
+          path: site-dist/
           if-no-files-found: error
       - name: Checkout published web branch
         uses: actions/checkout@v4
@@ -57,7 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p published/web-dist
-          rsync -a --delete engine/web/dist/ published/web-dist/
+          rsync -a --delete site-dist/ published/web-dist/
           cd published
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
