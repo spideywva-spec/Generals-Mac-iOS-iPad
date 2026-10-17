@@ -125,3 +125,7 @@
 - Rollback: revert commits on `generals-x-web-engine` or delete test branch; original iOS branch untouched.
 
 - Correction: no separate browser game window or new launcher installer. `web-engine-bridge.js` now reuses the existing Play button and embeds the engine viewport over the existing launcher, with Back control. IndexedDB caches engine JS/WASM; current engine HTML still fetches its own runtime from `/game/`, so offline and game asset integration remain incomplete. Native installation logic remains untouched. Browser playability not verified.
+
+## 2026-10-17 — remove redundant browser engine installation
+- Branch `generals-x-web-engine`: removed the incorrect IndexedDB JS/WASM download/install path from `web-engine-bridge.js`. The existing Generals X Play control now loads the deployed WebAssembly engine directly in the same browser tab, with a return button. The launcher UI and native installer were not changed.
+- Critical limitation: the existing launcher installer uses the native WKWebView bridge and cannot install/mount `.big` game files in a plain web browser without a new browser-specific filesystem adapter. Therefore playable game is NOT verified and this commit must not be represented as complete installation integration.
