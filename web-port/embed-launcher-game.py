@@ -17,8 +17,8 @@ marker = '<script src="./app.js"></script>'
 if source.count(marker) != 1:
     raise RuntimeError("Expected launcher app.js exactly once")
 overlay = """
-<section id="gxWebGame" hidden style="position:fixed;inset:0;z-index:2147483000;background:#090e14">
-  <button id="gxWebGameBack" type="button" style="position:absolute;top:16px;left:16px;z-index:3;padding:12px;background:#123451;color:white">← В лаунчер</button>
+<section id="gxWebGame" hidden style="position:fixed;top:80px;right:12px;bottom:12px;left:max(260px,24vw);z-index:2147483000;background:#090e14;border:1px solid #629ad0;border-radius:12px;overflow:hidden">
+  <button id="gxWebGameBack" type="button" style="position:absolute;top:8px;right:8px;z-index:3;padding:12px;background:#123451;color:white">← В лаунчер</button>
   <iframe id="gxWebGameFrame" title="Generals Zero Hour" allow="fullscreen;autoplay;gamepad" style="width:100%;height:100%;border:0"></iframe>
 </section>
 <script>
@@ -30,13 +30,13 @@ window.GeneralsXWebGame = (() => {
     panel.hidden = true;
     panel.style.display = 'none';
     frame.src = 'about:blank';
-    document.body.style.overflow = '';
+
   }
   function open() {
     panel.hidden = false;
     panel.style.display = 'block';
     frame.src = './game/';
-    document.body.style.overflow = 'hidden';
+
   }
   back.addEventListener('click', close);
   document.addEventListener('keydown', e => {
@@ -45,5 +45,12 @@ window.GeneralsXWebGame = (() => {
   return {open, close};
 })();
 </script>
+"""
+overlay += """
+<style>
+@media (max-width: 700px) {
+  #gxWebGame { top: 125px !important; left: 8px !important; right: 8px !important; bottom: 8px !important; }
+}
+</style>
 """
 html.write_text(source.replace(marker, overlay + marker))
