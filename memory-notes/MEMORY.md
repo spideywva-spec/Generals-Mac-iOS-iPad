@@ -161,3 +161,8 @@
 - Commit `37b35f56f392ecdf8bd126e5ff1a11995de1ccc9` updates `launcher_web/browser-hub.js` on experimental branch `generals-x-web-engine` only.
 - Replace one continuous multi-GB response with bounded 8 MiB HTTP Range requests through the Render proxy; validate HTTP 206 and exact Content-Range/length; save to device OPFS with periodic 32 MiB checkpoints, resume from committed file size, yield to UI after checkpoints.
 - Limitations: real-world speed and iOS responsiveness are not yet verified; Render/R2 throughput and Safari OPFS quotas can still bottleneck; package unpacking/playability is not implemented by this patch.
+
+## 2026-10-17 — Browser download stalls around 40%
+- User reports a previously working download slowed slightly, lagged mildly, then unexpectedly stopped around 40%; preserve existing functionality, do not replace the launcher.
+- `40e96f3d3c73904aaea5ff6020a849c78f6876a6` changes only `launcher_web/browser-hub.js` on `generals-x-web-engine`: 4 MiB ranged requests, 90-second request timeout, up to 6 retries with bounded exponential backoff, close OPFS writable after each block for durable resume, UI progress throttled to 350ms. Previously cached partial data remains and resumes by file size.
+- WARNING: OPFS `createWritable({keepExistingData:true})` may copy existing file contents on some implementations; this may harm throughput on multi-GB downloads. Need actual Safari profiling and a streaming/resumable design that avoids repeated full-file copies. No verified end-to-end download yet.
