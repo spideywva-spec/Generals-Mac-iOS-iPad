@@ -129,3 +129,13 @@
 ## 2026-10-17 — remove redundant browser engine installation
 - Branch `generals-x-web-engine`: removed the incorrect IndexedDB JS/WASM download/install path from `web-engine-bridge.js`. The existing Generals X Play control now loads the deployed WebAssembly engine directly in the same browser tab, with a return button. The launcher UI and native installer were not changed.
 - Critical limitation: the existing launcher installer uses the native WKWebView bridge and cannot install/mount `.big` game files in a plain web browser without a new browser-specific filesystem adapter. Therefore playable game is NOT verified and this commit must not be represented as complete installation integration.
+
+
+## 2026-10-17 — Generals X browser engine integration (test branch)
+- Branch: `generals-x-web-engine`. Original `launcher_web` HTML/CSS, settings, native installation/unpacking/profile management and `window.webkit.messageHandlers.generalsX` are preserved.
+- `launcher_web/app.js`: when no native IPA bridge exists, the existing Play button for base `online` profile navigates in the SAME TAB to `./engine/GeneralsZH.html`; native IPA path remains untouched. Browser mods are not claimed supported.
+- Render static service `generals-x-web-integrated` deploys the existing `launcher_web` and fetches pinned TheodoryLabs WebAssembly engine release `v0.5.1-web` into `public/engine/`. Engine binary is not copied into GitHub.
+- CRITICAL LIMITATION: engine does NOT bundle game `.big` assets. Its documented VFS requires game archives available under `/engine/assets/` with HTTP Range support. Current static deployment does not supply these assets; actual gameplay cannot be claimed functional until a lawful local-asset browser import/VFS adapter is implemented and tested.
+- CRITICAL LIMITATION: upstream SETUP.md explicitly states Safari is unsupported (WebAssembly Asyncify), so iPhone Safari success must NOT be claimed.
+- Web multiplayer is not implemented in upstream engine (WebRTC transport pending); do not claim cross-platform online works.
+- No changes to `SDL3GameEngine`, iOS build workflows, or the production branch.
