@@ -208,3 +208,10 @@
 - Branch: `web-port-wasm`, commit `60e4471530f6b201119d1aa97b8fe041f66555e6`.
 - Updated only `web-port/embed-launcher-game.py`: game iframe now appears in a docked panel, leaving the original `launcher_web` interface visible instead of replacing the whole viewport. Back button closes game. On mobile, launcher strip remains visible above game panel.
 - Existing `launcher_web` source and native iOS bridge remain untouched. Browser-only functions that require native bridge are NOT automatically implemented. New Actions build and Render publication not yet verified.
+
+
+### 2026-10-17 — Browser install bridge for original launcher_web
+- Branch `web-port-wasm`, commits `37927288`, `20e56edc`, `15a5e8df`, `80d251ba`.
+- Added `web-port/browser-adapter.js` to supply browser-side request bridge without modifying the original `launcher_web/app.js` source. Browser IndexedDB stores imported game/mod files, ZIP files are extracted via JSZip 3.10.1 bundled by Actions, installation progress/events update the original launcher UI, file picker is used when no direct package URL is available, and pause/resume/cancel plus profile state/settings hooks are wired.
+- Staging workflow copies the adapter and JSZip to site-dist; embed script injects them before app.js and extends the browser-only request timeout to one hour. Browser play opens the in-page WASM game panel, not a new site.
+- LIMITATIONS: Installed IndexedDB assets are not yet wired into Emscripten virtual filesystem; game may not see them. Package URLs depend on catalog availability/CORS, and profile uninstall does not yet purge per-file blobs. No full Actions compilation, end-to-end iOS Safari test, or Render deploy verification was performed at commit time. Never claim full game installation/launch works without testing.
