@@ -38,7 +38,21 @@ window.GeneralsXBrowser = (() => {
       const estimate = await navigator.storage?.estimate?.();
       if (estimate?.quota && estimate.quota - (estimate.usage || 0) < expected)
         throw new Error("Недостаточно свободного места в хранилище браузера");
-      const response = await fetch(item.release.packageURL, {mode:"cors",credentials:"omit",cache:"no-store"}).catch(error => { throw new Error("Сервер пакетов R2 блокирует загрузку из браузера (CORS) или сеть недоступна: " + error.message + ". Для исправления нужен CORS на R2 либо прокси того же домена."); });
+      const source = new URL(item.release.packageURL);
+      // R2 public buckets require an explicit CORS policy for browser fetch.
+      // Try the same-origin proxy first, when provisioned; never treat opaque no-cors as a usable response.
+      const proxy = "./api/packages/" + encodeURIComponent(id);
+      let response;
+      try {
+        response = await fetch(proxy, {credentials:"same-origin",cache:"no-store"});
+        if (!response.ok || !response.body) throw new Error("proxy HTTP " + response.status);
+      } catch (proxyError) {
+        try {
+          response = await fetch(source.href, {mode:"cors",credentials:"omit",cache:"no-store"});
+        } catch (directError) {
+          throw new Error("Скачивание заблокировано: прокси недоступен (" + proxyError.message + "), а R2 не разрешает CORS (" + directError.message + "). Нужна серверная настройка прокси либо CORS для домена лаунчера.");
+        }
+      }
       if (!response.ok || !response.body) throw new Error("Ошибка загрузки пакета: HTTP " + response.status);
       const dir = await directory();
       const file = await dir.getFileHandle(id + ".gxmod", {create:true});
