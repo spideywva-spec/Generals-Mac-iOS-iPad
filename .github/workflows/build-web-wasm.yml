@@ -45,7 +45,7 @@ jobs:
           cp web/shell/ice.json web/dist/
           cp build/emscripten/GeneralsMD/GeneralsXZH.js build/emscripten/GeneralsMD/GeneralsXZH.wasm web/dist/
           printf '[]\n' > web/dist/assets/builds.json
-          sha256sum web/dist/GeneralsXZH.wasm | cut -c1-12 | awk '{printf "{\"buildId\":\"%s\"}\n",$1}' > web/dist/build.json --skip-assets
+          sha256sum web/dist/GeneralsXZH.wasm | cut -c1-12 | awk '{printf "{\"buildId\":\"%s\"}\n",$1}' > web/dist/build.json
       - name: Upload web distribution
         uses: actions/upload-artifact@v4
         with:
