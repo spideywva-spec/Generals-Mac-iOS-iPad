@@ -166,3 +166,8 @@
 - User reports a previously working download slowed slightly, lagged mildly, then unexpectedly stopped around 40%; preserve existing functionality, do not replace the launcher.
 - `40e96f3d3c73904aaea5ff6020a849c78f6876a6` changes only `launcher_web/browser-hub.js` on `generals-x-web-engine`: 4 MiB ranged requests, 90-second request timeout, up to 6 retries with bounded exponential backoff, close OPFS writable after each block for durable resume, UI progress throttled to 350ms. Previously cached partial data remains and resumes by file size.
 - WARNING: OPFS `createWritable({keepExistingData:true})` may copy existing file contents on some implementations; this may harm throughput on multi-GB downloads. Need actual Safari profiling and a streaming/resumable design that avoids repeated full-file copies. No verified end-to-end download yet.
+
+## 2026-10-17 — Browser engine Play wiring
+- User clarified: website itself is the launcher and WASM game runs locally on the browser device, using device CPU/GPU/RAM, not Render compute. No native IPA/EXE required for this web mode.
+- Commit `bfbff5a584e1eccfff3b808cf4e4fb73fa8cf7dd`: after an OPFS GXMOD package is installed, Play now invokes the existing guarded `launchBrowserEngine()` path rather than only showing a placeholder toast. That routine verifies WebAssembly, WebGL2, engine WASM endpoint and a required `.big` archive before injecting engine JS.
+- **Not playable yet:** GXMOD unpacking, legal game asset import and mounting into Emscripten virtual FS are still absent. `engine/assets/INIZH.big` check expects an HTTP-served archive, not OPFS. Do not report a working game, successful runtime or completed deployment without testing.
