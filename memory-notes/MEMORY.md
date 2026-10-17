@@ -156,3 +156,8 @@
 
 ## 2026-10-17 — HTTP 404 package proxy
 - Root cause: static Render site has no `/api/packages/` route (404). Added `browser-package-proxy.cjs`, an allowlisted streaming Node HTTP proxy for R2 `.gxmod` files, deployed as separate free Render web service `srv-db9ouljrjlhs73fkp4rg` at `https://generals-x-package-proxy.onrender.com`. Browser installer now fetches this proxy with CORS, with direct R2 fallback. Only experimental `generals-x-web-engine` modified. Must verify proxy live and end-to-end multi-GB download; successful installation, extraction and game start NOT confirmed.
+
+## 2026-10-17 — Browser download memory and responsiveness
+- Commit `37b35f56f392ecdf8bd126e5ff1a11995de1ccc9` updates `launcher_web/browser-hub.js` on experimental branch `generals-x-web-engine` only.
+- Replace one continuous multi-GB response with bounded 8 MiB HTTP Range requests through the Render proxy; validate HTTP 206 and exact Content-Range/length; save to device OPFS with periodic 32 MiB checkpoints, resume from committed file size, yield to UI after checkpoints.
+- Limitations: real-world speed and iOS responsiveness are not yet verified; Render/R2 throughput and Safari OPFS quotas can still bottleneck; package unpacking/playability is not implemented by this patch.
