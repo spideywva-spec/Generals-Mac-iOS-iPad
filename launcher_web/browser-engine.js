@@ -69,7 +69,17 @@ window.GeneralsXBrowser = (() => {
       const stage=makeStage();
       window.GeneralsXEmbedded=true;
       for(const path of ['brotli.min.js','i18n/ru.js','i18n/en.js','i18n/i18n.js','storage.js','signaling.js','netbridge.js','loadscreen.js','lobby.js','mp-ui.js','game.js','loader.js']) await script(path);
-      await window.gxBoot();
+      const boot = window.gxBoot();
+      // Generals X Play is the single launch action: continue after storage init.
+      const button = document.getElementById('gx-play');
+      const timer = setInterval(() => {
+        if (button.style.display === 'inline-block') {
+          clearInterval(timer);
+          button.click();
+        }
+      }, 100);
+      setTimeout(() => clearInterval(timer), 30000);
+      await boot;
     })().catch(err=>{
       bootPromise=null;
       const e=document.getElementById('gx-error');
