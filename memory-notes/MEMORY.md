@@ -185,3 +185,8 @@
 
 ### Постоянное правило пользователя: диагностика ошибок GitHub Actions (2026-10-17)
 **ОБЯЗАТЕЛЬНО:** когда сборка GitHub Actions падает, НЕ анализировать лог непосредственно в интерфейсе GitHub и НЕ делать анализ через `fetch_workflow_job_logs` в GitHub connector. Пользователь неоднократно потребовал: **скачать ZIP-архив логов Actions на локальную машину/рабочее окружение, распаковать в локальную папку `errors/`, читать и анализировать только локально распакованные файлы**, затем исправлять причину, коммитить, запускать повторную сборку и фиксировать результат здесь. Если скачать ZIP технически невозможно, прямо сообщить об ограничении, не подменять этот порядок просмотром логов на GitHub. Это устойчивое требование для всех последующих задач с логами сборки.
+
+
+### 2026-10-17 — WASM workflow staging rollback
+- Replaced the custom browser-shell staging commands with `bash scripts/web/make-dist.sh --skip-assets`, exactly as used by successful run `38968736298` (commit `c43dde5`). Commit `1ab174da12639da1d9947dba97485e973cbb6b76`. Kept the later publishing steps for Render.
+- This is a code comparison/rollback of a previously successful step, **not** a log-based root cause determination. Could not download GitHub Actions run `38970177070` ZIP locally: working container network DNS resolution failed. Do not claim ZIP logs were analyzed; user requires ZIP downloaded and extracted into local `errors/` before analyzing logs. Await new run validation.
