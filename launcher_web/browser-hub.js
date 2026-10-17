@@ -38,38 +38,44 @@ window.GeneralsXBrowser = (() => {
       const estimate = await navigator.storage?.estimate?.();
       if (estimate?.quota && estimate.quota - (estimate.usage || 0) < expected)
         throw new Error("Недостаточно свободного места в хранилище браузера");
-      const source = new URL(item.release.packageURL);
-      // R2 public buckets require an explicit CORS policy for browser fetch.
-      // Try the same-origin proxy first, when provisioned; never treat opaque no-cors as a usable response.
-      const proxy = "https://generals-x-package-proxy.onrender.com/api/packages/" + encodeURIComponent(id);
-      let response;
-      try {
-        response = await fetch(proxy, {mode:"cors",credentials:"omit",cache:"no-store"});
-        if (!response.ok || !response.body) throw new Error("proxy HTTP " + response.status);
-      } catch (proxyError) {
-        try {
-          response = await fetch(source.href, {mode:"cors",credentials:"omit",cache:"no-store"});
-        } catch (directError) {
-          throw new Error("Скачивание заблокировано: прокси недоступен (" + proxyError.message + "), а R2 не разрешает CORS (" + directError.message + "). Нужна серверная настройка прокси либо CORS для домена лаунчера.");
-        }
-      }
-      if (!response.ok || !response.body) throw new Error("Ошибка загрузки пакета: HTTP " + response.status);
       const dir = await directory();
-      const file = await dir.getFileHandle(id + ".gxmod", {create:true});
-      writer = await file.createWritable();
-      const reader = response.body.getReader();
-      let received = 0;
-      while (true) {
-        const {done,value} = await reader.read();
-        if (done) break;
-        await writer.write(value);
-        received += value.byteLength;
-        progress?.(received,expected);
+      const filename = id + ".gxmod";
+      const file = await dir.getFileHandle(filename, {create:true});
+      const proxy = "https://generals-x-package-proxy.onrender.com/api/packages/" + encodeURIComponent(id);
+      // 8 MiB bounded requests: one buffer at a time, without buffering a multi-GB package.
+      const BLOCK = 8 * 1024 * 1024;
+      const CHECKPOINT = 4; // commit OPFS every 32 MiB so interrupted downloads can resume
+      let received = (await file.getFile()).size;
+      if (received > expected) {
+        await dir.removeEntry(filename);
+        throw new Error("Неверный размер частично загруженного пакета");
       }
-      await writer.close(); writer = null;
-      if (received !== expected) {
-        await dir.removeEntry(id + ".gxmod");
-        throw new Error("Размер загруженного пакета отличается от каталога Hub");
+      progress?.(received, expected);
+      let blocks = 0;
+      while (received < expected) {
+        const end = Math.min(expected - 1, received + BLOCK - 1);
+        let response;
+        try {
+          response = await fetch(proxy, {mode:"cors",credentials:"omit",cache:"no-store",
+            headers:{"Range":"bytes=" + received + "-" + end}});
+        } catch (error) {
+          throw new Error("Прокси недоступен: " + error.message + ". Загруженные блоки сохранены.");
+        }
+        const range = response.headers.get("Content-Range");
+        if (response.status !== 206 || range !== "bytes " + received + "-" + end + "/" + expected)
+          throw new Error("Сервер не поддерживает безопасную докачку: HTTP " + response.status + ", Content-Range: " + range);
+        const chunk = await response.arrayBuffer();
+        if (chunk.byteLength !== end - received + 1)
+          throw new Error("Получен неполный блок. Повторите загрузку.");
+        if (!writer) writer = await file.createWritable({keepExistingData:true});
+        await writer.write({type:"write",position:received,data:chunk});
+        received += chunk.byteLength;
+        progress?.(received,expected);
+        if (++blocks % CHECKPOINT === 0 || received === expected) {
+          await writer.close(); writer = null;
+          // Yield to Safari's UI loop between storage checkpoints.
+          await new Promise(resolve=>setTimeout(resolve,0));
+        }
       }
       const metadata = await dir.getFileHandle(id + ".json", {create:true});
       const metaWriter = await metadata.createWritable();
