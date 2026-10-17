@@ -891,7 +891,10 @@ playButton.addEventListener("click", async () => {
         showToast("Пакет загружен. Для запуска нужна распаковка GXMOD в WASM FS.");
         return;
       }
-      showToast("Пакет GXMOD сохранён. Распаковка и подключение ресурсов к WASM пока отсутствуют.");
+      // Do not pretend that a downloaded GXMOD is directly runnable: the engine
+      // still requires unpacked original game archives in its virtual FS.
+      showToast("Пакет GXMOD сохранён. Проверяю готовность браузерного движка…");
+      await launchBrowserEngine();
     } catch (error) {
       downloadMetrics.delete(profileId);
       finishHomeDownload(profileId,"error");
