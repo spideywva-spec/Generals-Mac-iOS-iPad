@@ -38,7 +38,7 @@ window.GeneralsXBrowser = (() => {
       const estimate = await navigator.storage?.estimate?.();
       if (estimate?.quota && estimate.quota - (estimate.usage || 0) < expected)
         throw new Error("Недостаточно свободного места в хранилище браузера");
-      const response = await fetch(item.release.packageURL);
+      const response = await fetch(item.release.packageURL, {mode:"cors",credentials:"omit",cache:"no-store"}).catch(error => { throw new Error("Сервер пакетов R2 блокирует загрузку из браузера (CORS) или сеть недоступна: " + error.message + ". Для исправления нужен CORS на R2 либо прокси того же домена."); });
       if (!response.ok || !response.body) throw new Error("Ошибка загрузки пакета: HTTP " + response.status);
       const dir = await directory();
       const file = await dir.getFileHandle(id + ".gxmod", {create:true});
