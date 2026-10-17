@@ -116,3 +116,11 @@
 ## 2026-10-12 Direct graphics copy from ammaarreshi
 - User explicitly requested direct upstream replacement, excluding SDL3GameEngine. Copied 20 graphics files in commits c5bd940, f1fc2df and cb496250 on fix/mods-visible-cross-platform-sync: W3D terrain, water, shadow, display, shader, view, particle, shroud, graphics LOD/options, DX8 renderer/wrapper/bitmap/polygon renderer. No SDL3GameEngine or workflows changed.
 - These exact overwrites intentionally discard previous A13-specific graphics fixes in overwritten files. Build and runtime compatibility not yet verified. Remaining WW3D2 texture/surface/asset files have NOT been copied.
+
+
+## 2026-10-17 — Browser WASM integration (branch generals-x-browser)
+- Original base: fix/mods-visible-cross-platform-sync. Do not modify original launcher app.js/styles.css or SDL3GameEngine.
+- Copied already-compiled GeneralsXZH.wasm (~80 MB) and game shell from the repository's web-wasm-dist branch to launcher_web/game, including JS runtime, WebGL bridge, storage and networking helpers; commit ff2d90940a98b8c0a2b98ff703b4a7dcacbe9ca5.
+- Added browser-only embedded game iframe overlay, no external redirect; commit 713973941cd546fbc1a031d9ccc2602824bd6a4e. Added PWA manifest and script in index.html; commit c97efe2e1f561e9bf1338ed8e275f1338d8ef8ac.
+- LIMITATION: launcher_web/game/assets/builds.json is empty ([]); no licensed Zero Hour GameData included. Browser engine is bundled, but actual gameplay cannot be claimed until legal user-owned assets are packaged/imported and iOS Safari is tested. Existing launcher Mod Hub native actions still require a browser storage adapter.
+- Render service cloude-generals-spideywv auto-deploys branch generals-x-browser. Verify deployment before claiming live.
