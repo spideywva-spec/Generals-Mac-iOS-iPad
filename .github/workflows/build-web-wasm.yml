@@ -58,7 +58,47 @@ jobs:
           text = p.read_text()
           old = 'showToast("Демо: запрос запуска для " + activeCard.dataset.title);'
           assert text.count(old) == 1, 'Browser launcher Play hook not found'
-          text = text.replace(old, 'window.location.assign("./game/");')
+          text = text.replace(old, 'window.GeneralsXWebGame.open();')
+          # Preserve native launcher behavior; only the web Play button opens the embedded game.
+          p.write_text(text)
+          html = Path('site-dist/index.html')
+          source = html.read_text()
+          marker = '  <script src="./app.js"></script>'
+          assert source.count(marker) == 1, 'Launcher app.js script not found'
+          source = source.replace(marker, '''  <section id="gxWebGame" hidden aria-label="Zero Hour — веб-игра" style="position:fixed;inset:0;z-index:2147483000;background:#090e14;">
+    <button id="gxWebGameBack" type="button" aria-label="Вернуться в лаунчер" style="position:absolute;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));z-index:3;padding:12px 18px;background:#123451;color:white;border:1px solid #629ad0;border-radius:9px;font-weight:700;cursor:pointer;">← В лаунчер</button>
+    <iframe id="gxWebGameFrame" title="Generals Zero Hour — WebAssembly" allow="fullscreen; autoplay; gamepad" allowfullscreen style="width:100%;height:100%;border:0;display:block;" loading="lazy"></iframe>
+  </section>
+  <script>
+    window.GeneralsXWebGame = (() => {
+      const panel = document.getElementById('gxWebGame');
+      const frame = document.getElementById('gxWebGameFrame');
+      const back = document.getElementById('gxWebGameBack');
+      let previousFocus = null;
+      function close() {
+        panel.hidden = true;
+        panel.style.display = 'none';
+        frame.src = 'about:blank';
+        document.body.style.overflow = '';
+        if (previousFocus && previousFocus.isConnected) previousFocus.focus();
+      }
+      function open() {
+        previousFocus = document.activeElement;
+        panel.hidden = false;
+        panel.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        frame.src = './game/';
+        back.focus();
+      }
+      back.addEventListener('click', close);
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && !panel.hidden) close();
+      });
+      return { open, close };
+    })();
+  </script>
+''' + marker)
+          html.write_text(source)
           p.write_text(text)
           PY
           test -f site-dist/index.html
