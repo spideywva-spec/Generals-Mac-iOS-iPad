@@ -153,3 +153,6 @@
 
 ## 2026-10-17 — Browser download blocked at 0%
 - Browser installer now attempts same-origin `/api/packages/<profile>` before direct R2 CORS fetch, with explicit diagnostic when both unavailable. Render static site does not currently implement this API; CORS or a dynamic proxy must be configured for actual fix. OPFS remains device-local; no confirmed successful download or playable browser game. Production iOS branch unchanged.
+
+## 2026-10-17 — HTTP 404 package proxy
+- Root cause: static Render site has no `/api/packages/` route (404). Added `browser-package-proxy.cjs`, an allowlisted streaming Node HTTP proxy for R2 `.gxmod` files, deployed as separate free Render web service `srv-db9ouljrjlhs73fkp4rg` at `https://generals-x-package-proxy.onrender.com`. Browser installer now fetches this proxy with CORS, with direct R2 fallback. Only experimental `generals-x-web-engine` modified. Must verify proxy live and end-to-end multi-GB download; successful installation, extraction and game start NOT confirmed.
