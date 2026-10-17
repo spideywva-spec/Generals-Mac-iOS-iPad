@@ -42,41 +42,73 @@ window.GeneralsXBrowser = (() => {
       const filename = id + ".gxmod";
       const file = await dir.getFileHandle(filename, {create:true});
       const proxy = "https://generals-x-package-proxy.onrender.com/api/packages/" + encodeURIComponent(id);
-      // 8 MiB bounded requests: one buffer at a time, without buffering a multi-GB package.
-      const BLOCK = 8 * 1024 * 1024;
-      const CHECKPOINT = 4; // commit OPFS every 32 MiB so interrupted downloads can resume
+      // Small, durable range requests: keep the working download on the device.
+      // Closing after each block commits OPFS data; an interrupted download resumes safely.
+      const BLOCK = 4 * 1024 * 1024;
+      const MAX_RETRIES = 6;
       let received = (await file.getFile()).size;
       if (received > expected) {
         await dir.removeEntry(filename);
         throw new Error("Неверный размер частично загруженного пакета");
       }
-      progress?.(received, expected);
-      let blocks = 0;
+      let lastProgressAt = 0;
+      const report = (force = false) => {
+        const now = performance.now();
+        if (force || now - lastProgressAt > 350) {
+          progress?.(received, expected);
+          lastProgressAt = now;
+        }
+      };
+      report(true);
       while (received < expected) {
         const end = Math.min(expected - 1, received + BLOCK - 1);
-        let response;
+        let chunk = null;
+        let lastError;
+        for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+          try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 90000);
+            try {
+              const response = await fetch(proxy, {
+                mode:"cors", credentials:"omit", cache:"no-store",
+                signal:controller.signal,
+                headers:{"Range":"bytes=" + received + "-" + end}
+              });
+              const range = response.headers.get("Content-Range");
+              if (response.status !== 206 || range !== "bytes " + received + "-" + end + "/" + expected)
+                throw new Error("HTTP " + response.status + "; Content-Range: " + range);
+              chunk = await response.arrayBuffer();
+              if (chunk.byteLength !== end - received + 1)
+                throw new Error("Неполный блок данных");
+            } finally {
+              clearTimeout(timeout);
+            }
+            break;
+          } catch (error) {
+            lastError = error;
+            if (attempt === MAX_RETRIES) break;
+            // Exponential backoff with jitter-free bounded delays for mobile connections.
+            await new Promise(resolve => setTimeout(resolve, Math.min(12000, 700 * 2 ** attempt)));
+          }
+        }
+        if (!chunk) throw new Error("Загрузка прервалась после повторных попыток: " + lastError?.message + ". Прогресс сохранён — нажмите «Установить» для продолжения.");
+        writer = await file.createWritable({keepExistingData:true});
         try {
-          response = await fetch(proxy, {mode:"cors",credentials:"omit",cache:"no-store",
-            headers:{"Range":"bytes=" + received + "-" + end}});
+          await writer.write({type:"write", position:received, data:chunk});
+          await writer.close();
+          writer = null;
         } catch (error) {
-          throw new Error("Прокси недоступен: " + error.message + ". Загруженные блоки сохранены.");
+          await writer.abort().catch(()=>{});
+          writer = null;
+          throw new Error("Не удалось сохранить блок на устройстве: " + error.message);
         }
-        const range = response.headers.get("Content-Range");
-        if (response.status !== 206 || range !== "bytes " + received + "-" + end + "/" + expected)
-          throw new Error("Сервер не поддерживает безопасную докачку: HTTP " + response.status + ", Content-Range: " + range);
-        const chunk = await response.arrayBuffer();
-        if (chunk.byteLength !== end - received + 1)
-          throw new Error("Получен неполный блок. Повторите загрузку.");
-        if (!writer) writer = await file.createWritable({keepExistingData:true});
-        await writer.write({type:"write",position:received,data:chunk});
         received += chunk.byteLength;
-        progress?.(received,expected);
-        if (++blocks % CHECKPOINT === 0 || received === expected) {
-          await writer.close(); writer = null;
-          // Yield to Safari's UI loop between storage checkpoints.
-          await new Promise(resolve=>setTimeout(resolve,0));
-        }
+        chunk = null;
+        report();
+        // Let Safari repaint the progress bar instead of monopolizing the UI thread.
+        await new Promise(resolve => setTimeout(resolve,0));
       }
+      report(true);
       const metadata = await dir.getFileHandle(id + ".json", {create:true});
       const metaWriter = await metadata.createWritable();
       await metaWriter.write(JSON.stringify({version:item.release.version,bytes:received,sha256Expected:item.release.sha256,format:"gxmod",unpacked:false}));
