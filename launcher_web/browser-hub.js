@@ -41,10 +41,10 @@ window.GeneralsXBrowser = (() => {
       const source = new URL(item.release.packageURL);
       // R2 public buckets require an explicit CORS policy for browser fetch.
       // Try the same-origin proxy first, when provisioned; never treat opaque no-cors as a usable response.
-      const proxy = "./api/packages/" + encodeURIComponent(id);
+      const proxy = "https://generals-x-package-proxy.onrender.com/api/packages/" + encodeURIComponent(id);
       let response;
       try {
-        response = await fetch(proxy, {credentials:"same-origin",cache:"no-store"});
+        response = await fetch(proxy, {mode:"cors",credentials:"omit",cache:"no-store"});
         if (!response.ok || !response.body) throw new Error("proxy HTTP " + response.status);
       } catch (proxyError) {
         try {
