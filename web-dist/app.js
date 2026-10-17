@@ -825,7 +825,7 @@ cards.forEach(card => {
 playButton.addEventListener("click", async () => {
   const profileId = nativeProfileIdForCard();
   if (!hasNativeBridge) {
-    window.location.assign("./game/");
+    window.GeneralsXWebGame.open();
     return;
   }
 

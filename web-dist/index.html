@@ -229,7 +229,36 @@
     </div>
   </div>
 
-  <script src="./app.js"></script>
+  
+<section id="gxWebGame" hidden style="position:fixed;inset:0;z-index:2147483000;background:#090e14">
+  <button id="gxWebGameBack" type="button" style="position:absolute;top:16px;left:16px;z-index:3;padding:12px;background:#123451;color:white">← В лаунчер</button>
+  <iframe id="gxWebGameFrame" title="Generals Zero Hour" allow="fullscreen;autoplay;gamepad" style="width:100%;height:100%;border:0"></iframe>
+</section>
+<script>
+window.GeneralsXWebGame = (() => {
+  const panel = document.getElementById('gxWebGame');
+  const frame = document.getElementById('gxWebGameFrame');
+  const back = document.getElementById('gxWebGameBack');
+  function close() {
+    panel.hidden = true;
+    panel.style.display = 'none';
+    frame.src = 'about:blank';
+    document.body.style.overflow = '';
+  }
+  function open() {
+    panel.hidden = false;
+    panel.style.display = 'block';
+    frame.src = './game/';
+    document.body.style.overflow = 'hidden';
+  }
+  back.addEventListener('click', close);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !panel.hidden) close();
+  });
+  return {open, close};
+})();
+</script>
+<script src="./app.js"></script>
   <script>if ("serviceWorker" in navigator && location.protocol === "https:") window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(console.warn));</script>
 </body>
 </html>
