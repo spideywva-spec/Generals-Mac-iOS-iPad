@@ -116,3 +116,10 @@
 ## 2026-10-12 Direct graphics copy from ammaarreshi
 - User explicitly requested direct upstream replacement, excluding SDL3GameEngine. Copied 20 graphics files in commits c5bd940, f1fc2df and cb496250 on fix/mods-visible-cross-platform-sync: W3D terrain, water, shadow, display, shader, view, particle, shroud, graphics LOD/options, DX8 renderer/wrapper/bitmap/polygon renderer. No SDL3GameEngine or workflows changed.
 - These exact overwrites intentionally discard previous A13-specific graphics fixes in overwritten files. Build and runtime compatibility not yet verified. Remaining WW3D2 texture/surface/asset files have NOT been copied.
+
+## 2026-10-17 — Generals X Web browser-engine test
+- Branch: `generals-x-web-engine` forked from `fix/mods-visible-cross-platform-sync`; native branch untouched.
+- `launcher_web/index.html`: loads `web-engine-bridge.js` before existing `app.js`.
+- `launcher_web/web-engine-bridge.js`: intercepts Play only in browser mode, navigates to `/game/` for Zero Hour; native WebKit bridge is unaffected. Mod profiles explicitly unsupported.
+- Render build must copy `launcher_web` to publish root and download the upstream TheodoryLabs v0.5.1-web HTML/JS/WASM into `game/`. No original .big assets are bundled; current upstream engine build and multiplayer are NOT integrated. Web rendering/playability unverified.
+- Rollback: revert commits on `generals-x-web-engine` or delete test branch; original iOS branch untouched.
