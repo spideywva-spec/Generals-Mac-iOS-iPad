@@ -1,85 +1,52 @@
-/* Browser runtime adapter: use existing launcher installation and Play UI.
-   Native iOS bridge remains untouched. No extra game window or new installer. */
+/* Generals X web engine integration.
+ * Preserves the existing launcher UI. Does not introduce a second installer.
+ * The native installer depends on WKWebView messageHandlers and cannot be
+ * called from a normal browser; game-data mounting requires a browser adapter.
+ */
 (() => {
   if (window.webkit?.messageHandlers?.generalsX) return;
-  const DB = "generals-x-browser-assets";
-  const STORE = "files";
-  function openDB() {
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open(DB, 1);
-      req.onupgradeneeded = () => req.result.createObjectStore(STORE);
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-  }
-  async function getAsset(name) {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE, "readonly");
-      const req = tx.objectStore(STORE).get(name);
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-      tx.oncomplete = () => db.close();
-    });
-  }
-  async function storeAsset(name, blob) {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE, "readwrite");
-      tx.objectStore(STORE).put(blob, name);
-      tx.oncomplete = () => { db.close(); resolve(); };
-      tx.onerror = () => reject(tx.error);
-    });
-  }
-  async function installed() {
-    return !!(await getAsset("GeneralsZH.wasm"));
-  }
-  function message(msg) {
+  let overlay = null;
+  function notice(text) {
     const toast = document.getElementById("toast");
-    if (toast) { toast.textContent = msg; toast.hidden = false; }
-    else alert(msg);
+    if (toast) { toast.textContent = text; toast.hidden = false; }
+    else console.warn(text);
   }
-  async function install() {
-    message("Загрузка браузерного движка…");
-    for (const name of ["GeneralsZH.js", "GeneralsZH.wasm"]) {
-      const response = await fetch("./game/" + name);
-      if (!response.ok) throw new Error("Не удалось скачать " + name + ": HTTP " + response.status);
-      await storeAsset(name, await response.blob());
-    }
-    message("Движок установлен в браузере. Игровые .big ресурсы нужно добавить отдельно.");
-  }
-  async function launch() {
-    const wasm = await getAsset("GeneralsZH.wasm");
-    const js = await getAsset("GeneralsZH.js");
-    if (!wasm || !js) throw new Error("Сначала установите движок.");
-    // The original engine HTML bootstraps Emscripten. Embed its page into the
-    // existing launcher viewport instead of navigating to a separate window.
+  function openEngine() {
+    if (overlay) return;
+    overlay = document.createElement("section");
+    overlay.id = "generalsXWebEngine";
+    overlay.setAttribute("aria-label", "Generals Zero Hour WebAssembly");
+    overlay.style.cssText = "position:fixed;inset:0;z-index:2147483646;background:#000;display:flex;flex-direction:column";
+    const toolbar = document.createElement("div");
+    toolbar.style.cssText = "flex:none;background:#101b2a;color:white;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;display:flex;justify-content:space-between;align-items:center";
+    const title = document.createElement("span");
+    title.textContent = "Generals X · Zero Hour";
+    const close = document.createElement("button");
+    close.type = "button";
+    close.textContent = "← В лаунчер";
+    close.style.cssText = "background:#24415d;color:white;border:1px solid #567b9d;border-radius:7px;padding:8px 12px";
+    close.onclick = () => { overlay.remove(); overlay = null; };
+    toolbar.append(title, close);
     const frame = document.createElement("iframe");
-    frame.title = "Generals Zero Hour";
-    frame.src = "./game/";
-    frame.allow = "fullscreen; gamepad; autoplay";
-    frame.style.cssText = "position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147483646;background:#000";
-    const back = document.createElement("button");
-    back.textContent = "← Generals X";
-    back.style.cssText = "position:fixed;top:env(safe-area-inset-top,12px);left:12px;z-index:2147483647;padding:10px 14px;background:#101b2a;color:#fff;border:1px solid #4d719a;border-radius:8px";
-    back.onclick = () => { frame.remove(); back.remove(); };
-    document.body.append(frame, back);
+    frame.src = "./game/GeneralsZH.html";
+    frame.title = "Zero Hour WebAssembly";
+    frame.allow = "fullscreen; autoplay; gamepad";
+    frame.style.cssText = "border:0;flex:1;width:100%;background:#000";
+    overlay.append(toolbar, frame);
+    document.body.append(overlay);
   }
   document.addEventListener("DOMContentLoaded", () => {
     const button = document.getElementById("playButton");
     if (!button) return;
-    button.addEventListener("click", async event => {
-      event.stopImmediatePropagation();
+    button.addEventListener("click", event => {
       event.preventDefault();
-      const card = document.querySelector(".mode-card.is-active");
-      if (card && card.dataset.id !== "zero-hour-online") {
-        message("Браузерный движок для этого мода ещё не подключён.");
+      event.stopImmediatePropagation();
+      const active = document.querySelector(".mode-card.is-active");
+      if (active && active.dataset.id !== "zero-hour-online") {
+        notice("Этот мод пока не поддерживается браузерным движком.");
         return;
       }
-      button.disabled = true;
-      try { if (!(await installed())) await install(); else await launch(); }
-      catch (error) { message(error.message || "Ошибка браузерного движка"); }
-      finally { button.disabled = false; }
+      openEngine();
     }, true);
   });
 })();
