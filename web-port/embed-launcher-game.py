@@ -9,7 +9,9 @@ text = app.read_text()
 old = 'showToast("Демо: запрос запуска для " + activeCard.dataset.title);'
 if text.count(old) != 1:
     raise RuntimeError("Expected launcher demo Play hook exactly once")
-app.write_text(text.replace(old, "window.GeneralsXWebGame.open();"))
+text = text.replace(old, "window.GeneralsXWebGame.open();")
+text = text.replace("timeoutMs = 20000", "timeoutMs = 3600000")
+app.write_text(text)
 
 html = root / "index.html"
 source = html.read_text()
