@@ -825,7 +825,18 @@ cards.forEach(card => {
 playButton.addEventListener("click", async () => {
   const profileId = nativeProfileIdForCard();
   if (!hasNativeBridge) {
-    showToast("Демо: запрос запуска для " + activeCard.dataset.title);
+    // Browser launch is a full-page navigation, never an iframe or a second launcher.
+    // The original IPA bridge path below is intentionally unchanged.
+    if (profileId !== "online") {
+      showToast("Браузерный движок пока поддерживает только Zero Hour без модов");
+      return;
+    }
+    if (!window.WebAssembly || !document.createElement("canvas").getContext("webgl2")) {
+      showToast("Для игры нужен браузер с WebAssembly и WebGL 2");
+      return;
+    }
+    localStorage.setItem("generals-x-web-last-profile", profileId);
+    window.location.assign("./engine/GeneralsZH.html");
     return;
   }
 
