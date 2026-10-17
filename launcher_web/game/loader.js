@@ -380,7 +380,7 @@ async function gxBoot() {
     // NOTE: a STABLE url (no cache-buster) so Range resume across page reloads
     // targets the same resource; freshness is validated by the server ETag in
     // the resume journal.
-    const url = 'assets/' + encodeURIComponent(build) + '/build.data';
+    const url = './game/assets/' + encodeURIComponent(build) + '/build.data';
     const journalKey = 'unpack-journal-' + build;
     gxUI.status('loader.assets');
     const result = await gxStreamExtract(url, storage, journalKey);
@@ -405,4 +405,5 @@ async function gxBoot() {
   }
 }
 
-window.addEventListener('DOMContentLoaded', gxBoot);
+window.gxBoot = gxBoot;
+if (!window.GeneralsXEmbedded) window.addEventListener('DOMContentLoaded', gxBoot);
