@@ -123,3 +123,5 @@
 - `launcher_web/web-engine-bridge.js`: intercepts Play only in browser mode, navigates to `/game/` for Zero Hour; native WebKit bridge is unaffected. Mod profiles explicitly unsupported.
 - Render build must copy `launcher_web` to publish root and download the upstream TheodoryLabs v0.5.1-web HTML/JS/WASM into `game/`. No original .big assets are bundled; current upstream engine build and multiplayer are NOT integrated. Web rendering/playability unverified.
 - Rollback: revert commits on `generals-x-web-engine` or delete test branch; original iOS branch untouched.
+
+- Correction: no separate browser game window or new launcher installer. `web-engine-bridge.js` now reuses the existing Play button and embeds the engine viewport over the existing launcher, with Back control. IndexedDB caches engine JS/WASM; current engine HTML still fetches its own runtime from `/game/`, so offline and game asset integration remain incomplete. Native installation logic remains untouched. Browser playability not verified.
