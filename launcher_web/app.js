@@ -1,3 +1,52 @@
+
+// Browser runtime uses the existing Play button. It never creates a second launcher or iframe.
+// The upstream engine expects legally owned .big archives at /engine/assets/;
+// the static hosting build provides engine code only.
+let browserEngineStarting = false;
+async function launchBrowserEngine() {
+  if (browserEngineStarting) return;
+  browserEngineStarting = true;
+  try {
+    if (typeof WebAssembly !== "object") throw new Error("WebAssembly отсутствует в браузере");
+    if (!document.createElement("canvas").getContext("webgl2")) throw new Error("Требуется WebGL 2");
+    const probe = await fetch("./engine/GeneralsZH.wasm", { method: "HEAD" });
+    if (!probe.ok) throw new Error("WASM-движок отсутствует на сервере");
+    // Check a required archive before starting a runtime that would otherwise fail silently.
+    const assets = await fetch("./engine/assets/INIZH.big", { method: "HEAD" });
+    if (!assets.ok) throw new Error("Игровые .big архивы ещё не доступны браузерному движку. Для запуска нужен импорт собственной копии Zero Hour.");
+    const shell = document.getElementById("appShell");
+    shell.style.display = "none";
+    const canvas = document.createElement("canvas");
+    canvas.id = "canvas";
+    canvas.style.cssText = "position:fixed;inset:0;width:100vw;height:100dvh;display:block;background:#000;z-index:9999";
+    canvas.addEventListener("contextmenu", event => event.preventDefault());
+    document.body.append(canvas);
+    window.Module = {
+      canvas,
+      locateFile: file => "./engine/" + file,
+      print: (...args) => console.log("[Generals Web]", ...args),
+      printErr: (...args) => console.error("[Generals Web]", ...args),
+      onAbort: reason => {
+        console.error("[Generals Web] aborted:", reason);
+        showToast("Ошибка движка: " + reason);
+      }
+    };
+    const script = document.createElement("script");
+    script.src = "./engine/GeneralsZH.js";
+    script.onerror = () => {
+      canvas.remove();
+      shell.style.display = "";
+      showToast("Не удалось загрузить WebAssembly-движок");
+      browserEngineStarting = false;
+    };
+    document.body.append(script);
+  } catch (error) {
+    browserEngineStarting = false;
+    showToast(error.message || String(error));
+    console.error("[Generals Web]", error);
+  }
+}
+
 const hasNativeBridge = Boolean(window.webkit?.messageHandlers?.generalsX);
 const nativePending = new Map();
 let nativeRequestCounter = 0;
@@ -825,7 +874,7 @@ cards.forEach(card => {
 playButton.addEventListener("click", async () => {
   const profileId = nativeProfileIdForCard();
   if (!hasNativeBridge) {
-    showToast("Запуск и установка игры доступны в приложении Generals X. Откройте лаунчер внутри IPA.");
+    await launchBrowserEngine();
     return;
   }
 
