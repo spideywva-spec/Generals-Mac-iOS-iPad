@@ -145,3 +145,8 @@
 - User requires existing `launcher_web` to handle download, installation, verification, and game launch through the existing native Generals X bridge; only engine internals may be replaced.
 - Removed erroneous browser navigation to `./engine/GeneralsZH.html` from `launcher_web/app.js` (commit `5e160a1`). The native download/install/launch handler remains unchanged.
 - Browser-only static site cannot execute native IPA installation or start the native engine. Do not present Render WASM test sites as the finished app. Engine replacement is NOT complete or verified.
+
+## 2026-10-17 — Browser Play handler integration (commit 088b62ea)
+- Changed only `launcher_web/app.js` in experimental `generals-x-web-engine` branch. Existing Play button now calls `launchBrowserEngine()` in regular browsers instead of displaying the IPA-only message. Native bridge behavior is unchanged.
+- Inline runtime creates a canvas in the same document (no iframe, duplicate launcher or redirect), loads `engine/GeneralsZH.js` and configures `Module.canvas`/`locateFile`.
+- Explicit preflight checks WebAssembly, WebGL2, the engine WASM, and `/engine/assets/INIZH.big` before starting. Render currently bundles WASM/JS but NOT legally owned game archives; browser gameplay remains BLOCKED until lawful asset import/range-serving integration. This is partial integration, not a verified playable release. Upstream does not support Safari.
