@@ -139,3 +139,9 @@
 - CRITICAL LIMITATION: upstream SETUP.md explicitly states Safari is unsupported (WebAssembly Asyncify), so iPhone Safari success must NOT be claimed.
 - Web multiplayer is not implemented in upstream engine (WebRTC transport pending); do not claim cross-platform online works.
 - No changes to `SDL3GameEngine`, iOS build workflows, or the production branch.
+
+
+## 2026-10-17 — Correction: NO separate game window
+- User requires existing `launcher_web` to handle download, installation, verification, and game launch through the existing native Generals X bridge; only engine internals may be replaced.
+- Removed erroneous browser navigation to `./engine/GeneralsZH.html` from `launcher_web/app.js` (commit `5e160a1`). The native download/install/launch handler remains unchanged.
+- Browser-only static site cannot execute native IPA installation or start the native engine. Do not present Render WASM test sites as the finished app. Engine replacement is NOT complete or verified.
