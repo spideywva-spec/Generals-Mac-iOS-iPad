@@ -35,22 +35,24 @@ window.GeneralsXBrowser = (() => {
     try {
       const item = await profile(id);
       const expected = item.release.packageBytes;
-      const estimate = await navigator.storage?.estimate?.();
-      if (estimate?.quota && estimate.quota - (estimate.usage || 0) < expected)
-        throw new Error("Недостаточно свободного места в хранилище браузера");
       const dir = await directory();
       const filename = id + ".gxmod";
       const file = await dir.getFileHandle(filename, {create:true});
       const proxy = "https://generals-x-package-proxy.onrender.com/api/packages/" + encodeURIComponent(id);
-      // Small, durable range requests: keep the working download on the device.
-      // Closing after each block commits OPFS data; an interrupted download resumes safely.
-      const BLOCK = 4 * 1024 * 1024;
+      // Fewer OPFS commits: Safari can copy the growing file at every close().
+      // 32 MiB bounds peak network buffer while cutting commit overhead 8x.
+      const BLOCK = 32 * 1024 * 1024;
       const MAX_RETRIES = 6;
       let received = (await file.getFile()).size;
       if (received > expected) {
         await dir.removeEntry(filename);
         throw new Error("Неверный размер частично загруженного пакета");
       }
+      // A resumed download needs only the missing bytes, not a second full package.
+      const estimate = await navigator.storage?.estimate?.();
+      const remaining = expected - received;
+      if (estimate?.quota && estimate.quota - (estimate.usage || 0) < remaining)
+        throw new Error("Недостаточно места для оставшихся " + Math.ceil(remaining / 1048576) + " МиБ. Уже скачанные данные сохранены.");
       let lastProgressAt = 0;
       const report = (force = false) => {
         const now = performance.now();
