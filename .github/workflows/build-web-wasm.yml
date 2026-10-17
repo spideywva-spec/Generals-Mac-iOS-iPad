@@ -99,7 +99,6 @@ jobs:
   </script>
 ''' + marker)
           html.write_text(source)
-          p.write_text(text)
           PY
           test -f site-dist/index.html
           # A newly claimed service worker does not retroactively isolate the page.
