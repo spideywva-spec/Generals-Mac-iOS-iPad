@@ -874,7 +874,30 @@ cards.forEach(card => {
 playButton.addEventListener("click", async () => {
   const profileId = nativeProfileIdForCard();
   if (!hasNativeBridge) {
-    await launchBrowserEngine();
+    try {
+      const browser = window.GeneralsXBrowser;
+      if (!browser) throw new Error("Браузерный установщик Hub отсутствует");
+      if (!(await browser.installed(profileId))) {
+        const item = await browser.profile(profileId);
+        showToast("Загрузка " + item.name + " из Generals Hub…");
+        downloadMetrics.set(profileId, {busy:true,profileId,received:0,total:item.release.packageBytes,fraction:0});
+        setHomeDownloadProgress(profileId,0,true);
+        await browser.install(profileId,(received,total)=>{
+          downloadMetrics.set(profileId,{busy:true,profileId,received,total,fraction:received/total});
+          setHomeDownloadProgress(profileId,received/total,true);
+        });
+        downloadMetrics.delete(profileId);
+        finishHomeDownload(profileId,"complete");
+        showToast("Пакет загружен. Для запуска нужна распаковка GXMOD в WASM FS.");
+        return;
+      }
+      showToast("Пакет GXMOD сохранён. Распаковка и подключение ресурсов к WASM пока отсутствуют.");
+    } catch (error) {
+      downloadMetrics.delete(profileId);
+      finishHomeDownload(profileId,"error");
+      showToast(error.message || String(error));
+      console.error("[Generals X browser install]",error);
+    }
     return;
   }
 
