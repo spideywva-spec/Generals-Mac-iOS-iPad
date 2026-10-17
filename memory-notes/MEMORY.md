@@ -190,3 +190,10 @@
 ### 2026-10-17 — WASM workflow staging rollback
 - Replaced the custom browser-shell staging commands with `bash scripts/web/make-dist.sh --skip-assets`, exactly as used by successful run `38968736298` (commit `c43dde5`). Commit `1ab174da12639da1d9947dba97485e973cbb6b76`. Kept the later publishing steps for Render.
 - This is a code comparison/rollback of a previously successful step, **not** a log-based root cause determination. Could not download GitHub Actions run `38970177070` ZIP locally: working container network DNS resolution failed. Do not claim ZIP logs were analyzed; user requires ZIP downloaded and extracted into local `errors/` before analyzing logs. Await new run validation.
+
+
+### 2026-10-17 — Restore Generals X launcher and browser SharedArrayBuffer isolation
+- User reported `SharedArrayBuffer недоступен. Используйте HTTPS` on HTTPS Render WASM preview and absence of original launcher.
+- Browser workflow now checks out the user's repo into `launcher-source`, copies **original** `launcher_web` to deployment root, copies upstream WASM shell/engine into `/game/`, and changes only the staged browser `app.js` Play demo handler to navigate to `./game/`. Original native launcher source and native bridge are unchanged. Commits `a12bffbed72bbf1bdfe515a76bb9d0155881a4c8` and `47bdd3e12c6f370bda34cddc71b6a2051062d47c`.
+- COI fix: upstream `coi-serviceworker.js` calls `clients.claim()`, so `navigator.serviceWorker.controller` may become non-null on first install without navigation. The document remains not cross-origin-isolated, so SharedArrayBuffer is blocked even on HTTPS. Add a `controllerchange` listener in staged service worker to reload once after it takes control, allowing COOP/COEP response headers on the new document. Requires real Safari validation and ideally native Render COOP/COEP response headers.
+- Deploy is pending GitHub Actions + Render; do not claim the browser game is playable until tested. Game data is not bundled.
