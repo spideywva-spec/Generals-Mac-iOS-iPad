@@ -53,4 +53,4 @@ overlay += """
 }
 </style>
 """
-html.write_text(source.replace(marker, overlay + marker))
+html.write_text(source.replace(marker, '<script src="./jszip.min.js"></script>\n<script src="./browser-adapter.js"></script>\n' + overlay + marker))
