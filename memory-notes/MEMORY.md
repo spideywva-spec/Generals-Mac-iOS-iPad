@@ -150,3 +150,6 @@
 - Changed only `launcher_web/app.js` in experimental `generals-x-web-engine` branch. Existing Play button now calls `launchBrowserEngine()` in regular browsers instead of displaying the IPA-only message. Native bridge behavior is unchanged.
 - Inline runtime creates a canvas in the same document (no iframe, duplicate launcher or redirect), loads `engine/GeneralsZH.js` and configures `Module.canvas`/`locateFile`.
 - Explicit preflight checks WebAssembly, WebGL2, the engine WASM, and `/engine/assets/INIZH.big` before starting. Render currently bundles WASM/JS but NOT legally owned game archives; browser gameplay remains BLOCKED until lawful asset import/range-serving integration. This is partial integration, not a verified playable release. Upstream does not support Safari.
+
+## 2026-10-17 — Browser download blocked at 0%
+- Browser installer now attempts same-origin `/api/packages/<profile>` before direct R2 CORS fetch, with explicit diagnostic when both unavailable. Render static site does not currently implement this API; CORS or a dynamic proxy must be configured for actual fix. OPFS remains device-local; no confirmed successful download or playable browser game. Production iOS branch unchanged.
