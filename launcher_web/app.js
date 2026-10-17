@@ -825,7 +825,8 @@ cards.forEach(card => {
 playButton.addEventListener("click", async () => {
   const profileId = nativeProfileIdForCard();
   if (!hasNativeBridge) {
-    await window.GeneralsXBrowser?.launch();
+    if (!window.GeneralsXBrowser) await import('./browser-engine.js');
+    await window.GeneralsXBrowser.launch();
     return;
   }
 
